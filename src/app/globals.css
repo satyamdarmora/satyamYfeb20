@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand */
+  --brand-primary: #D9008D;
+  --brand-light: #FFB2E4;
+  --brand-lighter: #FFCCED;
+  --brand-lightest: #FFE5F6;
+  --brand-secondary: #443152;
+
+  /* Gold Gradient */
+  --gold-start: #D5AF4A;
+  --gold-mid: #F2E983;
+  --gold-end: #D5B14B;
+
+  /* Backgrounds (neutral dark) */
+  --bg-primary: #161021;
+  --bg-secondary: #352D42;
+  --bg-card: #443152;
+  --bg-card-hover: #665E75;
+
+  /* Text */
+  --text-primary: #FAF9FC;
+  --text-secondary: #A7A1B2;
+  --text-muted: #665E75;
+
+  /* Semantic Colors */
+  --positive: #008043;
+  --positive-light: #A5E5C6;
+  --positive-bg: #E1FAED;
+  --negative: #E01E00;
+  --negative-light: #FFBDB3;
+  --negative-bg: #FFE9E5;
+  --warning: #FF8000;
+  --warning-dark: #B85C00;
+  --warning-light: #FFAA00;
+  --warning-bg: #FFE6CC;
+  --info: #FF8000;
+  --info-light: #FFAA00;
+  --info-bg: #FFE6CC;
+
+  /* Borders */
+  --border-subtle: #352D42;
+
+  /* Chip background */
+  --chip-bg: #352D42;
+
+  /* Money / Financial */
+  --money: #2196F3;
+  --money-light: #90CAF9;
+  --money-bg: rgba(33, 150, 243, 0.12);
+
+  /* Legacy aliases (for compat) */
+  --accent-green: #008043;
+  --accent-amber: #FF8000;
+  --accent-red: #E01E00;
+  --accent-blue: #2196F3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+
+/* Prevent text selection on interactive elements */
+.no-select { user-select: none; }
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.2s ease;
+}
+
+/* Task type colors */
+.task-install { border-left: 3px solid var(--brand-primary); }
+.task-restore { border-left: 3px solid var(--negative); }
+.task-netbox { border-left: 3px solid var(--info); }
+
+/* Priority indicators */
+.priority-high { color: var(--negative); }
+.priority-normal { color: var(--warning); }
+
+/* Chip states */
+.chip-compliant { color: var(--positive); }
+.chip-at-risk { color: var(--warning); }
+.chip-non-compliant { color: var(--negative); }
+.chip-eligible { color: var(--positive); }
+.chip-limited { color: var(--warning); }
+.chip-ineligible { color: var(--negative); }
+
+/* CTA Button */
+.cta-primary {
+  background: var(--brand-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.cta-primary:hover { opacity: 0.9; }
+.cta-primary:active { opacity: 0.8; }
+
+.cta-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cta-secondary:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+.cta-secondary:active { opacity: 0.7; }
+
+.cta-urgent {
+  background: var(--negative);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* Mobile optimized */
+@media (max-width: 480px) {
+  .cta-primary, .cta-urgent {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
+
+/* Resolved task fade-out animation */
+@keyframes fadeSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 120px;
+  }
+  60% {
+    opacity: 0.6;
+    transform: translateX(0);
+    max-height: 120px;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(40px);
+    max-height: 0;
+    margin-bottom: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+}
