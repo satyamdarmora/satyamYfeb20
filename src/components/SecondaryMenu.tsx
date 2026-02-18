@@ -90,7 +90,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.6)',
+          background: 'var(--overlay-bg)',
         }}
       />
 
@@ -105,7 +105,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
           width: '100%',
           maxWidth: 480,
           maxHeight: '80vh',
-          background: '#352D42',
+          background: 'var(--bg-secondary)',
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           overflow: 'hidden',
@@ -128,7 +128,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
               width: 36,
               height: 4,
               borderRadius: 2,
-              background: '#665E75',
+              background: 'var(--text-muted)',
             }}
           />
         </div>
@@ -140,7 +140,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '8px 20px 16px',
-            borderBottom: '1px solid #352D42',
+            borderBottom: '1px solid var(--border-subtle)',
           }}
         >
           <h3
@@ -148,7 +148,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
               margin: 0,
               fontSize: 16,
               fontWeight: 600,
-              color: '#FAF9FC',
+              color: 'var(--text-primary)',
             }}
           >
             {t('menu.title')}
@@ -158,7 +158,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
             style={{
               background: 'none',
               border: 'none',
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               fontSize: 20,
               cursor: 'pointer',
               padding: '4px 8px',
@@ -197,7 +197,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
                 transition: 'background 0.15s ease',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = '#443152';
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-card)';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
@@ -209,12 +209,12 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
                   width: 40,
                   height: 40,
                   borderRadius: 10,
-                  background: '#443152',
+                  background: 'var(--bg-card)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 18,
-                  color: '#A7A1B2',
+                  color: 'var(--text-secondary)',
                   flexShrink: 0,
                 }}
               >
@@ -227,7 +227,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
                   style={{
                     fontSize: 14,
                     fontWeight: 600,
-                    color: '#FAF9FC',
+                    color: 'var(--text-primary)',
                     lineHeight: 1.3,
                   }}
                 >
@@ -236,7 +236,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
                 <div
                   style={{
                     fontSize: 12,
-                    color: '#665E75',
+                    color: 'var(--text-muted)',
                     lineHeight: 1.4,
                     marginTop: 2,
                   }}
@@ -246,7 +246,7 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
               </div>
 
               {/* Chevron */}
-              <div style={{ color: '#665E75', fontSize: 16, flexShrink: 0 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 16, flexShrink: 0 }}>
                 {'\u203A'}
               </div>
             </button>

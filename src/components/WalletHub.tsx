@@ -30,24 +30,24 @@ function formatDate(iso: string): string {
 function getTypeBadge(type: WalletTransaction['type']): { label: string; color: string; bg: string } {
   switch (type) {
     case 'SETTLEMENT':
-      return { label: 'Settlement', color: '#008043', bg: 'rgba(0,128,67,0.12)' };
+      return { label: 'Settlement', color: 'var(--positive)', bg: 'var(--positive-subtle)' };
     case 'BONUS':
-      return { label: 'Bonus', color: '#2196F3', bg: 'rgba(33,150,243,0.12)' };
+      return { label: 'Bonus', color: 'var(--money)', bg: 'var(--money-subtle)' };
     case 'WITHDRAWAL':
-      return { label: 'Withdrawal', color: '#E01E00', bg: 'rgba(224,30,0,0.12)' };
+      return { label: 'Withdrawal', color: 'var(--negative)', bg: 'var(--negative-subtle)' };
     case 'TOP_UP':
-      return { label: 'Top Up', color: '#D9008D', bg: 'rgba(217,0,141,0.12)' };
+      return { label: 'Top Up', color: 'var(--brand-primary)', bg: 'var(--brand-subtle)' };
   }
 }
 
 function getStatusBadge(status: WalletTransaction['status']): { color: string; bg: string } {
   switch (status) {
     case 'COMPLETED':
-      return { color: '#008043', bg: 'rgba(0,128,67,0.12)' };
+      return { color: 'var(--positive)', bg: 'var(--positive-subtle)' };
     case 'PENDING':
-      return { color: '#FF8000', bg: 'rgba(255,128,0,0.12)' };
+      return { color: 'var(--warning)', bg: 'rgba(255,128,0,0.12)' };
     case 'FAILED':
-      return { color: '#E01E00', bg: 'rgba(224,30,0,0.12)' };
+      return { color: 'var(--negative)', bg: 'var(--negative-subtle)' };
   }
 }
 
@@ -74,7 +74,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
     position: 'fixed',
     inset: 0,
     zIndex: 900,
-    background: '#161021',
+    background: 'var(--bg-primary)',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -82,7 +82,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
 
   const headerStyle: React.CSSProperties = {
     padding: '16px',
-    borderBottom: '1px solid #352D42',
+    borderBottom: '1px solid var(--border-subtle)',
     flexShrink: 0,
   };
 
@@ -95,7 +95,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
   const btnPrimary: React.CSSProperties = {
     width: '100%',
     padding: '14px',
-    background: '#D9008D',
+    background: 'var(--brand-primary)',
     color: '#FFFFFF',
     border: 'none',
     borderRadius: 10,
@@ -108,8 +108,8 @@ export default function WalletHub({ onBack }: WalletHubProps) {
     width: '100%',
     padding: '14px',
     background: 'transparent',
-    color: '#D9008D',
-    border: '1px solid #D9008D',
+    color: 'var(--brand-primary)',
+    border: '1px solid var(--brand-primary)',
     borderRadius: 10,
     fontSize: 15,
     fontWeight: 600,
@@ -119,10 +119,10 @@ export default function WalletHub({ onBack }: WalletHubProps) {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '14px 16px',
-    background: '#352D42',
-    border: '1px solid #352D42',
+    background: 'var(--bg-secondary)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 10,
-    color: '#FAF9FC',
+    color: 'var(--text-primary)',
     fontSize: 18,
     fontWeight: 600,
     outline: 'none',
@@ -132,7 +132,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
   const sectionTitle: React.CSSProperties = {
     fontSize: 13,
     fontWeight: 600,
-    color: '#A7A1B2',
+    color: 'var(--text-secondary)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -140,7 +140,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
   };
 
   const cardStyle: React.CSSProperties = {
-    background: '#443152',
+    background: 'var(--bg-card)',
     borderRadius: 10,
     padding: '14px 16px',
     marginBottom: 8,
@@ -152,7 +152,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
       style={{
         background: 'none',
         border: 'none',
-        color: '#A7A1B2',
+        color: 'var(--text-secondary)',
         fontSize: 14,
         cursor: 'pointer',
         padding: '4px 0',
@@ -174,7 +174,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
             style={{
               background: 'none',
               border: 'none',
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               fontSize: 14,
               cursor: 'pointer',
               padding: '4px 0',
@@ -184,7 +184,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
           >
             &larr; Back
           </button>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
             Wallet
           </div>
         </div>
@@ -193,20 +193,20 @@ export default function WalletHub({ onBack }: WalletHubProps) {
           {/* Balance Card */}
           <div
             style={{
-              background: 'linear-gradient(135deg, #443152, #665E75)',
+              background: 'linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end))',
               borderRadius: 14,
               padding: '24px 20px',
               marginBottom: 4,
-              border: '1px solid #352D42',
+              border: '1px solid var(--border-subtle)',
             }}
           >
-            <div style={{ fontSize: 12, color: '#A7A1B2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Available Balance
             </div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: '#2196F3', marginBottom: 8 }}>
+            <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--money)', marginBottom: 8 }}>
               &#8377;{wallet.balance.toLocaleString('en-IN')}
             </div>
-            <div style={{ fontSize: 13, color: '#FF8000' }}>
+            <div style={{ fontSize: 13, color: 'var(--warning)' }}>
               Pending settlement: &#8377;{wallet.pending_settlement.toLocaleString('en-IN')}
             </div>
           </div>
@@ -231,26 +231,26 @@ export default function WalletHub({ onBack }: WalletHubProps) {
           <div style={sectionTitle}>Current Cycle Breakdown</div>
           <div style={cardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Cycle Earned</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#FAF9FC' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Cycle Earned</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
                 &#8377;{assurance.cycle_earned.toLocaleString('en-IN')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Active Base</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Active Base</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                 {assurance.active_base} connections
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Per-connection rate</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Per-connection rate</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                 ~&#8377;{assurance.active_base > 0 ? Math.round(assurance.cycle_earned / assurance.active_base).toLocaleString('en-IN') : '0'}/conn
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #352D42' }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Next Settlement</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#008043' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Next Settlement</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--positive)' }}>
                 &#8377;{assurance.next_settlement_amount.toLocaleString('en-IN')} on {assurance.next_settlement_date}
               </span>
             </div>
@@ -259,23 +259,23 @@ export default function WalletHub({ onBack }: WalletHubProps) {
           {/* ---- Bonus Breakdown ---- */}
           <div style={sectionTitle}>Bonus Breakdown</div>
           {bonuses.length === 0 ? (
-            <div style={{ ...cardStyle, color: '#665E75', fontSize: 13 }}>No bonuses this period</div>
+            <div style={{ ...cardStyle, color: 'var(--text-muted)', fontSize: 13 }}>No bonuses this period</div>
           ) : (
             bonuses.map((txn) => (
               <div key={txn.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 13, color: '#FAF9FC', fontWeight: 500 }}>{txn.description}</div>
-                  <div style={{ fontSize: 11, color: '#665E75', marginTop: 2 }}>{formatDate(txn.date)}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{txn.description}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{formatDate(txn.date)}</div>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#2196F3', whiteSpace: 'nowrap', marginLeft: 12 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--money)', whiteSpace: 'nowrap', marginLeft: 12 }}>
                   +&#8377;{txn.amount.toLocaleString('en-IN')}
                 </div>
               </div>
             ))
           )}
-          <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', background: 'rgba(33,150,243,0.08)', border: '1px solid rgba(33,150,243,0.2)' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#A7A1B2' }}>Total Bonuses</span>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#2196F3' }}>
+          <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', background: 'var(--money-subtle)', border: '1px solid rgba(33,150,243,0.2)' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Total Bonuses</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--money)' }}>
               &#8377;{totalBonuses.toLocaleString('en-IN')}
             </span>
           </div>
@@ -285,10 +285,10 @@ export default function WalletHub({ onBack }: WalletHubProps) {
           {settlements.map((txn) => (
             <div key={txn.id} style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontSize: 13, color: '#FAF9FC', fontWeight: 500 }}>{txn.description}</div>
-                <div style={{ fontSize: 11, color: '#665E75', marginTop: 2 }}>{formatDate(txn.date)}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{txn.description}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{formatDate(txn.date)}</div>
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#008043', whiteSpace: 'nowrap', marginLeft: 12 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--positive)', whiteSpace: 'nowrap', marginLeft: 12 }}>
                 +&#8377;{txn.amount.toLocaleString('en-IN')}
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
           <div style={sectionTitle}>Total Lifetime Earnings</div>
           <div
             style={{
-              background: 'linear-gradient(135deg, rgba(217,0,141,0.1), rgba(33,150,243,0.1))',
+              background: 'linear-gradient(135deg, var(--brand-subtle), var(--money-subtle))',
               border: '1px solid rgba(217,0,141,0.2)',
               borderRadius: 12,
               padding: '20px',
@@ -306,26 +306,26 @@ export default function WalletHub({ onBack }: WalletHubProps) {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Total Settlements</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total Settlements</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                 &#8377;{totalSettlements.toLocaleString('en-IN')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Total Bonuses</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total Bonuses</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                 &#8377;{totalBonuses.toLocaleString('en-IN')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Total Withdrawals</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#E01E00' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Total Withdrawals</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--negative)' }}>
                 -&#8377;{totalWithdrawals.toLocaleString('en-IN')}
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid #352D42' }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#FAF9FC' }}>Lifetime Earned</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#2196F3' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Lifetime Earned</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--money)' }}>
                 &#8377;{lifetimeEarnings.toLocaleString('en-IN')}
               </span>
             </div>
@@ -375,10 +375,10 @@ export default function WalletHub({ onBack }: WalletHubProps) {
                       {txn.status}
                     </span>
                   </div>
-                  <div style={{ fontSize: 13, color: '#FAF9FC', marginBottom: 2 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 2 }}>
                     {txn.description}
                   </div>
-                  <div style={{ fontSize: 11, color: '#665E75' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     {formatDate(txn.date)}
                   </div>
                 </div>
@@ -386,7 +386,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
                   style={{
                     fontSize: 16,
                     fontWeight: 700,
-                    color: isPositive ? '#008043' : '#E01E00',
+                    color: isPositive ? 'var(--positive)' : 'var(--negative)',
                     whiteSpace: 'nowrap',
                     marginLeft: 12,
                   }}
@@ -409,14 +409,14 @@ export default function WalletHub({ onBack }: WalletHubProps) {
       <div style={overlayStyle}>
         <div style={headerStyle}>
           {backBtn('hub')}
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Withdraw Funds</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Withdraw Funds</div>
         </div>
         <div style={scrollStyle}>
-          <div style={{ fontSize: 13, color: '#A7A1B2', marginBottom: 8 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
             Available: &#8377;{wallet.balance.toLocaleString('en-IN')}
           </div>
           <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 12, color: '#A7A1B2', display: 'block', marginBottom: 8 }}>
+            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>
               Enter amount
             </label>
             <input
@@ -451,21 +451,21 @@ export default function WalletHub({ onBack }: WalletHubProps) {
       <div style={overlayStyle}>
         <div style={headerStyle}>
           {backBtn('withdraw_amount')}
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Confirm Withdrawal</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Confirm Withdrawal</div>
         </div>
         <div style={scrollStyle}>
           <div style={{
-            background: '#443152',
+            background: 'var(--bg-card)',
             borderRadius: 12,
             padding: '20px',
             marginBottom: 24,
           }}>
-            <div style={{ fontSize: 13, color: '#A7A1B2', marginBottom: 4 }}>Amount</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#FAF9FC', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>Amount</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16 }}>
               &#8377;{Number(amount).toLocaleString('en-IN')}
             </div>
-            <div style={{ fontSize: 13, color: '#A7A1B2', marginBottom: 4 }}>To</div>
-            <div style={{ fontSize: 14, color: '#FAF9FC' }}>HDFC Bank ***4421</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>To</div>
+            <div style={{ fontSize: 14, color: 'var(--text-primary)' }}>HDFC Bank ***4421</div>
           </div>
           <button onClick={() => setStep('withdraw_receipt')} style={btnPrimary}>
             Confirm Withdrawal
@@ -480,18 +480,18 @@ export default function WalletHub({ onBack }: WalletHubProps) {
     return (
       <div style={overlayStyle}>
         <div style={headerStyle}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Withdrawal Submitted</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Withdrawal Submitted</div>
         </div>
         <div style={{ ...scrollStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(0,128,67,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <span style={{ fontSize: 28, color: '#008043' }}>&#10003;</span>
+          <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'var(--positive-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 28, color: 'var(--positive)' }}>&#10003;</span>
           </div>
-          <div style={{ fontSize: 14, color: '#A7A1B2', marginBottom: 8 }}>Withdrawal of</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#FAF9FC', marginBottom: 8 }}>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>Withdrawal of</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
             &#8377;{Number(amount).toLocaleString('en-IN')}
           </div>
-          <div style={{ fontSize: 13, color: '#A7A1B2', marginBottom: 4 }}>has been submitted.</div>
-          <div style={{ fontSize: 12, color: '#665E75', marginBottom: 32 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>has been submitted.</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 32 }}>
             Reference: WDR-{Date.now().toString().slice(-6)}
           </div>
           <button onClick={() => { setStep('hub'); setAmount(''); }} style={{ ...btnPrimary, maxWidth: 300 }}>
@@ -508,11 +508,11 @@ export default function WalletHub({ onBack }: WalletHubProps) {
       <div style={overlayStyle}>
         <div style={headerStyle}>
           {backBtn('hub')}
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Add Money</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Add Money</div>
         </div>
         <div style={scrollStyle}>
           <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 12, color: '#A7A1B2', display: 'block', marginBottom: 8 }}>
+            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>
               Enter amount
             </label>
             <input
@@ -545,7 +545,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
       <div style={overlayStyle}>
         <div style={headerStyle}>
           {backBtn('add_amount')}
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Select Payment Method</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Select Payment Method</div>
         </div>
         <div style={scrollStyle}>
           {PAYMENT_METHODS.map((method) => (
@@ -555,10 +555,10 @@ export default function WalletHub({ onBack }: WalletHubProps) {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: paymentMethod === method ? '#665E75' : '#443152',
-                border: paymentMethod === method ? '1px solid #D9008D' : '1px solid #352D42',
+                background: paymentMethod === method ? 'var(--bg-card-hover)' : 'var(--bg-card)',
+                border: paymentMethod === method ? '1px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
                 borderRadius: 10,
-                color: '#FAF9FC',
+                color: 'var(--text-primary)',
                 fontSize: 14,
                 fontWeight: 500,
                 cursor: 'pointer',
@@ -580,21 +580,21 @@ export default function WalletHub({ onBack }: WalletHubProps) {
       <div style={overlayStyle}>
         <div style={headerStyle}>
           {backBtn('add_method')}
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Confirm Top Up</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Confirm Top Up</div>
         </div>
         <div style={scrollStyle}>
           <div style={{
-            background: '#443152',
+            background: 'var(--bg-card)',
             borderRadius: 12,
             padding: '20px',
             marginBottom: 24,
           }}>
-            <div style={{ fontSize: 13, color: '#A7A1B2', marginBottom: 4 }}>Amount</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#FAF9FC', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>Amount</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16 }}>
               &#8377;{Number(amount).toLocaleString('en-IN')}
             </div>
-            <div style={{ fontSize: 13, color: '#A7A1B2', marginBottom: 4 }}>Payment Method</div>
-            <div style={{ fontSize: 14, color: '#FAF9FC' }}>{paymentMethod}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>Payment Method</div>
+            <div style={{ fontSize: 14, color: 'var(--text-primary)' }}>{paymentMethod}</div>
           </div>
           <button onClick={() => setStep('add_receipt')} style={btnPrimary}>
             Confirm Payment
@@ -609,18 +609,18 @@ export default function WalletHub({ onBack }: WalletHubProps) {
     return (
       <div style={overlayStyle}>
         <div style={headerStyle}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Payment Successful</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Payment Successful</div>
         </div>
         <div style={{ ...scrollStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(0,128,67,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <span style={{ fontSize: 28, color: '#008043' }}>&#10003;</span>
+          <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'var(--positive-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 28, color: 'var(--positive)' }}>&#10003;</span>
           </div>
-          <div style={{ fontSize: 14, color: '#A7A1B2', marginBottom: 8 }}>Top up of</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#FAF9FC', marginBottom: 8 }}>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>Top up of</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
             &#8377;{Number(amount).toLocaleString('en-IN')}
           </div>
-          <div style={{ fontSize: 13, color: '#A7A1B2', marginBottom: 4 }}>via {paymentMethod} was successful.</div>
-          <div style={{ fontSize: 12, color: '#665E75', marginBottom: 32 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>via {paymentMethod} was successful.</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 32 }}>
             Reference: TOP-{Date.now().toString().slice(-6)}
           </div>
           <button onClick={() => { setStep('hub'); setAmount(''); }} style={{ ...btnPrimary, maxWidth: 300 }}>

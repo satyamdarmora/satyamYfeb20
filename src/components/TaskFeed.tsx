@@ -139,7 +139,7 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
   const sectionHeaderStyle: React.CSSProperties = {
     fontSize: 13,
     fontWeight: 600,
-    color: '#A7A1B2',
+    color: 'var(--text-secondary)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     padding: '16px 0 8px',
@@ -166,8 +166,8 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
             style={{
               ...chipBaseStyle,
               background:
-                filter === chip.value ? '#D9008D' : '#352D42',
-              color: filter === chip.value ? '#FFFFFF' : '#A7A1B2',
+                filter === chip.value ? 'var(--brand-primary)' : 'var(--bg-secondary)',
+              color: filter === chip.value ? '#FFFFFF' : 'var(--text-secondary)',
             }}
           >
             {chip.label}
@@ -179,12 +179,12 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
       {hiddenCriticalCount > 0 && (
         <div
           style={{
-            background: 'rgba(224, 30, 0, 0.12)',
+            background: 'var(--negative-subtle)',
             border: '1px solid rgba(224, 30, 0, 0.3)',
             borderRadius: 8,
             padding: '10px 14px',
             fontSize: 13,
-            color: '#E01E00',
+            color: 'var(--negative)',
             fontWeight: 500,
             marginBottom: 8,
           }}
@@ -196,7 +196,7 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
       {/* Zone A: Your Tasks */}
       <div style={sectionHeaderStyle}>
         {t('feed.yourTasks')}
-        <span style={{ color: '#665E75', fontWeight: 400, marginLeft: 8 }}>
+        <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: 8 }}>
           ({zoneATasks.length})
         </span>
       </div>
@@ -206,7 +206,7 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
           style={{
             padding: '20px 0',
             fontSize: 13,
-            color: '#665E75',
+            color: 'var(--text-muted)',
             textAlign: 'center',
           }}
         >
@@ -226,22 +226,22 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
         >
           <div
             style={{
-              background: '#443152',
+              background: 'var(--bg-card)',
               borderRadius: 10,
-              borderLeft: '4px solid #008043',
+              borderLeft: '4px solid var(--positive)',
               padding: '14px 16px',
               opacity: 0.7,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#008043' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive)' }}>
                 {task.task_type}
               </span>
-              <span style={{ fontSize: 13, color: '#FAF9FC', fontWeight: 500 }}>
+              <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
                 {task.connection_id || task.netbox_id || task.task_id}
               </span>
             </div>
-            <div style={{ fontSize: 12, color: '#A7A1B2' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
               {task.customer_area || '--'}
             </div>
           </div>
@@ -254,12 +254,12 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: 10,
-              background: 'rgba(0, 128, 67, 0.15)',
+              background: 'var(--positive-subtle)',
             }}
           >
             <div
               style={{
-                background: '#008043',
+                background: 'var(--positive)',
                 color: '#FFFFFF',
                 padding: '6px 20px',
                 borderRadius: 20,
@@ -290,11 +290,11 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
           ...sectionHeaderStyle,
           marginTop: 8,
           paddingTop: 20,
-          borderTop: '1px solid #352D42',
+          borderTop: '1px solid var(--border-subtle)',
         }}
       >
         {t('feed.available')}
-        <span style={{ color: '#665E75', fontWeight: 400, marginLeft: 8 }}>
+        <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: 8 }}>
           ({zoneBTasks.length})
         </span>
       </div>
@@ -304,7 +304,7 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
           style={{
             padding: '20px 0',
             fontSize: 13,
-            color: '#665E75',
+            color: 'var(--text-muted)',
             textAlign: 'center',
           }}
         >

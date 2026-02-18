@@ -69,7 +69,7 @@ export default function DrillDown({ isOpen, onClose, title, children }: DrillDow
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.6)',
+          background: 'var(--overlay-bg)',
         }}
       />
 
@@ -84,7 +84,7 @@ export default function DrillDown({ isOpen, onClose, title, children }: DrillDow
           width: '100%',
           maxWidth: 480,
           maxHeight: '80vh',
-          background: '#352D42',
+          background: 'var(--bg-secondary)',
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           overflow: 'hidden',
@@ -107,7 +107,7 @@ export default function DrillDown({ isOpen, onClose, title, children }: DrillDow
               width: 36,
               height: 4,
               borderRadius: 2,
-              background: '#665E75',
+              background: 'var(--text-muted)',
             }}
           />
         </div>
@@ -119,7 +119,7 @@ export default function DrillDown({ isOpen, onClose, title, children }: DrillDow
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '8px 20px 16px',
-            borderBottom: '1px solid #352D42',
+            borderBottom: '1px solid var(--bg-secondary)',
           }}
         >
           <h3
@@ -127,7 +127,7 @@ export default function DrillDown({ isOpen, onClose, title, children }: DrillDow
               margin: 0,
               fontSize: 16,
               fontWeight: 600,
-              color: '#FAF9FC',
+              color: 'var(--text-primary)',
             }}
           >
             {title}
@@ -137,7 +137,7 @@ export default function DrillDown({ isOpen, onClose, title, children }: DrillDow
             style={{
               background: 'none',
               border: 'none',
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               fontSize: 20,
               cursor: 'pointer',
               padding: '4px 8px',

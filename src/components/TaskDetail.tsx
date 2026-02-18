@@ -10,27 +10,15 @@ interface TaskDetailProps {
   onAction: (taskId: string, action: string, extra?: Record<string, string>) => void;
 }
 
-function getLeftBorderColor(taskType: string): string {
-  switch (taskType) {
-    case 'INSTALL':
-      return '#D9008D';
-    case 'RESTORE':
-      return '#E01E00';
-    case 'NETBOX':
-      return '#FF8000';
-    default:
-      return '#665E75';
-  }
-}
-
+/** Task type badge colors from brand palette */
 function getBadgeBackground(taskType: string): string {
   switch (taskType) {
     case 'INSTALL':
-      return 'rgba(217, 0, 141, 0.15)';
+      return 'var(--brand-subtle)';
     case 'RESTORE':
-      return 'rgba(224, 30, 0, 0.15)';
+      return 'var(--restore-subtle)';
     case 'NETBOX':
-      return 'rgba(255, 128, 0, 0.15)';
+      return 'var(--gold-subtle)';
     default:
       return 'rgba(92, 111, 130, 0.15)';
   }
@@ -39,13 +27,13 @@ function getBadgeBackground(taskType: string): string {
 function getBadgeColor(taskType: string): string {
   switch (taskType) {
     case 'INSTALL':
-      return '#D9008D';
+      return 'var(--brand-primary)';
     case 'RESTORE':
-      return '#E01E00';
+      return 'var(--accent-restore)';
     case 'NETBOX':
-      return '#FF8000';
+      return 'var(--accent-gold)';
     default:
-      return '#665E75';
+      return 'var(--text-muted)';
   }
 }
 
@@ -85,15 +73,15 @@ function formatFullTimestamp(ts: string): string {
 function getActorColor(actorType: string): string {
   switch (actorType) {
     case 'SYSTEM':
-      return '#665E75';
+      return 'var(--text-muted)';
     case 'CSP':
-      return '#D9008D';
+      return 'var(--brand-primary)';
     case 'ADMIN':
-      return '#FF8000';
+      return 'var(--warning)';
     case 'TECHNICIAN':
-      return '#008043';
+      return 'var(--positive)';
     default:
-      return '#A7A1B2';
+      return 'var(--text-secondary)';
   }
 }
 
@@ -108,6 +96,10 @@ function isInTechnicianHands(task: Task): boolean {
   return false;
 }
 
+function isSelfAssigned(task: Task): boolean {
+  return isInTechnicianHands(task) && !!task.assigned_to && task.assigned_to.startsWith('Self');
+}
+
 function getCTA(task: Task): { label: string; action: string; urgent: boolean } | null {
   const state = task.state;
   const flag = task.queue_escalation_flag;
@@ -119,6 +111,21 @@ function getCTA(task: Task): { label: string; action: string; urgent: boolean } 
 
   // OFFERED tasks handled separately in detail view
   if (state === 'OFFERED') return null;
+
+  // Self-assigned: step-by-step progression per task type
+  if (isSelfAssigned(task)) {
+    if (task.task_type === 'INSTALL') {
+      if (state === 'SCHEDULED' || state === 'ASSIGNED') return { label: 'Start Work', action: 'START_WORK', urgent: false };
+      if (state === 'IN_PROGRESS') return { label: 'Mark Installed', action: 'INSTALL', urgent: false };
+      // INSTALLED handled below (Verify Manually)
+    } else if (task.task_type === 'RESTORE') {
+      if (state === 'ASSIGNED') return { label: 'Start Work', action: 'START_WORK', urgent: false };
+      if (state === 'IN_PROGRESS') return { label: 'Resolve', action: 'RESOLVE', urgent: false };
+    } else if (task.task_type === 'NETBOX') {
+      if (state === 'ASSIGNED') return { label: 'Mark Collected', action: 'COLLECTED', urgent: false };
+      // COLLECTED handled below (Confirm Return)
+    }
+  }
 
   // Technician is working - allow reassignment
   if (isInTechnicianHands(task)) {
@@ -158,11 +165,11 @@ function getStateColor(state: string): string {
   const doneStates = ['RESOLVED', 'VERIFIED', 'ACTIVATION_VERIFIED', 'RETURN_CONFIRMED', 'INSTALLED'];
   const failStates = ['FAILED', 'UNRESOLVED', 'LOST_DECLARED'];
 
-  if (activeStates.includes(state)) return '#D9008D';
-  if (alertStates.includes(state)) return '#FF8000';
-  if (doneStates.includes(state)) return '#008043';
-  if (failStates.includes(state)) return '#E01E00';
-  return '#A7A1B2';
+  if (activeStates.includes(state)) return 'var(--brand-primary)';
+  if (alertStates.includes(state)) return 'var(--warning)';
+  if (doneStates.includes(state)) return 'var(--positive)';
+  if (failStates.includes(state)) return 'var(--negative)';
+  return 'var(--text-secondary)';
 }
 
 function getTimeRemaining(dateStr: string | undefined): string {
@@ -182,7 +189,15 @@ function getSlotDate(offset: number): string {
   return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-type OfferStep = 'details' | 'slot_pick';
+type OfferStep = 'details' | 'slot_pick' | 'decline_reason';
+
+const DECLINE_REASONS = [
+  'Too far from my area',
+  'Insufficient bandwidth / too busy',
+  'Customer area not serviceable',
+  'Not enough technicians available',
+  'SLA timeline too tight',
+];
 
 export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) {
   const { t } = useI18n();
@@ -204,7 +219,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
     display: 'flex',
     justifyContent: 'space-between',
     padding: '8px 0',
-    borderBottom: '1px solid #352D42',
+    borderBottom: '1px solid var(--border-subtle)',
     fontSize: 13,
   };
 
@@ -224,19 +239,19 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
           position: 'fixed',
           inset: 0,
           zIndex: 900,
-          background: '#161021',
+          background: 'var(--bg-primary)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
         }}
       >
-        <div style={{ padding: '16px', borderBottom: '1px solid #352D42', flexShrink: 0 }}>
+        <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
           <button
             onClick={() => setOfferStep('details')}
             style={{
               background: 'none',
               border: 'none',
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               fontSize: 14,
               cursor: 'pointer',
               padding: '4px 0',
@@ -246,16 +261,16 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
           >
             &larr; Back
           </button>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
             Choose Preferred Slot
           </div>
-          <div style={{ fontSize: 13, color: '#A7A1B2', marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
             {contextId} -- {area}
           </div>
         </div>
 
         <div style={{ flex: 1, padding: '24px 16px' }}>
-          <div style={{ fontSize: 13, color: '#A7A1B2', marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
             When would you like to schedule the installation?
           </div>
 
@@ -272,8 +287,8 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
                 alignItems: 'center',
                 width: '100%',
                 padding: '18px 20px',
-                background: '#443152',
-                border: '1px solid #352D42',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
                 borderRadius: 12,
                 cursor: 'pointer',
                 textAlign: 'left',
@@ -281,14 +296,88 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
               }}
             >
               <div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: '#FAF9FC' }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
                   {slot.label}
                 </div>
-                <div style={{ fontSize: 12, color: '#A7A1B2', marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
                   {slot.sublabel}
                 </div>
               </div>
-              <div style={{ color: '#665E75', fontSize: 18 }}>{'\u203A'}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 18 }}>{'\u203A'}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ---- OFFERED: Decline reason step ----
+  if (isOffer && offerStep === 'decline_reason') {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 900,
+          background: 'var(--bg-primary)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+          <button
+            onClick={() => setOfferStep('details')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              fontSize: 14,
+              cursor: 'pointer',
+              padding: '4px 0',
+              marginBottom: 12,
+              fontWeight: 500,
+            }}
+          >
+            &larr; Back
+          </button>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+            Decline Offer
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+            {contextId} -- {area}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, padding: '24px 16px', overflowY: 'auto' }}>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            Please select a reason for declining this offer:
+          </div>
+
+          {DECLINE_REASONS.map((reason) => (
+            <button
+              key={reason}
+              onClick={() => {
+                onAction(task.task_id, 'DECLINE', { reason });
+              }}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: '100%',
+                padding: '16px 20px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 12,
+                cursor: 'pointer',
+                textAlign: 'left',
+                marginBottom: 10,
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
+                {reason}
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 18 }}>{'\u203A'}</div>
             </button>
           ))}
         </div>
@@ -302,7 +391,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
         position: 'fixed',
         inset: 0,
         zIndex: 900,
-        background: '#161021',
+        background: 'var(--bg-primary)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -312,7 +401,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
       <div
         style={{
           padding: '16px',
-          borderBottom: '1px solid #352D42',
+          borderBottom: '1px solid var(--border-subtle)',
           flexShrink: 0,
         }}
       >
@@ -322,7 +411,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
           style={{
             background: 'none',
             border: 'none',
-            color: '#A7A1B2',
+            color: 'var(--text-secondary)',
             fontSize: 14,
             cursor: 'pointer',
             padding: '4px 0',
@@ -363,7 +452,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
             style={{
               fontSize: 16,
               fontWeight: 700,
-              color: '#FAF9FC',
+              color: 'var(--text-primary)',
             }}
           >
             {task.task_id}
@@ -384,10 +473,10 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
         </div>
 
         {/* Context */}
-        <div style={{ fontSize: 14, color: '#FAF9FC', marginBottom: 2 }}>
+        <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 2 }}>
           {contextId}
         </div>
-        <div style={{ fontSize: 12, color: '#A7A1B2' }}>{area}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{area}</div>
       </div>
 
       {/* Scrollable content */}
@@ -402,37 +491,37 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
         {isOffer && (
           <div
             style={{
-              background: 'linear-gradient(135deg, #443152, #352D42)',
+              background: 'linear-gradient(135deg, var(--bg-card), var(--bg-secondary))',
               borderRadius: 12,
               padding: '20px',
               marginBottom: 20,
-              border: '1px solid #665E75',
+              border: '1px solid var(--bg-card-hover)',
             }}
           >
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#A7A1B2', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
               Customer Details
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Connection ID</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>{contextId}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Connection ID</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{contextId}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Area</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>{area}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Area</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{area}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Task Type</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Task Type</span>
               <span style={{ fontSize: 14, fontWeight: 600, color: getBadgeColor(task.task_type) }}>{task.task_type}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Priority</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: task.priority === 'HIGH' ? '#E01E00' : '#FAF9FC' }}>{task.priority}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Priority</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: task.priority === 'HIGH' ? 'var(--negative)' : 'var(--text-primary)' }}>{task.priority}</span>
             </div>
             {task.offer_expires_at && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, color: '#A7A1B2' }}>Offer Expires</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#FF8000' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Offer Expires</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--warning)' }}>
                   {getTimeRemaining(task.offer_expires_at)}
                 </span>
               </div>
@@ -444,10 +533,10 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
         {!isOffer && (
           <div style={{ marginBottom: 24 }}>
             <div style={infoRowStyle}>
-              <span style={{ color: '#A7A1B2' }}>Priority</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Priority</span>
               <span
                 style={{
-                  color: task.priority === 'HIGH' ? '#E01E00' : '#FAF9FC',
+                  color: task.priority === 'HIGH' ? 'var(--negative)' : 'var(--text-primary)',
                   fontWeight: 600,
                 }}
               >
@@ -455,55 +544,55 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
               </span>
             </div>
             <div style={infoRowStyle}>
-              <span style={{ color: '#A7A1B2' }}>Created By</span>
-              <span style={{ color: '#FAF9FC' }}>{task.created_by}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Created By</span>
+              <span style={{ color: 'var(--text-primary)' }}>{task.created_by}</span>
             </div>
             <div style={infoRowStyle}>
-              <span style={{ color: '#A7A1B2' }}>Created At</span>
-              <span style={{ color: '#FAF9FC' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Created At</span>
+              <span style={{ color: 'var(--text-primary)' }}>
                 {formatFullTimestamp(task.created_at)}
               </span>
             </div>
             {task.assigned_to && (
               <div style={infoRowStyle}>
-                <span style={{ color: '#A7A1B2' }}>Assigned To</span>
-                <span style={{ color: '#FAF9FC' }}>{task.assigned_to}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Assigned To</span>
+                <span style={{ color: 'var(--text-primary)' }}>{task.assigned_to}</span>
               </div>
             )}
             {task.delegation_state !== 'UNASSIGNED' && (
               <div style={infoRowStyle}>
-                <span style={{ color: '#A7A1B2' }}>Delegation</span>
-                <span style={{ color: '#FAF9FC' }}>{task.delegation_state}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Delegation</span>
+                <span style={{ color: 'var(--text-primary)' }}>{task.delegation_state}</span>
               </div>
             )}
             {task.sla_deadline_at && (
               <div style={infoRowStyle}>
-                <span style={{ color: '#A7A1B2' }}>SLA Deadline</span>
-                <span style={{ color: '#FAF9FC' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>SLA Deadline</span>
+                <span style={{ color: 'var(--text-primary)' }}>
                   {formatFullTimestamp(task.sla_deadline_at)}
                 </span>
               </div>
             )}
             {task.retry_count > 0 && (
               <div style={infoRowStyle}>
-                <span style={{ color: '#A7A1B2' }}>Retry Count</span>
-                <span style={{ color: '#FF8000', fontWeight: 600 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Retry Count</span>
+                <span style={{ color: 'var(--warning)', fontWeight: 600 }}>
                   {task.retry_count}
                 </span>
               </div>
             )}
             {task.queue_escalation_flag && (
               <div style={infoRowStyle}>
-                <span style={{ color: '#A7A1B2' }}>Escalation Flag</span>
-                <span style={{ color: '#FF8000', fontWeight: 600 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Escalation Flag</span>
+                <span style={{ color: 'var(--warning)', fontWeight: 600 }}>
                   {task.queue_escalation_flag}
                 </span>
               </div>
             )}
             {task.blocked_reason && (
               <div style={infoRowStyle}>
-                <span style={{ color: '#A7A1B2' }}>Blocked Reason</span>
-                <span style={{ color: '#E01E00' }}>{task.blocked_reason}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Blocked Reason</span>
+                <span style={{ color: 'var(--negative)' }}>{task.blocked_reason}</span>
               </div>
             )}
           </div>
@@ -513,23 +602,23 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
         {isInTechnicianHands(task) && (
           <div
             style={{
-              background: 'rgba(255, 128, 0, 0.08)',
+              background: 'var(--warning-subtle)',
               border: '1px solid rgba(255, 128, 0, 0.25)',
               borderRadius: 10,
               padding: '14px 16px',
               marginBottom: 20,
             }}
           >
-            <div style={{ fontSize: 12, color: '#A7A1B2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Technician Working
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF8000' }} />
-              <span style={{ fontSize: 15, fontWeight: 600, color: '#FAF9FC' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warning)' }} />
+              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
                 {task.assigned_to}
               </span>
             </div>
-            <div style={{ fontSize: 13, color: '#FF8000', fontWeight: 500 }}>
+            <div style={{ fontSize: 13, color: 'var(--warning)', fontWeight: 500 }}>
               Status: {task.delegation_state}
             </div>
           </div>
@@ -540,7 +629,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: '#A7A1B2',
+            color: 'var(--text-secondary)',
             textTransform: 'uppercase',
             letterSpacing: 0.5,
             marginBottom: 16,
@@ -558,7 +647,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
               top: 4,
               bottom: 4,
               width: 2,
-              background: '#352D42',
+              background: 'var(--border-subtle)',
             }}
           />
 
@@ -580,7 +669,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
                   height: 10,
                   borderRadius: '50%',
                   background: getActorColor(event.actor_type),
-                  border: '2px solid #161021',
+                  border: '2px solid var(--bg-primary)',
                 }}
               />
 
@@ -607,7 +696,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
                   <span
                     style={{
                       fontSize: 11,
-                      color: '#665E75',
+                      color: 'var(--text-muted)',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -617,7 +706,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
                 <div
                   style={{
                     fontSize: 11,
-                    color: '#665E75',
+                    color: 'var(--text-muted)',
                     fontWeight: 500,
                     textTransform: 'uppercase',
                     letterSpacing: 0.3,
@@ -629,7 +718,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
                 <div
                   style={{
                     fontSize: 13,
-                    color: '#FAF9FC',
+                    color: 'var(--text-primary)',
                     lineHeight: 1.5,
                   }}
                 >
@@ -639,7 +728,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
                   <div
                     style={{
                       fontSize: 11,
-                      color: '#D9008D',
+                      color: 'var(--brand-primary)',
                       marginTop: 4,
                     }}
                   >
@@ -658,22 +747,22 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
         <div
           style={{
             padding: '16px',
-            borderTop: '1px solid #352D42',
+            borderTop: '1px solid var(--border-subtle)',
             flexShrink: 0,
-            background: '#161021',
+            background: 'var(--bg-primary)',
           }}
         >
           <div style={{ display: 'flex', gap: 12 }}>
             <button
-              onClick={() => onAction(task.task_id, 'DECLINE')}
+              onClick={() => setOfferStep('decline_reason')}
               style={{
                 flex: 1,
                 padding: '14px',
                 fontSize: 15,
                 borderRadius: 10,
                 background: 'transparent',
-                color: '#E01E00',
-                border: '1px solid #E01E00',
+                color: 'var(--negative)',
+                border: '1px solid var(--negative)',
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
@@ -698,23 +787,52 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
         <div
           style={{
             padding: '16px',
-            borderTop: '1px solid #352D42',
+            borderTop: '1px solid var(--border-subtle)',
             flexShrink: 0,
-            background: '#161021',
+            background: 'var(--bg-primary)',
           }}
         >
-          <button
-            onClick={() => onAction(task.task_id, cta.action)}
-            className={cta.urgent ? 'cta-urgent' : cta.label === 'Reassign' ? 'cta-secondary' : 'cta-primary'}
-            style={{
-              width: '100%',
-              padding: '14px',
-              fontSize: 15,
-              borderRadius: 10,
-            }}
-          >
-            {cta.label}
-          </button>
+          {isSelfAssigned(task) ? (
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => onAction(task.task_id, 'ASSIGN')}
+                className="cta-secondary"
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  fontSize: 15,
+                  borderRadius: 10,
+                }}
+              >
+                Reassign
+              </button>
+              <button
+                onClick={() => onAction(task.task_id, cta.action)}
+                className="cta-primary"
+                style={{
+                  flex: 2,
+                  padding: '14px',
+                  fontSize: 15,
+                  borderRadius: 10,
+                }}
+              >
+                {cta.label}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => onAction(task.task_id, cta.action)}
+              className={cta.urgent ? 'cta-urgent' : cta.label === 'Reassign' ? 'cta-secondary' : 'cta-primary'}
+              style={{
+                width: '100%',
+                padding: '14px',
+                fontSize: 15,
+                borderRadius: 10,
+              }}
+            >
+              {cta.label}
+            </button>
+          )}
         </div>
       ) : null}
     </div>

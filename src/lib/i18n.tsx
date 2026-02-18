@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 
 export type Lang = 'en' | 'hi';
 
@@ -170,6 +170,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('wiom_lang', newLang);
     }
   }, []);
+
+  // Set data-lang on <html> for Hindi typography boost
+  useEffect(() => {
+    document.documentElement.setAttribute('data-lang', lang);
+  }, [lang]);
 
   const t = useCallback(
     (key: string): string => {

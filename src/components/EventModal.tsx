@@ -6,23 +6,24 @@ import type { AppNotification } from '@/lib/types';
 interface EventModalProps {
   notification: AppNotification | null;
   onDismiss: () => void;
+  onView?: (taskId: string) => void;
 }
 
 /** Accent colours keyed by notification type */
 const ACCENT: Record<string, string> = {
-  PAYMENT_RECEIVED: '#4CAF50',
-  SETTLEMENT_CREDIT: '#4CAF50',
-  NEW_OFFER: '#D9008D',
-  HIGH_RESTORE_ALERT: '#E01E00',
-  SLA_WARNING: '#FF8000',
-  GENERAL: '#A7A1B2',
+  PAYMENT_RECEIVED: 'var(--positive)',
+  SETTLEMENT_CREDIT: 'var(--positive)',
+  NEW_OFFER: 'var(--brand-primary)',
+  HIGH_RESTORE_ALERT: 'var(--negative)',
+  SLA_WARNING: 'var(--warning)',
+  GENERAL: 'var(--text-secondary)',
 };
 
 function getAccent(type: string): string {
   return ACCENT[type] ?? ACCENT.GENERAL;
 }
 
-export default function EventModal({ notification, onDismiss }: EventModalProps) {
+export default function EventModal({ notification, onDismiss, onView }: EventModalProps) {
   // Lock body scroll when modal is open
   useEffect(() => {
     if (notification) {
@@ -42,7 +43,7 @@ export default function EventModal({ notification, onDismiss }: EventModalProps)
 
   // Build headline text based on type
   let headline = notification.title;
-  let subtext = notification.message;
+  const subtext = notification.message;
 
   switch (notification.type) {
     case 'PAYMENT_RECEIVED':
@@ -68,6 +69,14 @@ export default function EventModal({ notification, onDismiss }: EventModalProps)
       break;
   }
 
+  const handleView = () => {
+    const taskId = notification.task_id;
+    onDismiss();
+    if (taskId && onView) {
+      onView(taskId);
+    }
+  };
+
   return (
     <div
       style={{
@@ -85,7 +94,7 @@ export default function EventModal({ notification, onDismiss }: EventModalProps)
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
+          background: 'var(--overlay-bg)',
         }}
       />
 
@@ -95,7 +104,7 @@ export default function EventModal({ notification, onDismiss }: EventModalProps)
           position: 'relative',
           width: '90%',
           maxWidth: 380,
-          background: '#352D42',
+          background: 'var(--bg-secondary)',
           borderRadius: 16,
           border: `1px solid ${accent}44`,
           overflow: 'hidden',
@@ -140,7 +149,7 @@ export default function EventModal({ notification, onDismiss }: EventModalProps)
               margin: 0,
               fontSize: 17,
               fontWeight: 700,
-              color: '#FAF9FC',
+              color: 'var(--text-primary)',
               lineHeight: 1.3,
             }}
           >
@@ -167,7 +176,7 @@ export default function EventModal({ notification, onDismiss }: EventModalProps)
             style={{
               margin: '10px 0 0',
               fontSize: 13,
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               lineHeight: 1.5,
             }}
           >
@@ -189,9 +198,9 @@ export default function EventModal({ notification, onDismiss }: EventModalProps)
               flex: 1,
               padding: '12px 0',
               borderRadius: 10,
-              border: '1px solid #352D42',
+              border: '1px solid var(--border-subtle)',
               background: 'transparent',
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               fontSize: 14,
               fontWeight: 600,
               cursor: 'pointer',
@@ -202,7 +211,7 @@ export default function EventModal({ notification, onDismiss }: EventModalProps)
 
           {(hasTask || notification.type === 'NEW_OFFER') && (
             <button
-              onClick={onDismiss}
+              onClick={handleView}
               style={{
                 flex: 1,
                 padding: '12px 0',

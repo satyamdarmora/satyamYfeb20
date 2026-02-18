@@ -16,6 +16,7 @@ import {
   getBucket,
   sortTasksByQueue,
 } from '@/lib/data';
+import { useTheme } from '@/lib/theme';
 
 const AREAS = [
   'Andheri West',
@@ -52,19 +53,19 @@ function getStateColor(state: string): string {
   const done = ['RESOLVED', 'VERIFIED', 'ACTIVATION_VERIFIED', 'RETURN_CONFIRMED', 'INSTALLED'];
   const fail = ['FAILED', 'UNRESOLVED', 'LOST_DECLARED'];
 
-  if (active.includes(state)) return '#D9008D';
-  if (alert.includes(state)) return '#FF8000';
-  if (done.includes(state)) return '#008043';
-  if (fail.includes(state)) return '#E01E00';
-  return '#A7A1B2';
+  if (active.includes(state)) return 'var(--brand-primary)';
+  if (alert.includes(state)) return 'var(--warning)';
+  if (done.includes(state)) return 'var(--positive)';
+  if (fail.includes(state)) return 'var(--negative)';
+  return 'var(--text-secondary)';
 }
 
 function getTypeColor(taskType: string): string {
   switch (taskType) {
-    case 'INSTALL': return '#D9008D';
-    case 'RESTORE': return '#E01E00';
-    case 'NETBOX': return '#FF8000';
-    default: return '#A7A1B2';
+    case 'INSTALL': return 'var(--brand-primary)';
+    case 'RESTORE': return 'var(--accent-restore)';
+    case 'NETBOX': return 'var(--accent-gold)';
+    default: return 'var(--text-secondary)';
   }
 }
 
@@ -72,6 +73,7 @@ export default function AdminPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const { theme, setTheme } = useTheme();
 
   // Form state
   const [formType, setFormType] = useState<TaskType>('INSTALL');
@@ -405,10 +407,10 @@ export default function AdminPage() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '10px 12px',
-    background: '#161021',
-    border: '1px solid #352D42',
+    background: 'var(--bg-primary)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 8,
-    color: '#FAF9FC',
+    color: 'var(--text-primary)',
     fontSize: 14,
     outline: 'none',
   };
@@ -416,7 +418,7 @@ export default function AdminPage() {
   const labelStyle: React.CSSProperties = {
     display: 'block',
     fontSize: 12,
-    color: '#A7A1B2',
+    color: 'var(--text-secondary)',
     marginBottom: 6,
     fontWeight: 500,
     textTransform: 'uppercase',
@@ -431,8 +433,8 @@ export default function AdminPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#161021',
-        color: '#FAF9FC',
+        background: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
         padding: '0 24px 40px',
         maxWidth: 1200,
         margin: '0 auto',
@@ -447,12 +449,12 @@ export default function AdminPage() {
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 2000,
-            background: '#352D42',
-            border: '1px solid #352D42',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
             borderRadius: 10,
             padding: '14px 24px',
             fontSize: 14,
-            color: '#FAF9FC',
+            color: 'var(--text-primary)',
             fontWeight: 500,
             maxWidth: 600,
             textAlign: 'center',
@@ -467,7 +469,7 @@ export default function AdminPage() {
       <div
         style={{
           padding: '24px 0 20px',
-          borderBottom: '1px solid #352D42',
+          borderBottom: '1px solid var(--border-subtle)',
           marginBottom: 24,
         }}
       >
@@ -476,7 +478,7 @@ export default function AdminPage() {
             fontSize: 22,
             fontWeight: 700,
             margin: 0,
-            color: '#FAF9FC',
+            color: 'var(--text-primary)',
           }}
         >
           Wiom Operations Portal
@@ -484,7 +486,7 @@ export default function AdminPage() {
         <p
           style={{
             fontSize: 13,
-            color: '#665E75',
+            color: 'var(--text-muted)',
             margin: '6px 0 0',
           }}
         >
@@ -503,7 +505,7 @@ export default function AdminPage() {
       >
         <div
           style={{
-            background: '#443152',
+            background: 'var(--bg-card)',
             borderRadius: 10,
             padding: '16px 20px',
           }}
@@ -511,7 +513,7 @@ export default function AdminPage() {
           <div
             style={{
               fontSize: 11,
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               textTransform: 'uppercase',
               letterSpacing: 0.5,
               marginBottom: 4,
@@ -519,13 +521,13 @@ export default function AdminPage() {
           >
             Total Tasks
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#FAF9FC' }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)' }}>
             {totalTasks}
           </div>
         </div>
         <div
           style={{
-            background: '#443152',
+            background: 'var(--bg-card)',
             borderRadius: 10,
             padding: '16px 20px',
           }}
@@ -533,7 +535,7 @@ export default function AdminPage() {
           <div
             style={{
               fontSize: 11,
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               textTransform: 'uppercase',
               letterSpacing: 0.5,
               marginBottom: 4,
@@ -541,13 +543,13 @@ export default function AdminPage() {
           >
             Active Tasks
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#D9008D' }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--brand-primary)' }}>
             {activeTasks}
           </div>
         </div>
         <div
           style={{
-            background: '#443152',
+            background: 'var(--bg-card)',
             borderRadius: 10,
             padding: '16px 20px',
           }}
@@ -555,7 +557,7 @@ export default function AdminPage() {
           <div
             style={{
               fontSize: 11,
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               textTransform: 'uppercase',
               letterSpacing: 0.5,
               marginBottom: 4,
@@ -563,7 +565,7 @@ export default function AdminPage() {
           >
             Pending Tasks
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#FF8000' }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--warning)' }}>
             {pendingTasks}
           </div>
         </div>
@@ -583,7 +585,7 @@ export default function AdminPage() {
           {/* Create New Task */}
           <div
             style={{
-              background: '#352D42',
+              background: 'var(--bg-secondary)',
               borderRadius: 12,
               padding: 24,
               marginBottom: 24,
@@ -594,7 +596,7 @@ export default function AdminPage() {
                 fontSize: 16,
                 fontWeight: 600,
                 margin: '0 0 20px',
-                color: '#FAF9FC',
+                color: 'var(--text-primary)',
               }}
             >
               Create New Task
@@ -694,7 +696,7 @@ export default function AdminPage() {
                 style={{
                   width: '100%',
                   padding: '12px',
-                  background: '#D9008D',
+                  background: 'var(--brand-primary)',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: 8,
@@ -712,7 +714,7 @@ export default function AdminPage() {
           {/* Trigger System Events */}
           <div
             style={{
-              background: '#352D42',
+              background: 'var(--bg-secondary)',
               borderRadius: 12,
               padding: 24,
             }}
@@ -722,7 +724,7 @@ export default function AdminPage() {
                 fontSize: 16,
                 fontWeight: 600,
                 margin: '0 0 20px',
-                color: '#FAF9FC',
+                color: 'var(--text-primary)',
               }}
             >
               Trigger System Events
@@ -733,10 +735,10 @@ export default function AdminPage() {
                 onClick={handleSimulateRecharge}
                 style={{
                   padding: '12px 16px',
-                  background: '#161021',
-                  border: '1px solid #352D42',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: 8,
-                  color: '#FAF9FC',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -747,7 +749,7 @@ export default function AdminPage() {
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>
                   Simulate Recharge Event
                 </div>
-                <div style={{ fontSize: 12, color: '#665E75' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Triggers a customer recharge event, updating cycle earnings.
                 </div>
               </button>
@@ -756,10 +758,10 @@ export default function AdminPage() {
                 onClick={handleSimulateSettlement}
                 style={{
                   padding: '12px 16px',
-                  background: '#161021',
-                  border: '1px solid #352D42',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: 8,
-                  color: '#FAF9FC',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -770,7 +772,7 @@ export default function AdminPage() {
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>
                   Simulate Settlement Credit
                 </div>
-                <div style={{ fontSize: 12, color: '#665E75' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Shows a settlement notification with pending amount.
                 </div>
               </button>
@@ -782,7 +784,7 @@ export default function AdminPage() {
                   background: 'rgba(224, 30, 0, 0.08)',
                   border: '1px solid rgba(224, 30, 0, 0.25)',
                   borderRadius: 8,
-                  color: '#FAF9FC',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -790,10 +792,10 @@ export default function AdminPage() {
                   transition: 'border-color 0.15s',
                 }}
               >
-                <div style={{ fontWeight: 600, marginBottom: 4, color: '#E01E00' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--negative)' }}>
                   Generate HIGH RESTORE
                 </div>
-                <div style={{ fontSize: 12, color: '#665E75' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Creates a new high-priority restore task with 75-min SLA.
                 </div>
               </button>
@@ -805,7 +807,7 @@ export default function AdminPage() {
                   background: 'rgba(0, 128, 67, 0.08)',
                   border: '1px solid rgba(0, 128, 67, 0.25)',
                   borderRadius: 8,
-                  color: '#FAF9FC',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -813,10 +815,10 @@ export default function AdminPage() {
                   transition: 'border-color 0.15s',
                 }}
               >
-                <div style={{ fontWeight: 600, marginBottom: 4, color: '#008043' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--positive)' }}>
                   Send Payment Notification
                 </div>
-                <div style={{ fontSize: 12, color: '#665E75' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Sends a payment received notification (Rs.499) to the CSP app.
                 </div>
               </button>
@@ -828,7 +830,7 @@ export default function AdminPage() {
                   background: 'rgba(217, 0, 141, 0.08)',
                   border: '1px solid rgba(217, 0, 141, 0.25)',
                   borderRadius: 8,
-                  color: '#FAF9FC',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -836,10 +838,10 @@ export default function AdminPage() {
                   transition: 'border-color 0.15s',
                 }}
               >
-                <div style={{ fontWeight: 600, marginBottom: 4, color: '#D9008D' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--brand-primary)' }}>
                   Send New Offer Notification
                 </div>
-                <div style={{ fontSize: 12, color: '#665E75' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Creates a new INSTALL OFFERED task and sends a NEW_OFFER notification.
                 </div>
               </button>
@@ -851,7 +853,7 @@ export default function AdminPage() {
                   background: 'rgba(255, 128, 0, 0.08)',
                   border: '1px solid rgba(255, 128, 0, 0.25)',
                   borderRadius: 8,
-                  color: '#FAF9FC',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -859,10 +861,10 @@ export default function AdminPage() {
                   transition: 'border-color 0.15s',
                 }}
               >
-                <div style={{ fontWeight: 600, marginBottom: 4, color: '#FF8000' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--warning)' }}>
                   Send SLA Warning
                 </div>
-                <div style={{ fontSize: 12, color: '#665E75' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Sends an SLA compliance warning notification to the CSP app.
                 </div>
               </button>
@@ -874,7 +876,7 @@ export default function AdminPage() {
                   background: 'rgba(224, 30, 0, 0.08)',
                   border: '1px solid rgba(224, 30, 0, 0.25)',
                   borderRadius: 8,
-                  color: '#FAF9FC',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -882,10 +884,10 @@ export default function AdminPage() {
                   transition: 'border-color 0.15s',
                 }}
               >
-                <div style={{ fontWeight: 600, marginBottom: 4, color: '#E01E00' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--negative)' }}>
                   Revoke Timed-Out Offer
                 </div>
-                <div style={{ fontSize: 12, color: '#665E75' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Revokes the oldest OFFERED task (simulates timeout). CSP gets a clear notification that the connection is being reassigned.
                 </div>
               </button>
@@ -897,7 +899,7 @@ export default function AdminPage() {
                   background: 'rgba(255, 128, 0, 0.08)',
                   border: '1px solid rgba(255, 128, 0, 0.25)',
                   borderRadius: 8,
-                  color: '#FAF9FC',
+                  color: 'var(--text-primary)',
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -905,12 +907,57 @@ export default function AdminPage() {
                   transition: 'border-color 0.15s',
                 }}
               >
-                <div style={{ fontWeight: 600, marginBottom: 4, color: '#FF8000' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--warning)' }}>
                   Claimed by Another CSP
                 </div>
-                <div style={{ fontSize: 12, color: '#665E75' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Simulates another CSP claiming an offered connection first. CSP gets a notification that the offer is no longer available.
                 </div>
+              </button>
+            </div>
+          </div>
+
+          {/* State - Color Check Toggle */}
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: 12,
+            padding: 24,
+            marginTop: 24,
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 12px', color: 'var(--text-primary)' }}>
+              State - Color Check
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+              Toggle warm off-white theme with muted state colors, calibrated text hierarchy, and Hindi typography contrast boost.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                {theme === 'state-color-check' ? 'Active' : 'Off'}
+              </span>
+              <button
+                onClick={() => setTheme(theme === 'state-color-check' ? 'dark' : 'state-color-check')}
+                style={{
+                  width: 52,
+                  height: 30,
+                  borderRadius: 15,
+                  border: 'none',
+                  background: theme === 'state-color-check' ? 'var(--positive)' : 'var(--bg-card)',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <div style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: '#FFFFFF',
+                  position: 'absolute',
+                  top: 3,
+                  left: theme === 'state-color-check' ? 25 : 3,
+                  transition: 'left 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }} />
               </button>
             </div>
           </div>
@@ -919,7 +966,7 @@ export default function AdminPage() {
         {/* Right: Task Table */}
         <div
           style={{
-            background: '#352D42',
+            background: 'var(--bg-secondary)',
             borderRadius: 12,
             overflow: 'hidden',
           }}
@@ -927,7 +974,7 @@ export default function AdminPage() {
           <div
             style={{
               padding: '16px 20px',
-              borderBottom: '1px solid #352D42',
+              borderBottom: '1px solid var(--border-subtle)',
             }}
           >
             <h2
@@ -935,7 +982,7 @@ export default function AdminPage() {
                 fontSize: 16,
                 fontWeight: 600,
                 margin: 0,
-                color: '#FAF9FC',
+                color: 'var(--text-primary)',
               }}
             >
               All Tasks
@@ -953,7 +1000,7 @@ export default function AdminPage() {
               <thead>
                 <tr
                   style={{
-                    borderBottom: '1px solid #352D42',
+                    borderBottom: '1px solid var(--border-subtle)',
                   }}
                 >
                   {['ID', 'Type', 'State', 'Priority', 'Area', 'Created', 'Bucket'].map(
@@ -965,7 +1012,7 @@ export default function AdminPage() {
                           textAlign: 'left',
                           fontSize: 11,
                           fontWeight: 600,
-                          color: '#665E75',
+                          color: 'var(--text-muted)',
                           textTransform: 'uppercase',
                           letterSpacing: 0.5,
                           whiteSpace: 'nowrap',
@@ -996,12 +1043,12 @@ export default function AdminPage() {
                             padding: '0',
                             borderBottom: isExpanded
                               ? 'none'
-                              : '1px solid #443152',
+                              : '1px solid var(--bg-card)',
                             transition: 'background 0.1s',
                           }}
                           onMouseEnter={(e) => {
                             (e.currentTarget as HTMLDivElement).style.background =
-                              '#665E75';
+                              'var(--bg-card-hover)';
                           }}
                           onMouseLeave={(e) => {
                             (e.currentTarget as HTMLDivElement).style.background =
@@ -1012,7 +1059,7 @@ export default function AdminPage() {
                             style={{
                               padding: '10px 14px',
                               fontWeight: 600,
-                              color: '#FAF9FC',
+                              color: 'var(--text-primary)',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -1041,8 +1088,8 @@ export default function AdminPage() {
                               padding: '10px 14px',
                               color:
                                 task.priority === 'HIGH'
-                                  ? '#E01E00'
-                                  : '#A7A1B2',
+                                  ? 'var(--negative)'
+                                  : 'var(--text-secondary)',
                               fontWeight: task.priority === 'HIGH' ? 700 : 400,
                             }}
                           >
@@ -1051,7 +1098,7 @@ export default function AdminPage() {
                           <div
                             style={{
                               padding: '10px 14px',
-                              color: '#A7A1B2',
+                              color: 'var(--text-secondary)',
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -1062,7 +1109,7 @@ export default function AdminPage() {
                           <div
                             style={{
                               padding: '10px 14px',
-                              color: '#665E75',
+                              color: 'var(--text-muted)',
                               whiteSpace: 'nowrap',
                             }}
                           >
@@ -1071,7 +1118,7 @@ export default function AdminPage() {
                           <div
                             style={{
                               padding: '10px 14px',
-                              color: '#665E75',
+                              color: 'var(--text-muted)',
                               textAlign: 'center',
                             }}
                           >
@@ -1084,15 +1131,15 @@ export default function AdminPage() {
                           <div
                             style={{
                               padding: '12px 20px 16px',
-                              background: '#161021',
-                              borderBottom: '1px solid #352D42',
+                              background: 'var(--bg-primary)',
+                              borderBottom: '1px solid var(--border-subtle)',
                             }}
                           >
                             <div
                               style={{
                                 fontSize: 12,
                                 fontWeight: 600,
-                                color: '#665E75',
+                                color: 'var(--text-muted)',
                                 textTransform: 'uppercase',
                                 letterSpacing: 0.5,
                                 marginBottom: 12,
@@ -1112,35 +1159,35 @@ export default function AdminPage() {
                               }}
                             >
                               <div>
-                                <span style={{ color: '#665E75' }}>ID: </span>
-                                <span style={{ color: '#FAF9FC' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>ID: </span>
+                                <span style={{ color: 'var(--text-primary)' }}>
                                   {task.connection_id || task.netbox_id || '--'}
                                 </span>
                               </div>
                               <div>
-                                <span style={{ color: '#665E75' }}>Assigned: </span>
-                                <span style={{ color: '#FAF9FC' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Assigned: </span>
+                                <span style={{ color: 'var(--text-primary)' }}>
                                   {task.assigned_to || 'Unassigned'}
                                 </span>
                               </div>
                               <div>
-                                <span style={{ color: '#665E75' }}>Delegation: </span>
-                                <span style={{ color: '#FAF9FC' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Delegation: </span>
+                                <span style={{ color: 'var(--text-primary)' }}>
                                   {task.delegation_state}
                                 </span>
                               </div>
                               {task.queue_escalation_flag && (
                                 <div>
-                                  <span style={{ color: '#665E75' }}>Flag: </span>
-                                  <span style={{ color: '#FF8000', fontWeight: 600 }}>
+                                  <span style={{ color: 'var(--text-muted)' }}>Flag: </span>
+                                  <span style={{ color: 'var(--warning)', fontWeight: 600 }}>
                                     {task.queue_escalation_flag}
                                   </span>
                                 </div>
                               )}
                               {task.retry_count > 0 && (
                                 <div>
-                                  <span style={{ color: '#665E75' }}>Retries: </span>
-                                  <span style={{ color: '#FF8000', fontWeight: 600 }}>
+                                  <span style={{ color: 'var(--text-muted)' }}>Retries: </span>
+                                  <span style={{ color: 'var(--warning)', fontWeight: 600 }}>
                                     {task.retry_count}
                                   </span>
                                 </div>
@@ -1156,7 +1203,7 @@ export default function AdminPage() {
                                   top: 4,
                                   bottom: 4,
                                   width: 2,
-                                  background: '#352D42',
+                                  background: 'var(--border-subtle)',
                                 }}
                               />
                               {[...task.event_log]
@@ -1184,13 +1231,13 @@ export default function AdminPage() {
                                         borderRadius: '50%',
                                         background:
                                           event.actor_type === 'SYSTEM'
-                                            ? '#665E75'
+                                            ? 'var(--text-muted)'
                                             : event.actor_type === 'CSP'
-                                              ? '#D9008D'
+                                              ? 'var(--brand-primary)'
                                               : event.actor_type === 'ADMIN'
-                                                ? '#FF8000'
-                                                : '#008043',
-                                        border: '2px solid #161021',
+                                                ? 'var(--warning)'
+                                                : 'var(--positive)',
+                                        border: '2px solid var(--bg-primary)',
                                       }}
                                     />
                                     <div
@@ -1204,7 +1251,7 @@ export default function AdminPage() {
                                       <span
                                         style={{
                                           fontSize: 11,
-                                          color: '#665E75',
+                                          color: 'var(--text-muted)',
                                           whiteSpace: 'nowrap',
                                         }}
                                       >
@@ -1216,8 +1263,8 @@ export default function AdminPage() {
                                           fontWeight: 600,
                                           color:
                                             event.actor_type === 'SYSTEM'
-                                              ? '#665E75'
-                                              : '#A7A1B2',
+                                              ? 'var(--text-muted)'
+                                              : 'var(--text-secondary)',
                                         }}
                                       >
                                         {event.actor}
@@ -1226,7 +1273,7 @@ export default function AdminPage() {
                                     <div
                                       style={{
                                         fontSize: 12,
-                                        color: '#FAF9FC',
+                                        color: 'var(--text-primary)',
                                         lineHeight: 1.4,
                                       }}
                                     >
@@ -1251,7 +1298,7 @@ export default function AdminPage() {
                 padding: '40px 20px',
                 textAlign: 'center',
                 fontSize: 14,
-                color: '#665E75',
+                color: 'var(--text-muted)',
               }}
             >
               No tasks found

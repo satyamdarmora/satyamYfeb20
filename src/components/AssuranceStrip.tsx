@@ -41,20 +41,20 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
 
   const slaColor =
     assuranceState.sla_standing === 'Compliant'
-      ? '#008043'
+      ? 'var(--positive)'
       : assuranceState.sla_standing === 'At Risk'
-        ? '#FF8000'
-        : '#E01E00';
+        ? 'var(--warning)'
+        : 'var(--negative)';
 
   const exposureColor =
     assuranceState.exposure_state === 'ELIGIBLE'
-      ? '#008043'
+      ? 'var(--positive)'
       : assuranceState.exposure_state === 'LIMITED'
-        ? '#FF8000'
-        : '#E01E00';
+        ? 'var(--warning)'
+        : 'var(--negative)';
 
   const chipStyle: React.CSSProperties = {
-    background: '#443152',
+    background: 'var(--bg-card)',
     borderRadius: 10,
     padding: '12px 14px',
     cursor: 'pointer',
@@ -66,7 +66,7 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
   const labelStyle: React.CSSProperties = {
     fontSize: 11,
     fontWeight: 500,
-    color: '#A7A1B2',
+    color: 'var(--text-secondary)',
     marginBottom: 4,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -75,19 +75,19 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
   const valueStyle: React.CSSProperties = {
     fontSize: 18,
     fontWeight: 700,
-    color: '#FAF9FC',
+    color: 'var(--text-primary)',
     lineHeight: 1.2,
   };
 
   const drillLabelStyle: React.CSSProperties = {
     fontSize: 12,
-    color: '#A7A1B2',
+    color: 'var(--text-secondary)',
     marginBottom: 4,
   };
 
   const drillValueStyle: React.CSSProperties = {
     fontSize: 15,
-    color: '#FAF9FC',
+    color: 'var(--text-primary)',
     fontWeight: 600,
     marginBottom: 16,
   };
@@ -97,7 +97,7 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '10px 0',
-    borderBottom: '1px solid #352D42',
+    borderBottom: '1px solid var(--border-subtle)',
     fontSize: 13,
   };
 
@@ -125,7 +125,7 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
           gridTemplateColumns: 'repeat(2, 1fr)',
           gap: 10,
           padding: '12px 16px',
-          background: '#161021',
+          background: 'var(--strip-bg)',
         }}
       >
         {/* Active Base */}
@@ -143,7 +143,7 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
           onClick={() => setOpenDrill('earnings')}
         >
           <div style={labelStyle}>{t('assurance.cycleEarnings')}</div>
-          <div style={{ ...valueStyle, color: '#2196F3' }}>
+          <div style={{ ...valueStyle, color: 'var(--money)' }}>
             {'\u20B9'}{formatCurrency(assuranceState.cycle_earned)}
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: '#A7A1B2',
+            color: 'var(--text-secondary)',
             marginBottom: 8,
             textTransform: 'uppercase',
             letterSpacing: 0.5,
@@ -195,19 +195,19 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
         {assuranceState.active_base_events.map((evt, i) => (
           <div key={i} style={eventRowStyle}>
             <div>
-              <div style={{ color: '#FAF9FC', fontWeight: 500 }}>{evt.connection_id}</div>
-              <div style={{ color: '#665E75', fontSize: 12, marginTop: 2 }}>{evt.reason}</div>
+              <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{evt.connection_id}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>{evt.reason}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div
                 style={{
-                  color: evt.change > 0 ? '#008043' : '#E01E00',
+                  color: evt.change > 0 ? 'var(--positive)' : 'var(--negative)',
                   fontWeight: 600,
                 }}
               >
                 {evt.change > 0 ? '+1' : '-1'}
               </div>
-              <div style={{ color: '#665E75', fontSize: 11, marginTop: 2 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>
                 {formatRelativeDate(evt.date)}
               </div>
             </div>
@@ -222,7 +222,7 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
         title={t('assurance.cycleEarnings')}
       >
         <div style={drillLabelStyle}>{t('assurance.cycleEarned')}</div>
-        <div style={{ fontSize: 28, fontWeight: 700, color: '#FAF9FC', marginBottom: 20 }}>
+        <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 20 }}>
           {'\u20B9'}{formatCurrency(assuranceState.cycle_earned)}
         </div>
 
@@ -239,15 +239,15 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
           style={{
             marginTop: 12,
             padding: 14,
-            background: '#161021',
+            background: 'var(--bg-primary)',
             borderRadius: 8,
             fontSize: 13,
-            color: '#A7A1B2',
+            color: 'var(--text-secondary)',
             lineHeight: 1.5,
           }}
         >
           {t('assurance.cycleNote')}{' '}
-          <span style={{ color: '#D9008D', fontWeight: 600 }}>{t('assurance.wallet')}</span>{' '}
+          <span style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>{t('assurance.wallet')}</span>{' '}
           {t('assurance.fromMenu')}
         </div>
       </DrillDown>
@@ -273,10 +273,10 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
           style={{
             marginTop: 12,
             padding: 14,
-            background: '#161021',
+            background: 'var(--bg-primary)',
             borderRadius: 8,
             fontSize: 13,
-            color: '#A7A1B2',
+            color: 'var(--text-secondary)',
             lineHeight: 1.5,
           }}
         >
@@ -305,14 +305,14 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
           style={{
             marginTop: 12,
             padding: 14,
-            background: '#161021',
+            background: 'var(--bg-primary)',
             borderRadius: 8,
             fontSize: 13,
             lineHeight: 1.5,
           }}
         >
-          <div style={{ color: '#A7A1B2', marginBottom: 8 }}>{t('assurance.qualSignal')}</div>
-          <div style={{ color: '#FAF9FC' }}>
+          <div style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>{t('assurance.qualSignal')}</div>
+          <div style={{ color: 'var(--text-primary)' }}>
             {assuranceState.exposure_state === 'ELIGIBLE'
               ? t('assurance.exposureOk')
               : assuranceState.exposure_state === 'LIMITED'

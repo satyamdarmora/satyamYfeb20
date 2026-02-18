@@ -11,27 +11,31 @@ interface TaskCardProps {
   onCardClick: (taskId: string) => void;
 }
 
-function getLeftBorderColor(taskType: string): string {
-  switch (taskType) {
-    case 'INSTALL':
-      return '#D9008D';
-    case 'RESTORE':
-      return '#E01E00';
-    case 'NETBOX':
-      return '#FF8000';
-    default:
-      return '#665E75';
-  }
+/** Left border = urgency-based (green / amber / red) */
+function getLeftBorderColor(bucket: number, task: Task): string {
+  // Overdue check
+  const deadlines = [task.sla_deadline_at, task.offer_expires_at, task.accept_expires_at, task.return_due_at, task.pickup_due_at, task.due_at];
+  const isOverdue = deadlines.some((d) => d && new Date(d).getTime() < Date.now());
+  if (isOverdue) return 'var(--negative)';
+
+  // High priority always red
+  if (task.priority === 'HIGH') return 'var(--negative)';
+
+  // Bucket-based
+  if (bucket <= 1) return 'var(--negative)';   // critical
+  if (bucket <= 3) return 'var(--warning)';   // needs attention
+  return 'var(--positive)';                     // on track
 }
 
+/** Task type badge colors from brand palette */
 function getBadgeBackground(taskType: string): string {
   switch (taskType) {
     case 'INSTALL':
-      return 'rgba(217, 0, 141, 0.15)';
+      return 'var(--brand-subtle)';
     case 'RESTORE':
-      return 'rgba(224, 30, 0, 0.15)';
+      return 'var(--restore-subtle)';
     case 'NETBOX':
-      return 'rgba(255, 128, 0, 0.15)';
+      return 'var(--gold-subtle)';
     default:
       return 'rgba(92, 111, 130, 0.15)';
   }
@@ -40,13 +44,13 @@ function getBadgeBackground(taskType: string): string {
 function getBadgeColor(taskType: string): string {
   switch (taskType) {
     case 'INSTALL':
-      return '#D9008D';
+      return 'var(--brand-primary)';
     case 'RESTORE':
-      return '#E01E00';
+      return 'var(--accent-restore)';
     case 'NETBOX':
-      return '#FF8000';
+      return 'var(--accent-gold)';
     default:
-      return '#665E75';
+      return 'var(--text-muted)';
   }
 }
 
@@ -211,7 +215,7 @@ function getDelegationDisplay(task: Task): string {
 
 export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCardProps) {
   const { t } = useI18n();
-  const borderColor = getLeftBorderColor(task.task_type);
+  const borderColor = getLeftBorderColor(bucket, task);
   const reasonLabel = useMemo(() => getReasonLabel(task), [task]);
   const cta = useMemo(() => getCTA(task), [task]);
   const countdown = useMemo(() => getCountdownDisplay(task), [task]);
@@ -223,7 +227,7 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
     <div
       onClick={() => onCardClick(task.task_id)}
       style={{
-        background: '#443152',
+        background: 'var(--bg-card)',
         borderRadius: 10,
         borderLeft: `4px solid ${borderColor}`,
         padding: '14px 16px',
@@ -232,10 +236,10 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
         marginBottom: 10,
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = '#665E75';
+        (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card-hover)';
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = '#443152';
+        (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card)';
       }}
     >
       {/* Row 1: Type badge + reason label */}
@@ -275,7 +279,7 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
               fontWeight: 700,
               letterSpacing: 0.3,
               background: 'rgba(224, 30, 0, 0.12)',
-              color: '#E01E00',
+              color: 'var(--negative)',
             }}
           >
             {t('card.high')}
@@ -286,7 +290,7 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
           <span
             style={{
               fontSize: 11,
-              color: bucket <= 1 ? '#E01E00' : '#FF8000',
+              color: bucket <= 1 ? 'var(--negative)' : 'var(--warning)',
               fontWeight: 500,
             }}
           >
@@ -299,7 +303,7 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
       <div
         style={{
           fontSize: 14,
-          color: '#FAF9FC',
+          color: 'var(--text-primary)',
           fontWeight: 500,
           marginBottom: 4,
         }}
@@ -309,13 +313,13 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
       <div
         style={{
           fontSize: 12,
-          color: '#A7A1B2',
+          color: 'var(--text-secondary)',
           marginBottom: techWorking ? 6 : 10,
         }}
       >
         {area}
         {task.assigned_to && !techWorking && (
-          <span style={{ color: '#665E75' }}> -- {task.assigned_to}</span>
+          <span style={{ color: 'var(--text-muted)' }}> -- {task.assigned_to}</span>
         )}
       </div>
 
@@ -328,7 +332,7 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
             gap: 8,
             marginBottom: 10,
             padding: '6px 10px',
-            background: 'rgba(255, 128, 0, 0.1)',
+            background: 'var(--warning-subtle)',
             borderRadius: 6,
             border: '1px solid rgba(255, 128, 0, 0.2)',
           }}
@@ -338,14 +342,14 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: '#FF8000',
+              background: 'var(--warning)',
               flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#FF8000' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--warning)' }}>
             {task.assigned_to}
           </span>
-          <span style={{ fontSize: 11, color: '#A7A1B2' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
             {getDelegationDisplay(task)}
           </span>
         </div>
@@ -365,14 +369,14 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
               style={{
                 fontSize: 12,
                 fontWeight: 600,
-                color: countdown.overdue ? '#E01E00' : '#A7A1B2',
+                color: countdown.overdue ? 'var(--negative)' : 'var(--text-secondary)',
               }}
             >
               {countdown.text}
             </span>
           )}
           {!countdown && (
-            <span style={{ fontSize: 12, color: '#665E75' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {task.state}
             </span>
           )}

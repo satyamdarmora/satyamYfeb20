@@ -224,12 +224,13 @@ export default function HomePage() {
         }
 
         case 'DECLINE': {
+          const reason = extra?.reason || 'No reason provided';
           updateTask(taskId, {
             state: 'FAILED',
             queue_escalation_flag: undefined,
             event_log: [
               ...task.event_log,
-              newEvent('DECLINED', 'CSP declined this offer.'),
+              newEvent('DECLINED', `CSP declined this offer. Reason: ${reason}`),
             ],
           });
           showConfirmation(`${taskId} declined.`);
@@ -257,6 +258,19 @@ export default function HomePage() {
           setAssignTaskId(taskId);
           setAssignPickerOpen(true);
           return; // Don't refresh yet; picker will handle it
+        }
+
+        case 'START_WORK': {
+          updateTask(taskId, {
+            state: 'IN_PROGRESS',
+            delegation_state: 'IN_PROGRESS',
+            event_log: [
+              ...task.event_log,
+              newEvent('IN_PROGRESS', `CSP started work on this task (self-assigned).`),
+            ],
+          });
+          showConfirmation(`${taskId} -- Work started.`);
+          break;
         }
 
         case 'RESOLVE': {
@@ -386,7 +400,7 @@ export default function HomePage() {
         maxWidth: 480,
         margin: '0 auto',
         position: 'relative',
-        background: '#161021',
+        background: 'var(--bg-primary)',
       }}
     >
       {/* Confirmation toast */}
@@ -398,8 +412,8 @@ export default function HomePage() {
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 2000,
-            background: '#D9008D',
-            border: '1px solid #FFB2E4',
+            background: 'var(--brand-primary)',
+            border: '1px solid var(--brand-light)',
             borderRadius: 10,
             padding: '14px 24px',
             fontSize: 14,
@@ -420,7 +434,7 @@ export default function HomePage() {
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          background: '#161021',
+          background: 'var(--bg-primary)',
         }}
       >
         <div style={{ position: 'relative' }}>
@@ -435,9 +449,9 @@ export default function HomePage() {
               width: 36,
               height: 36,
               borderRadius: 8,
-              background: '#443152',
-              border: '1px solid #352D42',
-              color: '#A7A1B2',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
               fontSize: 18,
               display: 'flex',
               alignItems: 'center',
@@ -469,7 +483,7 @@ export default function HomePage() {
           width: '100%',
           maxWidth: 480,
           padding: '12px 16px',
-          background: 'linear-gradient(transparent, #161021 30%)',
+          background: 'linear-gradient(transparent, var(--bg-primary) 30%)',
           zIndex: 50,
         }}
       >
@@ -481,14 +495,14 @@ export default function HomePage() {
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 12, color: '#665E75' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {t('home.offerNotifications')}
           </span>
           <button
             onClick={() => setOffersEnabled(!offersEnabled)}
             style={{
-              background: offersEnabled ? '#D9008D' : '#352D42',
-              color: offersEnabled ? '#FFFFFF' : '#665E75',
+              background: offersEnabled ? 'var(--brand-primary)' : 'var(--bg-secondary)',
+              color: offersEnabled ? '#FFFFFF' : 'var(--text-muted)',
               border: 'none',
               borderRadius: 16,
               padding: '6px 16px',
@@ -550,7 +564,7 @@ export default function HomePage() {
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(0, 0, 0, 0.6)',
+              background: 'var(--overlay-bg)',
             }}
           />
           {/* Bottom sheet */}
@@ -559,7 +573,7 @@ export default function HomePage() {
               position: 'relative',
               width: '100%',
               maxWidth: 480,
-              background: '#352D42',
+              background: 'var(--bg-secondary)',
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               padding: '16px 0',
@@ -567,14 +581,14 @@ export default function HomePage() {
           >
             {/* Drag handle */}
             <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 8 }}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: '#665E75' }} />
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--text-muted)' }} />
             </div>
 
-            <div style={{ padding: '0 20px 8px', borderBottom: '1px solid #443152' }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#FAF9FC', marginBottom: 4 }}>
+            <div style={{ padding: '0 20px 8px', borderBottom: '1px solid var(--bg-card)' }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
                 Assign to Technician
               </div>
-              <div style={{ fontSize: 12, color: '#A7A1B2' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 Task: {assignTaskId}
               </div>
             </div>
@@ -595,7 +609,7 @@ export default function HomePage() {
                   padding: '14px 20px',
                   background: 'transparent',
                   border: 'none',
-                  borderBottom: '1px solid #443152',
+                  borderBottom: '1px solid var(--bg-card)',
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
@@ -605,7 +619,7 @@ export default function HomePage() {
                     width: 40,
                     height: 40,
                     borderRadius: '50%',
-                    background: '#D9008D',
+                    background: 'var(--brand-primary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -618,14 +632,14 @@ export default function HomePage() {
                   C
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                     Myself (CSP)
                   </div>
-                  <div style={{ fontSize: 12, color: '#A7A1B2', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
                     I will handle this task
                   </div>
                 </div>
-                <div style={{ color: '#D9008D', fontSize: 12, fontWeight: 600 }}>
+                <div style={{ color: 'var(--brand-primary)', fontSize: 12, fontWeight: 600 }}>
                   Self
                 </div>
               </button>
@@ -658,13 +672,13 @@ export default function HomePage() {
                       width: 40,
                       height: 40,
                       borderRadius: '50%',
-                      background: tech.available ? '#443152' : '#352D42',
+                      background: tech.available ? 'var(--bg-card)' : 'var(--bg-secondary)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: 16,
                       fontWeight: 700,
-                      color: tech.available ? '#D9008D' : '#665E75',
+                      color: tech.available ? 'var(--brand-primary)' : 'var(--text-muted)',
                       flexShrink: 0,
                     }}
                   >
@@ -672,16 +686,16 @@ export default function HomePage() {
                   </div>
 
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                       {tech.name}
                     </div>
-                    <div style={{ fontSize: 12, color: '#A7A1B2', marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
                       Band {tech.band} {!tech.available && '-- Unavailable'}
                     </div>
                   </div>
 
                   {tech.available && (
-                    <div style={{ color: '#008043', fontSize: 12, fontWeight: 600 }}>
+                    <div style={{ color: 'var(--positive)', fontSize: 12, fontWeight: 600 }}>
                       Available
                     </div>
                   )}
@@ -697,8 +711,8 @@ export default function HomePage() {
                   width: '100%',
                   padding: '12px',
                   background: 'transparent',
-                  color: '#A7A1B2',
-                  border: '1px solid #443152',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--bg-card)',
                   borderRadius: 10,
                   fontSize: 14,
                   fontWeight: 600,
@@ -723,6 +737,10 @@ export default function HomePage() {
       <EventModal
         notification={activeNotification}
         onDismiss={handleDismissNotification}
+        onView={(taskId) => {
+          refreshTasks();
+          setSelectedTaskId(taskId);
+        }}
       />
 
       {/* Section overlays */}

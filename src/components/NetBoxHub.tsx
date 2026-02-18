@@ -44,11 +44,11 @@ function getStateColor(state: string): string {
   const done = ['RETURN_CONFIRMED', 'COLLECTED'];
   const fail = ['LOST_DECLARED'];
 
-  if (active.includes(state)) return '#D9008D';
-  if (alert.includes(state)) return '#FF8000';
-  if (done.includes(state)) return '#008043';
-  if (fail.includes(state)) return '#E01E00';
-  return '#A7A1B2';
+  if (active.includes(state)) return 'var(--brand-primary)';
+  if (alert.includes(state)) return 'var(--warning)';
+  if (done.includes(state)) return 'var(--positive)';
+  if (fail.includes(state)) return 'var(--negative)';
+  return 'var(--text-secondary)';
 }
 
 export default function NetBoxHub({ onBack }: NetBoxHubProps) {
@@ -88,7 +88,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
     position: 'fixed',
     inset: 0,
     zIndex: 900,
-    background: '#161021',
+    background: 'var(--bg-primary)',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -96,7 +96,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
 
   const headerStyle: React.CSSProperties = {
     padding: '16px',
-    borderBottom: '1px solid #352D42',
+    borderBottom: '1px solid var(--border-subtle)',
     flexShrink: 0,
   };
 
@@ -109,7 +109,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
   const btnPrimary: React.CSSProperties = {
     width: '100%',
     padding: '14px',
-    background: '#D9008D',
+    background: 'var(--brand-primary)',
     color: '#FFFFFF',
     border: 'none',
     borderRadius: 10,
@@ -121,10 +121,10 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '12px 14px',
-    background: '#352D42',
-    border: '1px solid #352D42',
+    background: 'var(--bg-secondary)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 10,
-    color: '#FAF9FC',
+    color: 'var(--text-primary)',
     fontSize: 14,
     outline: 'none',
     boxSizing: 'border-box',
@@ -136,7 +136,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
       style={{
         background: 'none',
         border: 'none',
-        color: '#A7A1B2',
+        color: 'var(--text-secondary)',
         fontSize: 14,
         cursor: 'pointer',
         padding: '4px 0',
@@ -158,7 +158,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
             style={{
               background: 'none',
               border: 'none',
-              color: '#A7A1B2',
+              color: 'var(--text-secondary)',
               fontSize: 14,
               cursor: 'pointer',
               padding: '4px 0',
@@ -169,12 +169,12 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
             &larr; Back
           </button>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>NetBox Management</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>NetBox Management</div>
             <button
               onClick={() => { setStep('create_order'); setQuantity(''); setDeliveryArea(AREAS[0]); }}
               style={{
                 padding: '8px 16px',
-                background: '#D9008D',
+                background: 'var(--brand-primary)',
                 color: '#FFFFFF',
                 border: 'none',
                 borderRadius: 8,
@@ -190,12 +190,12 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
 
         <div style={scrollStyle}>
           {/* Active NETBOX Tasks by State */}
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#A7A1B2', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
             Active Tasks
           </div>
 
           {Object.keys(netboxTasks).length === 0 && (
-            <div style={{ padding: '20px 0', textAlign: 'center', fontSize: 13, color: '#665E75' }}>
+            <div style={{ padding: '20px 0', textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
               No active NetBox tasks
             </div>
           )}
@@ -224,7 +224,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
                 <div
                   key={task.task_id}
                   style={{
-                    background: '#443152',
+                    background: 'var(--bg-card)',
                     borderRadius: 8,
                     padding: '12px 14px',
                     marginBottom: 6,
@@ -232,10 +232,10 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#FAF9FC' }}>{task.task_id}</span>
-                    <span style={{ fontSize: 12, color: '#A7A1B2' }}>{task.netbox_id}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{task.task_id}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{task.netbox_id}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: '#A7A1B2' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                     {task.customer_area} {task.assigned_to ? `-- ${task.assigned_to}` : ''}
                   </div>
                 </div>
@@ -247,27 +247,27 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
           <div style={{
             fontSize: 13,
             fontWeight: 600,
-            color: '#A7A1B2',
+            color: 'var(--text-secondary)',
             textTransform: 'uppercase',
             letterSpacing: 0.5,
             marginTop: 24,
             marginBottom: 12,
             paddingTop: 16,
-            borderTop: '1px solid #352D42',
+            borderTop: '1px solid var(--border-subtle)',
           }}>
             NetBox Orders
           </div>
 
           {orders.map((order) => {
-            const statusColor = order.status === 'DELIVERED' ? '#008043' : order.status === 'DISPATCHED' ? '#D9008D' : '#FF8000';
+            const statusColor = order.status === 'DELIVERED' ? 'var(--positive)' : order.status === 'DISPATCHED' ? 'var(--brand-primary)' : 'var(--warning)';
             return (
               <button
                 key={order.id}
                 onClick={() => { setSelectedOrder(order); setStep('order_detail'); }}
                 style={{
                   width: '100%',
-                  background: '#443152',
-                  border: '1px solid #352D42',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: 10,
                   padding: '14px 16px',
                   marginBottom: 8,
@@ -276,7 +276,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#FAF9FC' }}>{order.id}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{order.id}</span>
                   <span style={{
                     fontSize: 11,
                     fontWeight: 600,
@@ -288,7 +288,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
                     {order.status}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: '#A7A1B2' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                   Qty: {order.quantity} &middot; {order.delivery_area} &middot; {formatDate(order.created_at)}
                 </div>
               </button>
@@ -308,11 +308,11 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
       <div style={overlayStyle}>
         <div style={headerStyle}>
           {backBtn('hub')}
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Request New NetBox</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Request New NetBox</div>
         </div>
         <div style={scrollStyle}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, color: '#A7A1B2', display: 'block', marginBottom: 6 }}>Quantity</label>
+            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Quantity</label>
             <input
               type="number"
               value={quantity}
@@ -323,7 +323,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
             />
           </div>
           <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 12, color: '#A7A1B2', display: 'block', marginBottom: 6 }}>Delivery Area</label>
+            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Delivery Area</label>
             <select
               value={deliveryArea}
               onChange={(e) => setDeliveryArea(e.target.value)}
@@ -360,7 +360,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
 
   // Order detail
   if (step === 'order_detail' && selectedOrder) {
-    const statusColor = selectedOrder.status === 'DELIVERED' ? '#008043' : selectedOrder.status === 'DISPATCHED' ? '#D9008D' : '#FF8000';
+    const statusColor = selectedOrder.status === 'DELIVERED' ? 'var(--positive)' : selectedOrder.status === 'DISPATCHED' ? 'var(--brand-primary)' : 'var(--warning)';
 
     const timelineSteps = [
       { label: 'Order Placed', done: true, date: selectedOrder.created_at },
@@ -374,7 +374,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
         <div style={headerStyle}>
           {backBtn('hub')}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>{selectedOrder.id}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{selectedOrder.id}</div>
             <span style={{
               fontSize: 11,
               fontWeight: 600,
@@ -391,27 +391,27 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
         <div style={scrollStyle}>
           {/* Order info */}
           <div style={{
-            background: '#443152',
+            background: 'var(--bg-card)',
             borderRadius: 12,
             padding: '20px',
             marginBottom: 20,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #352D42' }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Quantity</span>
-              <span style={{ fontSize: 13, color: '#FAF9FC', fontWeight: 600 }}>{selectedOrder.quantity} units</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Quantity</span>
+              <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>{selectedOrder.quantity} units</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #352D42' }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Delivery Area</span>
-              <span style={{ fontSize: 13, color: '#FAF9FC' }}>{selectedOrder.delivery_area}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Delivery Area</span>
+              <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{selectedOrder.delivery_area}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-              <span style={{ fontSize: 13, color: '#A7A1B2' }}>Ordered On</span>
-              <span style={{ fontSize: 13, color: '#FAF9FC' }}>{formatDate(selectedOrder.created_at)}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Ordered On</span>
+              <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{formatDate(selectedOrder.created_at)}</span>
             </div>
           </div>
 
           {/* Status Timeline */}
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#A7A1B2', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 }}>
             Status Timeline
           </div>
 
@@ -422,7 +422,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
               top: 4,
               bottom: 4,
               width: 2,
-              background: '#352D42',
+              background: 'var(--bg-secondary)',
             }} />
 
             {timelineSteps.map((ts, i) => (
@@ -434,14 +434,14 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
                   width: 12,
                   height: 12,
                   borderRadius: '50%',
-                  background: ts.done ? '#D9008D' : '#352D42',
-                  border: '2px solid #161021',
+                  background: ts.done ? 'var(--brand-primary)' : 'var(--bg-secondary)',
+                  border: '2px solid var(--bg-primary)',
                 }} />
-                <div style={{ fontSize: 14, fontWeight: ts.done ? 600 : 400, color: ts.done ? '#FAF9FC' : '#665E75' }}>
+                <div style={{ fontSize: 14, fontWeight: ts.done ? 600 : 400, color: ts.done ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                   {ts.label}
                 </div>
                 {ts.done && ts.date && (
-                  <div style={{ fontSize: 11, color: '#665E75', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                     {formatDate(ts.date)}
                   </div>
                 )}

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* ============================================================
+   DARK THEME (default)
+   ============================================================ */
 :root {
   /* Brand */
   --brand-primary: #D9008D;
@@ -13,7 +16,7 @@
   --gold-mid: #F2E983;
   --gold-end: #D5B14B;
 
-  /* Backgrounds (neutral dark) */
+  /* Backgrounds */
   --bg-primary: #161021;
   --bg-secondary: #352D42;
   --bg-card: #443152;
@@ -24,7 +27,7 @@
   --text-secondary: #A7A1B2;
   --text-muted: #665E75;
 
-  /* Semantic Colors */
+  /* Semantic State Colors */
   --positive: #008043;
   --positive-light: #A5E5C6;
   --positive-bg: #E1FAED;
@@ -35,9 +38,6 @@
   --warning-dark: #B85C00;
   --warning-light: #FFAA00;
   --warning-bg: #FFE6CC;
-  --info: #FF8000;
-  --info-light: #FFAA00;
-  --info-bg: #FFE6CC;
 
   /* Borders */
   --border-subtle: #352D42;
@@ -50,13 +50,116 @@
   --money-light: #90CAF9;
   --money-bg: rgba(33, 150, 243, 0.12);
 
-  /* Legacy aliases (for compat) */
-  --accent-green: #008043;
-  --accent-amber: #FF8000;
-  --accent-red: #E01E00;
-  --accent-blue: #2196F3;
+  /* Task type accents (brand palette) */
+  --accent-restore: #6D17CE;
+  --accent-gold: #D5AF4A;
+
+  /* Strip surface */
+  --strip-bg: #161021;
+
+  /* Semi-transparent state backgrounds */
+  --positive-subtle: rgba(0, 128, 67, 0.10);
+  --negative-subtle: rgba(224, 30, 0, 0.08);
+  --warning-subtle: rgba(255, 128, 0, 0.10);
+  --brand-subtle: rgba(217, 0, 141, 0.08);
+  --money-subtle: rgba(33, 150, 243, 0.08);
+  --restore-subtle: rgba(109, 23, 206, 0.15);
+  --gold-subtle: rgba(213, 175, 74, 0.15);
+
+  /* Card gradient */
+  --card-gradient-start: #443152;
+  --card-gradient-end: #665E75;
+
+  /* Overlay */
+  --overlay-bg: rgba(0, 0, 0, 0.6);
 }
 
+/* ============================================================
+   STATE - COLOR CHECK  (warm off-white, muted state colors)
+   ============================================================ */
+[data-theme="state-color-check"] {
+  /* Backgrounds — warm off-white surface */
+  --bg-primary: #FAF7F2;
+  --bg-secondary: #F0EDE6;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F5F3EE;
+
+  /* Text hierarchy calibrated for light surface */
+  --text-primary: #1C1B1F;
+  --text-secondary: #5E5C66;
+  --text-muted: #9D9BA3;
+
+  /* Borders — warm neutral */
+  --border-subtle: #E4E1DA;
+  --chip-bg: #F0EDE6;
+
+  /* Brand — slightly deeper for white surface */
+  --brand-primary: #C10080;
+  --brand-light: #F2A0D0;
+  --brand-secondary: #F0EDE6;
+
+  /* State colors — muted, calibrated against warm off-white */
+  --positive: #2B7A4B;
+  --positive-light: #8CCDA5;
+  --negative: #C4453A;
+  --negative-light: #E8A9A4;
+  --warning: #B87D00;
+  --warning-dark: #8A5E00;
+  --warning-light: #D4A73D;
+
+  /* Money — deeper blue on white */
+  --money: #1976D2;
+  --money-light: #64A8E8;
+  --money-bg: rgba(25, 118, 210, 0.08);
+
+  /* Task type accents — muted for white */
+  --accent-restore: #5B12AC;
+  --accent-gold: #9E7E2A;
+
+  /* Strip surface — distinct material (slightly warmer than card) */
+  --strip-bg: #EDE9E2;
+
+  /* Semi-transparent state backgrounds */
+  --positive-subtle: rgba(43, 122, 75, 0.06);
+  --negative-subtle: rgba(196, 69, 58, 0.06);
+  --warning-subtle: rgba(184, 125, 0, 0.06);
+  --brand-subtle: rgba(193, 0, 128, 0.06);
+  --money-subtle: rgba(25, 118, 210, 0.06);
+  --restore-subtle: rgba(91, 18, 172, 0.08);
+  --gold-subtle: rgba(158, 126, 42, 0.08);
+
+  /* Card gradient */
+  --card-gradient-start: #FFFFFF;
+  --card-gradient-end: #F5F3EE;
+
+  /* Overlay */
+  --overlay-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================
+   HINDI TYPOGRAPHY BOOST
+   Devanagari characters are denser — slightly more weight + spacing
+   ============================================================ */
+[data-lang="hi"] {
+  letter-spacing: 0.2px;
+}
+[data-lang="hi"] button,
+[data-lang="hi"] span,
+[data-lang="hi"] div {
+  font-weight: inherit;
+}
+/* Bump weight on key text elements for Hindi readability */
+[data-lang="hi"] [style*="fontWeight: 400"],
+[data-lang="hi"] .hindi-boost {
+  font-weight: 500;
+}
+[data-lang="hi"] [style*="fontWeight: 500"] {
+  font-weight: 600;
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
 * {
   box-sizing: border-box;
 }
@@ -68,27 +171,23 @@ body {
   -webkit-font-smoothing: antialiased;
   margin: 0;
   padding: 0;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* Scrollbar styling */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
 
-/* Prevent text selection on interactive elements */
 .no-select { user-select: none; }
+.transition-smooth { transition: all 0.2s ease; }
 
-/* Smooth transitions */
-.transition-smooth {
-  transition: all 0.2s ease;
-}
-
-/* Task type colors */
+/* Task type borders (brand palette) */
 .task-install { border-left: 3px solid var(--brand-primary); }
-.task-restore { border-left: 3px solid var(--negative); }
-.task-netbox { border-left: 3px solid var(--info); }
+.task-restore { border-left: 3px solid var(--accent-restore); }
+.task-netbox { border-left: 3px solid var(--accent-gold); }
 
-/* Priority indicators */
+/* Priority */
 .priority-high { color: var(--negative); }
 .priority-normal { color: var(--warning); }
 
@@ -100,7 +199,7 @@ body {
 .chip-limited { color: var(--warning); }
 .chip-ineligible { color: var(--negative); }
 
-/* CTA Button */
+/* CTA Buttons */
 .cta-primary {
   background: var(--brand-primary);
   color: white;
@@ -151,7 +250,7 @@ body {
   letter-spacing: 0.3px;
 }
 
-/* Mobile optimized */
+/* Mobile */
 @media (max-width: 480px) {
   .cta-primary, .cta-urgent {
     padding: 10px 20px;
@@ -159,7 +258,7 @@ body {
   }
 }
 
-/* Resolved task fade-out animation */
+/* Resolved task fade-out */
 @keyframes fadeSlideOut {
   0% {
     opacity: 1;
