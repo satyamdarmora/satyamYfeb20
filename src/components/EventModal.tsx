@@ -16,6 +16,9 @@ const ACCENT: Record<string, string> = {
   NEW_OFFER: 'var(--brand-primary)',
   HIGH_RESTORE_ALERT: 'var(--negative)',
   SLA_WARNING: 'var(--warning)',
+  CAPABILITY_RESET: 'var(--warning)',
+  WALLET_FROZEN: 'var(--negative)',
+  NETBOX_RECOVERY_DEDUCTION: 'var(--negative)',
   GENERAL: 'var(--text-secondary)',
 };
 
@@ -64,6 +67,17 @@ export default function EventModal({ notification, onDismiss, onView }: EventMod
       break;
     case 'SLA_WARNING':
       headline = notification.title || 'SLA Warning';
+      break;
+    case 'CAPABILITY_RESET':
+      headline = 'Capability Reset Program';
+      break;
+    case 'WALLET_FROZEN':
+      headline = 'Wallet Frozen';
+      break;
+    case 'NETBOX_RECOVERY_DEDUCTION':
+      headline = notification.amount
+        ? `Deduction of \u20B9${notification.amount.toLocaleString('en-IN')}`
+        : 'NetBox Recovery Deduction';
       break;
     default:
       break;
@@ -138,9 +152,13 @@ export default function EventModal({ notification, onDismiss, onView }: EventMod
                 ? '\u002B'
                 : notification.type === 'HIGH_RESTORE_ALERT'
                   ? '!'
-                  : notification.type === 'SLA_WARNING'
+                  : notification.type === 'SLA_WARNING' || notification.type === 'CAPABILITY_RESET'
                     ? '\u26A0'
-                    : '\u2139'}
+                    : notification.type === 'WALLET_FROZEN'
+                      ? '\u2744'
+                      : notification.type === 'NETBOX_RECOVERY_DEDUCTION'
+                        ? '\u2212'
+                        : '\u2139'}
           </div>
 
           {/* Headline */}
@@ -170,6 +188,55 @@ export default function EventModal({ notification, onDismiss, onView }: EventMod
                 {'\u20B9'}{notification.amount.toLocaleString('en-IN')}
               </div>
             )}
+
+          {/* Negative amount callout for deductions */}
+          {notification.amount != null && notification.type === 'NETBOX_RECOVERY_DEDUCTION' && (
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 800,
+                color: 'var(--negative)',
+                margin: '12px 0',
+              }}
+            >
+              {'-\u20B9'}{notification.amount.toLocaleString('en-IN')}
+            </div>
+          )}
+
+          {/* Consequence callout for alert types */}
+          {(notification.type === 'CAPABILITY_RESET' ||
+            notification.type === 'WALLET_FROZEN' ||
+            notification.type === 'NETBOX_RECOVERY_DEDUCTION') && (
+            <div
+              style={{
+                marginTop: 14,
+                padding: '12px 14px',
+                background: `${accent}15`,
+                border: `1px solid ${accent}35`,
+                borderRadius: 10,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: accent,
+                  marginBottom: 6,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.3,
+                }}
+              >
+                What this means:
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                {notification.type === 'CAPABILITY_RESET'
+                  ? 'New task assignments may be paused. Your earning potential is reduced until retraining is completed and compliance is restored.'
+                  : notification.type === 'WALLET_FROZEN'
+                    ? 'You cannot withdraw any funds. Settlements will continue to accumulate but remain locked until the investigation is resolved.'
+                    : `\u20B9${notification.amount?.toLocaleString('en-IN') ?? '0'} has been deducted from your available balance. You have 7 days to raise a support ticket to dispute this deduction.`}
+              </div>
+            </div>
+          )}
 
           {/* Sub-text */}
           <p

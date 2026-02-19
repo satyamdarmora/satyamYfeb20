@@ -70,6 +70,7 @@ export default function DrillDown({ isOpen, onClose, title, children }: DrillDow
           position: 'absolute',
           inset: 0,
           background: 'var(--overlay-bg)',
+          animation: 'overlayFadeIn 0.2s ease',
         }}
       />
 
@@ -91,6 +92,7 @@ export default function DrillDown({ isOpen, onClose, title, children }: DrillDow
           display: 'flex',
           flexDirection: 'column',
           transition: 'transform 0.2s ease',
+          animation: 'sheetSlideUp 0.25s ease',
         }}
       >
         {/* Drag handle */}

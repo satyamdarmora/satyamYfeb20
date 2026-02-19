@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import type { Technician } from '@/lib/types';
-import { getTechnicians } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import type { Technician, Task } from '@/lib/types';
+import { getTechnicians, getAllTasks } from '@/lib/data';
 
 interface TeamHubProps {
   onBack: () => void;
@@ -23,6 +23,18 @@ export default function TeamHub({ onBack }: TeamHubProps) {
   const [newBand, setNewBand] = useState<Technician['band']>('B');
   const [newPhone, setNewPhone] = useState('');
 
+  // Active task count per technician
+  const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const terminal = ['RESOLVED', 'VERIFIED', 'ACTIVATION_VERIFIED', 'RETURN_CONFIRMED', 'FAILED', 'UNRESOLVED', 'LOST_DECLARED'];
+    const allTasks = getAllTasks();
+    const counts: Record<string, number> = {};
+    techs.forEach((t) => {
+      counts[t.id] = allTasks.filter((task) => task.assigned_to === t.name && !terminal.includes(task.state)).length;
+    });
+    setTaskCounts(counts);
+  }, [techs]);
+
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
@@ -31,6 +43,7 @@ export default function TeamHub({ onBack }: TeamHubProps) {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    animation: 'slideUpIn 0.25s ease',
   };
 
   const headerStyle: React.CSSProperties = {
@@ -165,6 +178,7 @@ export default function TeamHub({ onBack }: TeamHubProps) {
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#FAF9FC' }}>{tech.name}</div>
                   <div style={{ fontSize: 12, color: '#A7A1B2', marginTop: 2 }}>
                     Band {tech.band} &middot; {tech.available ? 'Available' : 'Unavailable'}
+                    {taskCounts[tech.id] ? ` \u00B7 ${taskCounts[tech.id]} active` : ''}
                   </div>
                 </div>
               </div>
@@ -233,15 +247,37 @@ export default function TeamHub({ onBack }: TeamHubProps) {
             />
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (canSubmit) {
-                const newTech: Technician = {
-                  id: `TECH-${Date.now().toString().slice(-4)}`,
-                  name: newName.trim(),
-                  band: newBand,
-                  available: true,
-                };
-                setTechs([...techs, newTech]);
+                try {
+                  const res = await fetch('/api/technician/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      name: newName.trim(),
+                      phone: newPhone.trim(),
+                      band: newBand,
+                      csp_id: 'CSP-MH-1001',
+                    }),
+                  });
+                  const data = await res.json();
+                  if (data.ok) {
+                    setTechs([...techs, data.technician]);
+                  }
+                } catch {
+                  // fallback: add locally
+                  const newTech: Technician = {
+                    id: `TECH-${Date.now().toString().slice(-4)}`,
+                    name: newName.trim(),
+                    band: newBand,
+                    available: true,
+                    csp_id: 'CSP-MH-1001',
+                    phone: newPhone.trim(),
+                    join_date: new Date().toISOString().split('T')[0],
+                    completed_count: 0,
+                  };
+                  setTechs([...techs, newTech]);
+                }
                 setStep('roster');
               }
             }}
@@ -305,6 +341,21 @@ export default function TeamHub({ onBack }: TeamHubProps) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button
+              onClick={() => {
+                const updated = techs.map((t) =>
+                  t.id === selectedTech.id ? { ...t, available: !t.available } : t
+                );
+                setTechs(updated);
+                setSelectedTech({ ...selectedTech, available: !selectedTech.available });
+              }}
+              style={{
+                ...btnPrimary,
+                background: selectedTech.available ? '#665E75' : '#008043',
+              }}
+            >
+              {selectedTech.available ? 'Set Unavailable' : 'Set Available'}
+            </button>
             <button
               onClick={() => setStep('edit_permissions')}
               style={btnPrimary}

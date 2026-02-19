@@ -27,10 +27,10 @@ const DAY = 24 * HOUR;
 // ---- Technicians ------------------------------------------------------------
 
 const technicians: Technician[] = [
-  { id: 'TECH-001', name: 'Ajay Patil',    band: 'A', available: true  },
-  { id: 'TECH-002', name: 'Suresh Kamble',  band: 'B', available: true  },
-  { id: 'TECH-003', name: 'Ramesh Jadhav',  band: 'B', available: false },
-  { id: 'TECH-004', name: 'Vikram Shinde',  band: 'C', available: true  },
+  { id: 'TECH-001', name: 'Ajay Patil',    band: 'A', available: true,  csp_id: 'CSP-MH-1001', phone: '+91 98765 43210', join_date: '2025-06-15', completed_count: 47 },
+  { id: 'TECH-002', name: 'Suresh Kamble',  band: 'B', available: true,  csp_id: 'CSP-MH-1001', phone: '+91 98765 43211', join_date: '2025-08-01', completed_count: 31 },
+  { id: 'TECH-003', name: 'Ramesh Jadhav',  band: 'B', available: false, csp_id: 'CSP-MH-1001', phone: '+91 98765 43212', join_date: '2025-09-10', completed_count: 22 },
+  { id: 'TECH-004', name: 'Vikram Shinde',  band: 'C', available: true,  csp_id: 'CSP-MH-1001', phone: '+91 98765 43213', join_date: '2025-11-20', completed_count: 8  },
 ];
 
 // ---- Seed tasks -------------------------------------------------------------
@@ -592,6 +592,7 @@ const assuranceState: AssuranceState = {
   exposure_since: '2025-11-01',
   active_restores: 2,
   unresolved_count: 0,
+  capability_reset_active: false,
   active_base_events: [
     { date: iso(-2 * DAY),  change: 1,  connection_id: 'WM-CON-3201', reason: 'New activation verified' },
     { date: iso(-5 * DAY),  change: 1,  connection_id: 'WM-CON-3180', reason: 'New activation verified' },
@@ -740,8 +741,31 @@ export function getAssuranceState(): AssuranceState {
   return assuranceState;
 }
 
+export function updateAssuranceState(updates: Partial<AssuranceState>): void {
+  Object.assign(assuranceState, updates);
+}
+
 export function getTechnicians(): Technician[] {
   return technicians;
+}
+
+export function getTechnicianById(id: string): Technician | undefined {
+  return technicians.find((t) => t.id === id);
+}
+
+export function getTasksForTechnician(techId: string): Task[] {
+  const tech = technicians.find((t) => t.id === techId);
+  if (!tech) return [];
+  return tasks.filter((t) => t.assigned_to === tech.name);
+}
+
+export function getCompletedTasksForTechnician(techId: string): Task[] {
+  const terminalStates = ['RESOLVED', 'VERIFIED', 'ACTIVATION_VERIFIED', 'RETURN_CONFIRMED', 'FAILED', 'UNRESOLVED', 'LOST_DECLARED'];
+  return getTasksForTechnician(techId).filter((t) => terminalStates.includes(t.state));
+}
+
+export function addTechnician(tech: Technician): void {
+  technicians.push(tech);
 }
 
 export function addTask(task: Task): void {
@@ -767,6 +791,7 @@ export const deleteTask = removeTask;
 const walletState: WalletState = {
   balance: 14200,
   pending_settlement: 14200,
+  frozen: false,
   transactions: [
     {
       id: 'TXN-001',
@@ -895,6 +920,14 @@ const notifications: AppNotification[] = [];
 
 export function getWalletState(): WalletState {
   return walletState;
+}
+
+export function updateWalletState(updates: Partial<WalletState>): void {
+  Object.assign(walletState, updates);
+}
+
+export function addWalletTransaction(txn: WalletTransaction): void {
+  walletState.transactions.unshift(txn);
 }
 
 // ---- Support case helpers -------------------------------------------------

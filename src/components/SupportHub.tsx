@@ -8,7 +8,7 @@ interface SupportHubProps {
   onBack: () => void;
 }
 
-type FlowStep = 'list' | 'create_case' | 'case_detail';
+type FlowStep = 'list' | 'create_case' | 'create_receipt' | 'case_detail';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -38,6 +38,9 @@ export default function SupportHub({ onBack }: SupportHubProps) {
   const [selectedCase, setSelectedCase] = useState<SupportCase | null>(null);
   const [replyText, setReplyText] = useState('');
 
+  // Submitted case ID for receipt
+  const [submittedCaseId, setSubmittedCaseId] = useState('');
+
   // Create case form
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -51,6 +54,7 @@ export default function SupportHub({ onBack }: SupportHubProps) {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    animation: 'slideUpIn 0.25s ease',
   };
 
   const headerStyle: React.CSSProperties = {
@@ -266,12 +270,42 @@ export default function SupportHub({ onBack }: SupportHubProps) {
                 };
                 addSupportCase(newCase);
                 setCases([...cases, newCase]);
-                setStep('list');
+                setSubmittedCaseId(newCase.case_id);
+                setStep('create_receipt');
               }
             }}
             style={{ ...btnPrimary, opacity: canSubmit ? 1 : 0.4 }}
           >
             Submit Case
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Create receipt
+  if (step === 'create_receipt') {
+    return (
+      <div style={overlayStyle}>
+        <div style={headerStyle}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#FAF9FC' }}>Case Submitted</div>
+        </div>
+        <div style={{ ...scrollStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(0,128,67,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 28, color: '#008043' }}>&#10003;</span>
+          </div>
+          <div style={{ fontSize: 14, color: '#A7A1B2', marginBottom: 8 }}>Case ID</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#FAF9FC', marginBottom: 16 }}>
+            {submittedCaseId}
+          </div>
+          <div style={{ fontSize: 14, color: '#A7A1B2', textAlign: 'center', lineHeight: 1.6, marginBottom: 32, maxWidth: 300 }}>
+            Your support case has been submitted. Expect a response within 24 hours.
+          </div>
+          <button
+            onClick={() => { setStep('list'); setSubmittedCaseId(''); }}
+            style={{ ...btnPrimary, maxWidth: 300 }}
+          >
+            Back to Support
           </button>
         </div>
       </div>

@@ -11,46 +11,23 @@ interface TaskCardProps {
   onCardClick: (taskId: string) => void;
 }
 
-/** Left border = urgency-based (green / amber / red) */
+/** Left border = urgency-based */
 function getLeftBorderColor(bucket: number, task: Task): string {
-  // Overdue check
   const deadlines = [task.sla_deadline_at, task.offer_expires_at, task.accept_expires_at, task.return_due_at, task.pickup_due_at, task.due_at];
   const isOverdue = deadlines.some((d) => d && new Date(d).getTime() < Date.now());
   if (isOverdue) return 'var(--negative)';
-
-  // High priority always red
   if (task.priority === 'HIGH') return 'var(--negative)';
-
-  // Bucket-based
-  if (bucket <= 1) return 'var(--negative)';   // critical
-  if (bucket <= 3) return 'var(--warning)';   // needs attention
-  return 'var(--positive)';                     // on track
-}
-
-/** Task type badge colors from brand palette */
-function getBadgeBackground(taskType: string): string {
-  switch (taskType) {
-    case 'INSTALL':
-      return 'var(--brand-subtle)';
-    case 'RESTORE':
-      return 'var(--restore-subtle)';
-    case 'NETBOX':
-      return 'var(--gold-subtle)';
-    default:
-      return 'rgba(92, 111, 130, 0.15)';
-  }
+  if (bucket <= 1) return 'var(--negative)';
+  if (bucket <= 3) return 'var(--warning)';
+  return 'var(--positive)';
 }
 
 function getBadgeColor(taskType: string): string {
   switch (taskType) {
-    case 'INSTALL':
-      return 'var(--brand-primary)';
-    case 'RESTORE':
-      return 'var(--accent-restore)';
-    case 'NETBOX':
-      return 'var(--accent-gold)';
-    default:
-      return 'var(--text-muted)';
+    case 'INSTALL': return 'var(--brand-primary)';
+    case 'RESTORE': return 'var(--accent-restore)';
+    case 'NETBOX': return 'var(--accent-gold)';
+    default: return 'var(--text-muted)';
   }
 }
 
@@ -59,7 +36,7 @@ function getTimeRemaining(dateStr: string | undefined): string {
   const diff = new Date(dateStr).getTime() - Date.now();
   if (diff <= 0) return 'Overdue';
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins} min`;
+  if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
   const remainMins = mins % 60;
   if (hrs < 24) return remainMins > 0 ? `${hrs}h ${remainMins}m` : `${hrs}h`;
@@ -67,64 +44,10 @@ function getTimeRemaining(dateStr: string | undefined): string {
   return `${days}d ${hrs % 24}h`;
 }
 
-function getOrdinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-function getReasonLabel(task: Task): string | null {
-  const flag = task.queue_escalation_flag;
-  const state = task.state;
-
-  if (state === 'OFFERED') {
-    const remaining = getTimeRemaining(task.offer_expires_at);
-    return `Offer expires -- ${remaining}`;
-  }
-
-  if (flag === 'CLAIM_TTL_EXPIRING') {
-    const remaining = getTimeRemaining(task.accept_expires_at);
-    return `Claim expiring -- ${remaining}`;
-  }
-
-  if (task.task_type === 'RESTORE' && task.priority === 'HIGH' && ['ALERTED', 'ASSIGNED', 'IN_PROGRESS'].includes(state)) {
-    const remaining = getTimeRemaining(task.sla_deadline_at);
-    return `High restore -- ${remaining} left`;
-  }
-
-  if (flag === 'RESTORE_RETRY') {
-    return `Restore retry -- ${getOrdinal(task.retry_count + 1)} attempt`;
-  }
-
-  if (flag === 'BLOCKED_STALE') return 'Blocked -- action needed';
-  if (flag === 'RETURN_OVERDUE') return 'Return overdue';
-  if (flag === 'VERIFICATION_PENDING') return 'Verification pending -- confirm';
-  if (flag === 'INSTALL_OVERDUE') return 'Install overdue';
-  if (flag === 'PICKUP_OVERDUE') return 'Pickup overdue';
-
-  if (flag === 'OFFER_TTL_EXPIRING') {
-    const remaining = getTimeRemaining(task.offer_expires_at);
-    return `Offer expires -- ${remaining}`;
-  }
-
-  if (flag === 'ASSIGNMENT_UNACCEPTED') return 'Assignment unaccepted';
-  if (flag === 'CHAIN_ESCALATION_PENDING') return 'Chain escalation pending';
-  if (flag === 'MANUAL_EXCEPTION') return 'Manual exception';
-
-  return null;
-}
-
-/**
- * Determine if this task is "in technician hands" - CSP has visibility but
- * should not see an action CTA (the technician is working on it).
- */
 function isInTechnicianHands(task: Task): boolean {
-  // If delegation_state is ASSIGNED, ACCEPTED, or IN_PROGRESS and a technician
-  // is assigned, the task is being worked on by the tech.
   if (
     task.assigned_to &&
     ['ASSIGNED', 'ACCEPTED', 'IN_PROGRESS'].includes(task.delegation_state) &&
-    // These task states mean the tech is actively working
     ['ASSIGNED', 'IN_PROGRESS', 'SCHEDULED'].includes(task.state)
   ) {
     return true;
@@ -132,94 +55,61 @@ function isInTechnicianHands(task: Task): boolean {
   return false;
 }
 
+function isSelfAssigned(task: Task): boolean {
+  return isInTechnicianHands(task) && !!task.assigned_to && task.assigned_to.startsWith('Self');
+}
+
 function getCTA(task: Task): { label: string; action: string; urgent: boolean; ctaKey: string } | null {
-  // If technician is assigned, show Reassign option
+  const state = task.state;
+
+  if (isSelfAssigned(task)) {
+    if (task.task_type === 'INSTALL') {
+      if (state === 'SCHEDULED' || state === 'ASSIGNED') return { label: 'Start Work', action: 'START_WORK', urgent: false, ctaKey: 'cta.startWork' };
+      if (state === 'IN_PROGRESS') return { label: 'Mark Installed', action: 'INSTALL', urgent: false, ctaKey: 'cta.install' };
+    } else if (task.task_type === 'RESTORE') {
+      if (state === 'ASSIGNED') return { label: 'Start Work', action: 'START_WORK', urgent: false, ctaKey: 'cta.startWork' };
+      if (state === 'IN_PROGRESS') return { label: 'Resolve', action: 'RESOLVE', urgent: false, ctaKey: 'cta.resolve' };
+    } else if (task.task_type === 'NETBOX') {
+      if (state === 'ASSIGNED') return { label: 'Mark Collected', action: 'COLLECTED', urgent: false, ctaKey: 'cta.collected' };
+    }
+  }
+
+  // Technician assigned (not self) — CSP can only reassign, not resolve directly
   if (isInTechnicianHands(task)) {
     return { label: 'Reassign', action: 'ASSIGN', urgent: false, ctaKey: 'cta.reassign' };
   }
 
-  const state = task.state;
   const flag = task.queue_escalation_flag;
 
-  if (state === 'OFFERED') {
-    // Open detail view (customer details + claim/decline), not auto-claim
-    return { label: 'View', action: 'VIEW', urgent: false, ctaKey: 'cta.view' };
-  }
+  if (state === 'OFFERED') return { label: 'View', action: 'VIEW', urgent: false, ctaKey: 'cta.view' };
+  if (state === 'CLAIMED') return { label: 'Accept', action: 'ACCEPT', urgent: false, ctaKey: 'cta.accept' };
+  if (state === 'ACCEPTED' || state === 'PICKUP_REQUIRED') return { label: 'Assign', action: 'SCHEDULE', urgent: false, ctaKey: 'cta.scheduleAssign' };
+  if (state === 'ALERTED') return { label: 'Assign', action: 'ASSIGN', urgent: task.priority === 'HIGH', ctaKey: 'cta.assign' };
+  if (flag === 'BLOCKED_STALE') return { label: 'Unblock', action: 'RESOLVE_BLOCKED', urgent: true, ctaKey: 'cta.resolveUrgent' };
+  if (state === 'COLLECTED') return { label: 'Confirm Return', action: 'CONFIRM_RETURN', urgent: false, ctaKey: 'cta.confirmReturn' };
+  if (state === 'INSTALLED' && flag === 'VERIFICATION_PENDING') return { label: 'Verify', action: 'VERIFY', urgent: false, ctaKey: 'cta.verifyManually' };
 
-  if (state === 'CLAIMED') {
-    return { label: 'Accept', action: 'ACCEPT', urgent: false, ctaKey: 'cta.accept' };
-  }
-
-  if (state === 'ACCEPTED' || state === 'PICKUP_REQUIRED') {
-    return { label: 'Schedule / Assign', action: 'SCHEDULE', urgent: false, ctaKey: 'cta.scheduleAssign' };
-  }
-
-  if (state === 'ALERTED') {
-    return { label: 'Assign', action: 'ASSIGN', urgent: task.priority === 'HIGH', ctaKey: 'cta.assign' };
-  }
-
-  if (flag === 'BLOCKED_STALE') {
-    return { label: 'Resolve (Urgent)', action: 'RESOLVE_BLOCKED', urgent: true, ctaKey: 'cta.resolveUrgent' };
-  }
-
-  if (state === 'COLLECTED') {
-    return { label: 'Confirm Return', action: 'CONFIRM_RETURN', urgent: false, ctaKey: 'cta.confirmReturn' };
-  }
-
-  if (state === 'INSTALLED' && flag === 'VERIFICATION_PENDING') {
-    return { label: 'Verify Manually', action: 'VERIFY', urgent: false, ctaKey: 'cta.verifyManually' };
-  }
-
-  return { label: 'View', action: 'VIEW', urgent: false, ctaKey: 'cta.view' };
+  return null;
 }
 
-function getCountdownDisplay(task: Task): { text: string; overdue: boolean } | null {
+function getDeadlineInfo(task: Task): { text: string; overdue: boolean } | null {
   const candidates: (string | undefined)[] = [
-    task.sla_deadline_at,
-    task.offer_expires_at,
-    task.accept_expires_at,
-    task.return_due_at,
-    task.pickup_due_at,
-    task.due_at,
+    task.sla_deadline_at, task.offer_expires_at, task.accept_expires_at,
+    task.return_due_at, task.pickup_due_at, task.due_at,
   ];
-
   const valid = candidates.filter((d): d is string => d !== undefined);
   if (valid.length === 0) return null;
-
-  const nearest = valid.reduce((min, d) => {
-    const t = new Date(d).getTime();
-    return t < new Date(min).getTime() ? d : min;
-  });
-
-  const diff = new Date(nearest).getTime() - Date.now();
-  if (diff <= 0) return { text: 'Overdue', overdue: true };
-
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return { text: `${mins}m remaining`, overdue: false };
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) {
-    const rm = mins % 60;
-    return { text: rm > 0 ? `${hrs}h ${rm}m remaining` : `${hrs}h remaining`, overdue: false };
-  }
-  const days = Math.floor(hrs / 24);
-  return { text: `${days}d ${hrs % 24}h remaining`, overdue: false };
-}
-
-/** Delegation state display for when technician is working */
-function getDelegationDisplay(task: Task): string {
-  if (task.delegation_state === 'ASSIGNED') return 'Assigned';
-  if (task.delegation_state === 'ACCEPTED') return 'Accepted';
-  if (task.delegation_state === 'IN_PROGRESS') return 'In Progress';
-  return task.state;
+  const nearest = valid.reduce((min, d) => new Date(d).getTime() < new Date(min).getTime() ? d : min);
+  const remaining = getTimeRemaining(nearest);
+  return { text: remaining, overdue: remaining === 'Overdue' };
 }
 
 export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCardProps) {
   const { t } = useI18n();
   const borderColor = getLeftBorderColor(bucket, task);
-  const reasonLabel = useMemo(() => getReasonLabel(task), [task]);
   const cta = useMemo(() => getCTA(task), [task]);
-  const countdown = useMemo(() => getCountdownDisplay(task), [task]);
-  const contextId = task.connection_id || task.netbox_id || '--';
+  const deadline = useMemo(() => getDeadlineInfo(task), [task]);
+  const contextId = task.connection_id || task.netbox_id || task.task_id;
   const area = task.customer_area || '--';
   const techWorking = isInTechnicianHands(task);
 
@@ -228,172 +118,64 @@ export default function TaskCard({ task, bucket, onAction, onCardClick }: TaskCa
       onClick={() => onCardClick(task.task_id)}
       style={{
         background: 'var(--bg-card)',
-        borderRadius: 10,
-        borderLeft: `4px solid ${borderColor}`,
-        padding: '14px 16px',
+        borderRadius: 14,
+        borderLeft: `3px solid ${borderColor}`,
+        padding: '18px 20px 20px',
         cursor: 'pointer',
-        transition: 'background 0.15s ease',
-        marginBottom: 10,
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card-hover)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card)';
+        marginBottom: 14,
+        transition: 'transform 0.1s ease, box-shadow 0.15s ease',
       }}
     >
-      {/* Row 1: Type badge + reason label */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 8,
-          flexWrap: 'wrap',
-        }}
-      >
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: '2px 8px',
-            borderRadius: 4,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: 0.3,
-            background: getBadgeBackground(task.task_type),
-            color: getBadgeColor(task.task_type),
-          }}
-        >
+      {/* Line 1: Type + ID + Deadline */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: getBadgeColor(task.task_type), letterSpacing: 0.5, textTransform: 'uppercase' }}>
           {task.task_type}
         </span>
-
         {task.priority === 'HIGH' && (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '2px 6px',
-              borderRadius: 4,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: 0.3,
-              background: 'rgba(224, 30, 0, 0.12)',
-              color: 'var(--negative)',
-            }}
-          >
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--negative)', background: 'var(--negative-subtle)', padding: '2px 6px', borderRadius: 4 }}>
             {t('card.high')}
           </span>
         )}
-
-        {reasonLabel && (
-          <span
-            style={{
-              fontSize: 11,
-              color: bucket <= 1 ? 'var(--negative)' : 'var(--warning)',
-              fontWeight: 500,
-            }}
-          >
-            {reasonLabel}
+        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>
+          {contextId}
+        </span>
+        {deadline && (
+          <span style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: deadline.overdue ? 'var(--negative)' : 'var(--text-muted)',
+            flexShrink: 0,
+          }}>
+            {deadline.text}
           </span>
         )}
       </div>
 
-      {/* Row 2: Context line */}
-      <div
-        style={{
-          fontSize: 14,
-          color: 'var(--text-primary)',
-          fontWeight: 500,
-          marginBottom: 4,
-        }}
-      >
-        {contextId}
-      </div>
-      <div
-        style={{
-          fontSize: 12,
-          color: 'var(--text-secondary)',
-          marginBottom: techWorking ? 6 : 10,
-        }}
-      >
-        {area}
-        {task.assigned_to && !techWorking && (
-          <span style={{ color: 'var(--text-muted)' }}> -- {task.assigned_to}</span>
-        )}
-      </div>
-
-      {/* Technician working indicator - high visibility */}
-      {techWorking && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 10,
-            padding: '6px 10px',
-            background: 'var(--warning-subtle)',
-            borderRadius: 6,
-            border: '1px solid rgba(255, 128, 0, 0.2)',
-          }}
-        >
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: 'var(--warning)',
-              flexShrink: 0,
-            }}
-          />
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--warning)' }}>
-            {task.assigned_to}
+      {/* Line 2: Area + Tech/State + CTA */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {area}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-            {getDelegationDisplay(task)}
-          </span>
-        </div>
-      )}
-
-      {/* Row 3: Status / Countdown + CTA or Delegation status */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div>
-          {countdown && (
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: countdown.overdue ? 'var(--negative)' : 'var(--text-secondary)',
-              }}
-            >
-              {countdown.text}
-            </span>
-          )}
-          {!countdown && (
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {task.state}
-            </span>
+          {techWorking && (
+            <>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>·</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning)', whiteSpace: 'nowrap' }}>
+                {task.assigned_to}
+              </span>
+            </>
           )}
         </div>
-
-        {/* Show CTA if available, or delegation status badge if tech is working */}
         {cta ? (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAction(task.task_id, cta.action);
-            }}
-            className={cta.urgent ? 'cta-urgent' : cta.ctaKey === 'cta.reassign' ? 'cta-secondary' : 'cta-primary'}
+            onClick={(e) => { e.stopPropagation(); onAction(task.task_id, cta.action); }}
+            className={cta.urgent ? 'cta-urgent cta-sm' : cta.ctaKey === 'cta.reassign' ? 'cta-secondary cta-sm' : 'cta-primary cta-sm'}
           >
             {t(cta.ctaKey)}
           </button>
-        ) : null}
+        ) : (
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', flexShrink: 0 }}>{'\u203A'}</span>
+        )}
       </div>
     </div>
   );

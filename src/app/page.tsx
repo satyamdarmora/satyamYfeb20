@@ -1,14 +1,24 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { Task, AssuranceState, TimelineEvent, AppNotification, Technician } from '@/lib/types';
+import type { Task, AssuranceState, TimelineEvent, AppNotification, Technician, WalletState } from '@/lib/types';
 import {
   getAllTasks,
   getAssuranceState,
-  updateTask,
+  updateTask as _updateTask,
   getTaskById,
   getTechnicians,
 } from '@/lib/data';
+
+// Wrapper: update client-side AND sync to server so API routes see the change
+function updateTask(id: string, updates: Partial<Task>) {
+  _updateTask(id, updates);
+  fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task_id: id, updates }),
+  }).catch(() => {});
+}
 import { useI18n } from '@/lib/i18n';
 import AssuranceStrip from '@/components/AssuranceStrip';
 import TaskFeed from '@/components/TaskFeed';
@@ -56,6 +66,10 @@ export default function HomePage() {
   const [activeNotification, setActiveNotification] = useState<AppNotification | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Wallet state for lifetime earnings
+  const [walletData, setWalletData] = useState<WalletState | null>(null);
+  const walletPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Technician picker state
   const [assignPickerOpen, setAssignPickerOpen] = useState(false);
   const [assignTaskId, setAssignTaskId] = useState<string | null>(null);
@@ -65,13 +79,83 @@ export default function HomePage() {
     setAssurance(getAssuranceState());
   }, []);
 
+  // Poll server for assurance state changes (admin SLA/exposure triggers)
+  const assurancePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    assurancePollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/assurance');
+        const data = await res.json();
+        if (data) setAssurance(data);
+      } catch {
+        // API not available, skip
+      }
+    }, 2000);
+    return () => {
+      if (assurancePollRef.current) clearInterval(assurancePollRef.current);
+    };
+  }, []);
+
+  // Poll wallet state for lifetime earnings
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await fetch('/api/wallet');
+        const data: WalletState = await res.json();
+        if (data) setWalletData(data);
+      } catch {
+        // API not available, skip
+      }
+    };
+    fetchWallet();
+    walletPollRef.current = setInterval(fetchWallet, 5000);
+    return () => {
+      if (walletPollRef.current) clearInterval(walletPollRef.current);
+    };
+  }, []);
+
+  // Compute lifetime earnings from wallet transactions
+  const lifetimeEarnings = walletData
+    ? walletData.transactions
+        .filter((t) => (t.type === 'SETTLEMENT' || t.type === 'BONUS') && t.status === 'COMPLETED')
+        .reduce((s, t) => s + t.amount, 0)
+    : undefined;
+
+  // Prevent browser back from leaving the app
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      if (selectedTaskId) {
+        setSelectedTaskId(null);
+        setTasks(getAllTasks());
+      } else if (activeSection) {
+        setActiveSection(null);
+        setTasks(getAllTasks());
+      } else if (menuOpen) {
+        setMenuOpen(false);
+      } else if (assignPickerOpen) {
+        setAssignPickerOpen(false);
+        setAssignTaskId(null);
+      } else {
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedTaskId, activeSection, menuOpen, assignPickerOpen]);
+
   // Poll server API for notifications every 2 seconds (works cross-device)
   useEffect(() => {
     pollRef.current = setInterval(async () => {
       try {
         const res = await fetch('/api/notifications');
         const notifications: AppNotification[] = await res.json();
-        const undismissed = notifications.find((n: AppNotification) => !n.dismissed);
+        const undismissed = notifications.find((n: AppNotification) => {
+          if (n.dismissed) return false;
+          // If offers are off, suppress offer notifications
+          if (!offersEnabled && n.type === 'NEW_OFFER') return false;
+          return true;
+        });
         if (undismissed && !activeNotification) {
           setActiveNotification(undismissed);
           if (undismissed.type === 'HIGH_RESTORE_ALERT') {
@@ -88,7 +172,7 @@ export default function HomePage() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [activeNotification]);
+  }, [activeNotification, offersEnabled]);
 
   const refreshTasks = useCallback(() => {
     setTasks(getAllTasks());
@@ -154,6 +238,7 @@ export default function HomePage() {
           ),
         ],
       });
+
       showConfirmation(`${taskId} assigned to ${tech.name}.`);
       // Go back to home after assigning
       setSelectedTaskId(null);
@@ -339,7 +424,31 @@ export default function HomePage() {
               ),
             ],
           });
-          showConfirmation(`${taskId} -- Activation verified.`);
+          showConfirmation(`${taskId} -- Activation verified. \u20B9300 earned.`);
+
+          // Credit ₹300 per-install earning
+          const connId = task.connection_id || taskId;
+          fetch('/api/assurance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              increment_cycle_earned: 300,
+              increment_next_settlement: 300,
+            }),
+          }).catch(() => {});
+          fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: 'NOTIF-' + Date.now(),
+              type: 'SETTLEMENT_CREDIT',
+              title: 'Install Earning Credited',
+              amount: 300,
+              message: `\u20B9300 earned \u2014 Install activation for ${connId}`,
+              timestamp: new Date().toISOString(),
+              dismissed: false,
+            }),
+          }).catch(() => {});
           break;
         }
 
@@ -397,7 +506,7 @@ export default function HomePage() {
     <div
       style={{
         minHeight: '100vh',
-        maxWidth: 480,
+        maxWidth: 500,
         margin: '0 auto',
         position: 'relative',
         background: 'var(--bg-primary)',
@@ -428,7 +537,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Fixed Assurance Strip + More button */}
+      {/* Sticky header + Assurance Strip */}
       <div
         style={{
           position: 'sticky',
@@ -437,34 +546,90 @@ export default function HomePage() {
           background: 'var(--bg-primary)',
         }}
       >
-        <div style={{ position: 'relative' }}>
-          <AssuranceStrip assuranceState={assurance} />
-          {/* More button */}
+        {/* Top header bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 20px',
+            borderBottom: '1px solid var(--border-subtle)',
+          }}
+        >
+          <div
+            onClick={() => setActiveSection('profile')}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+          >
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'var(--brand-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#FFFFFF',
+              }}
+            >
+              C
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
+              CSP-MH-1001
+            </span>
+          </div>
           <button
             onClick={() => setMenuOpen(true)}
             style={{
-              position: 'absolute',
-              top: 12,
-              right: 12,
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               borderRadius: 8,
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-subtle)',
+              background: 'transparent',
+              border: 'none',
               color: 'var(--text-secondary)',
-              fontSize: 18,
+              fontSize: 20,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               lineHeight: 1,
-              zIndex: 101,
             }}
           >
             &#9776;
           </button>
         </div>
+
+        <AssuranceStrip assuranceState={assurance} lifetimeEarnings={lifetimeEarnings} />
       </div>
+
+      {/* Capability Reset Banner */}
+      {assurance.capability_reset_active && (
+        <div
+          style={{
+            margin: '0 12px',
+            padding: '14px 16px',
+            background: 'rgba(255,128,0,0.10)',
+            border: '1px solid rgba(255,128,0,0.35)',
+            borderRadius: 10,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            marginTop: 8,
+          }}
+        >
+          <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1.2 }}>{'\u26A0'}</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--warning)', marginBottom: 4 }}>
+              {t('capabilityReset.title')}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {assurance.capability_reset_reason || t('capabilityReset.desc')}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Task Feed */}
       <TaskFeed
@@ -472,50 +637,6 @@ export default function HomePage() {
         onAction={handleAction}
         onCardClick={handleCardClick}
       />
-
-      {/* Offer toggle */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '100%',
-          maxWidth: 480,
-          padding: '12px 16px',
-          background: 'linear-gradient(transparent, var(--bg-primary) 30%)',
-          zIndex: 50,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {t('home.offerNotifications')}
-          </span>
-          <button
-            onClick={() => setOffersEnabled(!offersEnabled)}
-            style={{
-              background: offersEnabled ? 'var(--brand-primary)' : 'var(--bg-secondary)',
-              color: offersEnabled ? '#FFFFFF' : 'var(--text-muted)',
-              border: 'none',
-              borderRadius: 16,
-              padding: '6px 16px',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {offersEnabled ? t('home.on') : t('home.off')}
-          </button>
-        </div>
-      </div>
 
       {/* Task Detail overlay */}
       {selectedTask && (
@@ -572,7 +693,7 @@ export default function HomePage() {
             style={{
               position: 'relative',
               width: '100%',
-              maxWidth: 480,
+              maxWidth: 500,
               background: 'var(--bg-secondary)',
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
@@ -597,7 +718,7 @@ export default function HomePage() {
               {/* Self-assign option */}
               <button
                 onClick={() => {
-                  doAssign(assignTaskId, { id: 'CSP-MH-1001', name: 'Self (CSP-MH-1001)', band: 'A', available: true });
+                  doAssign(assignTaskId, { id: 'CSP-MH-1001', name: 'Self (CSP-MH-1001)', band: 'A', available: true, csp_id: 'CSP-MH-1001', phone: '', join_date: '2025-01-01', completed_count: 0 });
                   setAssignPickerOpen(false);
                   setAssignTaskId(null);
                 }}
@@ -606,7 +727,7 @@ export default function HomePage() {
                   alignItems: 'center',
                   gap: 14,
                   width: '100%',
-                  padding: '14px 20px',
+                  padding: '16px 20px',
                   background: 'transparent',
                   border: 'none',
                   borderBottom: '1px solid var(--bg-card)',
@@ -658,7 +779,7 @@ export default function HomePage() {
                     alignItems: 'center',
                     gap: 14,
                     width: '100%',
-                    padding: '14px 20px',
+                    padding: '16px 20px',
                     background: 'transparent',
                     border: 'none',
                     cursor: tech.available ? 'pointer' : 'default',
@@ -748,7 +869,7 @@ export default function HomePage() {
       {activeSection === 'team' && <TeamHub onBack={handleBackToHome} />}
       {activeSection === 'support' && <SupportHub onBack={handleBackToHome} />}
       {activeSection === 'netbox' && <NetBoxHub onBack={handleBackToHome} />}
-      {activeSection === 'profile' && <ProfilePage onBack={handleBackToHome} />}
+      {activeSection === 'profile' && <ProfilePage onBack={handleBackToHome} offersEnabled={offersEnabled} onOffersToggle={setOffersEnabled} />}
       {activeSection === 'policies' && <PoliciesPage onBack={handleBackToHome} />}
     </div>
   );

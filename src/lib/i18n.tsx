@@ -83,6 +83,9 @@ const translations: Record<string, Record<Lang, string>> = {
   'cta.resolveUrgent': { en: 'Resolve (Urgent)', hi: '\u0939\u0932 \u0915\u0930\u0947\u0902 (\u0924\u0941\u0930\u0902\u0924)' },
   'cta.view': { en: 'View', hi: '\u0926\u0947\u0916\u0947\u0902' },
   'cta.reassign': { en: 'Reassign', hi: '\u092A\u0941\u0928\u0903 \u0905\u0938\u093E\u0907\u0928' },
+  'cta.resolve': { en: 'Resolve', hi: '\u0939\u0932 \u0915\u0930\u0947\u0902' },
+  'cta.startWork': { en: 'Start Work', hi: '\u0915\u093E\u092E \u0936\u0941\u0930\u0942 \u0915\u0930\u0947\u0902' },
+  'cta.install': { en: 'Mark Installed', hi: '\u0907\u0902\u0938\u094D\u091F\u0949\u0932 \u0915\u093F\u092F\u093E' },
 
   // ---- TaskCard labels ----
   'card.high': { en: 'HIGH', hi: '\u0909\u091A\u094D\u091A' },
@@ -134,10 +137,66 @@ const translations: Record<string, Record<Lang, string>> = {
   'profile.bandPartner': { en: 'Band A Partner', hi: '\u092C\u0948\u0902\u0921 A \u092A\u093E\u0930\u094D\u091F\u0928\u0930' },
   'profile.back': { en: 'Back', hi: '\u0935\u093E\u092A\u0938' },
 
+  // ---- Capability Reset Banner ----
+  'capabilityReset.title': { en: 'Capability Reset Active', hi: '\u0915\u094D\u0937\u092E\u0924\u093E \u0930\u0940\u0938\u0947\u091F \u0938\u0915\u094D\u0930\u093F\u092F' },
+  'capabilityReset.desc': {
+    en: 'Task assignments may be paused. Complete retraining to restore full partner status. Contact your zone manager.',
+    hi: '\u0915\u093E\u0930\u094D\u092F \u0906\u0935\u0902\u091F\u0928 \u0930\u0941\u0915 \u0938\u0915\u0924\u0947 \u0939\u0948\u0902\u0964 \u092A\u0942\u0930\u094D\u0923 \u092A\u093E\u0930\u094D\u091F\u0928\u0930 \u0938\u094D\u0925\u093F\u0924\u093F \u092C\u0939\u093E\u0932 \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F \u092A\u0941\u0928\u0930\u094D\u092A\u094D\u0930\u0936\u093F\u0915\u094D\u0937\u0923 \u092A\u0942\u0930\u093E \u0915\u0930\u0947\u0902\u0964 \u0905\u092A\u0928\u0947 \u095B\u094B\u0928 \u092E\u0948\u0928\u0947\u091C\u0930 \u0938\u0947 \u0938\u0902\u092A\u0930\u094D\u0915 \u0915\u0930\u0947\u0902\u0964',
+  },
+
+  // ---- Wallet Frozen ----
+  'walletFrozen.title': { en: 'Wallet Frozen', hi: '\u0935\u0949\u0932\u0947\u091F \u092B\u094D\u0930\u0940\u095B' },
+  'walletFrozen.desc': {
+    en: 'Withdrawals are disabled. Settlements will accumulate but cannot be withdrawn until the investigation is resolved.',
+    hi: '\u0928\u093F\u0915\u093E\u0938\u0940 \u0905\u0915\u094D\u0937\u092E \u0939\u0948\u0964 \u0938\u0947\u091F\u0932\u092E\u0947\u0902\u091F \u091C\u092E\u093E \u0939\u094B\u0924\u0947 \u0930\u0939\u0947\u0902\u0917\u0947 \u0932\u0947\u0915\u093F\u0928 \u091C\u093E\u0902\u091A \u092A\u0942\u0930\u0940 \u0939\u094B\u0928\u0947 \u0924\u0915 \u0928\u093F\u0915\u093E\u0932\u0947 \u0928\u0939\u0940\u0902 \u091C\u093E \u0938\u0915\u0924\u0947\u0964',
+  },
+
+  // ---- Profile: Offer Notifications ----
+  'profile.offerNotifications': { en: 'Offer Notifications', hi: '\u0911\u092B\u0930 \u0938\u0942\u091A\u0928\u093E' },
+  'profile.offerToggleConsequence': {
+    en: 'You will not receive new connection offers. Your active base will not grow until you turn this back on.',
+    hi: '\u0906\u092A\u0915\u094B \u0928\u090F \u0915\u0928\u0947\u0915\u094D\u0936\u0928 \u0911\u092B\u0930 \u0928\u0939\u0940\u0902 \u092E\u093F\u0932\u0947\u0902\u0917\u0947\u0964 \u091C\u092C \u0924\u0915 \u0906\u092A \u0907\u0938\u0947 \u0935\u093E\u092A\u0938 \u091A\u093E\u0932\u0942 \u0928\u0939\u0940\u0902 \u0915\u0930\u0924\u0947, \u0906\u092A\u0915\u093E \u0938\u0915\u094D\u0930\u093F\u092F \u092C\u0947\u0938 \u0928\u0939\u0940\u0902 \u092C\u0922\u093C\u0947\u0917\u093E\u0964',
+  },
+
   // ---- Home page ----
   'home.offerNotifications': { en: 'Offer notifications:', hi: '\u0911\u092B\u0930 \u0938\u0942\u091A\u0928\u093E:' },
   'home.on': { en: 'ON', hi: '\u091A\u093E\u0932\u0942' },
   'home.off': { en: 'OFF', hi: '\u092C\u0902\u0926' },
+
+  // ---- Technician App ----
+  'tech.appTitle': { en: 'Wiom Technician', hi: 'Wiom \u091F\u0947\u0915\u094D\u0928\u0940\u0936\u093F\u092F\u0928' },
+  'tech.selectProfile': { en: 'Select your profile to continue', hi: '\u091C\u093E\u0930\u0940 \u0930\u0916\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F \u0905\u092A\u0928\u0940 \u092A\u094D\u0930\u094B\u092B\u093E\u0907\u0932 \u091A\u0941\u0928\u0947\u0902' },
+  'tech.onlyCSP': { en: 'Only technicians added by your CSP can log in.', hi: '\u0915\u0947\u0935\u0932 \u0906\u092A\u0915\u0947 CSP \u0926\u094D\u0935\u093E\u0930\u093E \u091C\u094B\u0921\u093C\u0947 \u0917\u090F \u091F\u0947\u0915\u094D\u0928\u0940\u0936\u093F\u092F\u0928 \u0932\u0949\u0917\u0907\u0928 \u0915\u0930 \u0938\u0915\u0924\u0947 \u0939\u0948\u0902\u0964' },
+  'tech.activeTasks': { en: 'Active Tasks', hi: '\u0938\u0915\u094D\u0930\u093F\u092F \u0915\u093E\u0930\u094D\u092F' },
+  'tech.completed': { en: 'Completed', hi: '\u092A\u0942\u0930\u094D\u0923' },
+  'tech.noActive': { en: 'No active tasks right now', hi: '\u0905\u092D\u0940 \u0915\u094B\u0908 \u0938\u0915\u094D\u0930\u093F\u092F \u0915\u093E\u0930\u094D\u092F \u0928\u0939\u0940\u0902' },
+  'tech.available': { en: 'Available', hi: '\u0909\u092A\u0932\u092C\u094D\u0927' },
+  'tech.unavailable': { en: 'Unavailable', hi: '\u0905\u0928\u0941\u092A\u0932\u092C\u094D\u0927' },
+  'tech.profile': { en: 'Profile', hi: '\u092A\u094D\u0930\u094B\u092B\u093E\u0907\u0932' },
+  'tech.stats': { en: 'Stats', hi: '\u0906\u0901\u0915\u0921\u093C\u0947' },
+  'tech.logout': { en: 'Logout', hi: '\u0932\u0949\u0917\u0906\u0909\u091F' },
+  'tech.accept': { en: 'Accept Assignment', hi: '\u0905\u0938\u093E\u0907\u0928\u092E\u0947\u0902\u091F \u0938\u094D\u0935\u0940\u0915\u093E\u0930 \u0915\u0930\u0947\u0902' },
+  'tech.startWork': { en: 'Start Work', hi: '\u0915\u093E\u092E \u0936\u0941\u0930\u0942 \u0915\u0930\u0947\u0902' },
+  'tech.markInstalled': { en: 'Mark Installed', hi: '\u0907\u0902\u0938\u094D\u091F\u0949\u0932 \u0915\u093F\u092F\u093E' },
+  'tech.resolve': { en: 'Resolve', hi: '\u0939\u0932 \u0915\u0930\u0947\u0902' },
+  'tech.markCollected': { en: 'Mark Collected', hi: '\u0915\u0932\u0947\u0915\u094D\u091F \u0915\u093F\u092F\u093E' },
+  'tech.confirmReturn': { en: 'Confirm Return', hi: '\u0935\u093E\u092A\u0938\u0940 \u092A\u0941\u0937\u094D\u091F\u093F \u0915\u0930\u0947\u0902' },
+  'tech.timeline': { en: 'Timeline', hi: '\u0938\u092E\u092F\u0930\u0947\u0916\u093E' },
+  'tech.back': { en: 'Back', hi: '\u0935\u093E\u092A\u0938' },
+
+  // ---- Support Confirmation ----
+  'support.receiptTitle': { en: 'Case Submitted', hi: '\u0915\u0947\u0938 \u0938\u092C\u092E\u093F\u091F \u0939\u094B \u0917\u092F\u093E' },
+  'support.receiptDesc': {
+    en: 'Your support case has been submitted. Expect a response within 24 hours.',
+    hi: '\u0906\u092A\u0915\u093E \u0938\u092A\u094B\u0930\u094D\u091F \u0915\u0947\u0938 \u0938\u092C\u092E\u093F\u091F \u0939\u094B \u0917\u092F\u093E \u0939\u0948\u0964 24 \u0918\u0902\u091F\u0947 \u0915\u0947 \u0905\u0902\u0926\u0930 \u091C\u0935\u093E\u092C \u0915\u0940 \u0909\u092E\u094D\u092E\u0940\u0926 \u0915\u0930\u0947\u0902\u0964',
+  },
+  'support.backToSupport': { en: 'Back to Support', hi: '\u0938\u092A\u094B\u0930\u094D\u091F \u092A\u0930 \u0935\u093E\u092A\u0938' },
+
+  // ---- Consequence Label ----
+  'consequence.label': { en: 'What this means:', hi: '\u0907\u0938\u0915\u093E \u092E\u0924\u0932\u092C:' },
+
+  // ---- Lifetime Earnings ----
+  'assurance.lifetimeEarned': { en: 'Lifetime Earned', hi: '\u0915\u0941\u0932 \u0915\u092E\u093E\u0908' },
 };
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import type { WalletTransaction } from '@/lib/types';
+import { useState, useEffect, useRef } from 'react';
+import type { WalletTransaction, WalletState } from '@/lib/types';
 import { getWalletState, getAssuranceState } from '@/lib/data';
 
 interface WalletHubProps {
@@ -37,6 +37,8 @@ function getTypeBadge(type: WalletTransaction['type']): { label: string; color: 
       return { label: 'Withdrawal', color: 'var(--negative)', bg: 'var(--negative-subtle)' };
     case 'TOP_UP':
       return { label: 'Top Up', color: 'var(--brand-primary)', bg: 'var(--brand-subtle)' };
+    case 'DEDUCTION':
+      return { label: 'Deduction', color: 'var(--negative)', bg: 'var(--negative-subtle)' };
   }
 }
 
@@ -54,11 +56,38 @@ function getStatusBadge(status: WalletTransaction['status']): { color: string; b
 const PAYMENT_METHODS = ['UPI', 'Net Banking', 'Debit Card'];
 
 export default function WalletHub({ onBack }: WalletHubProps) {
-  const wallet = getWalletState();
+  const [walletData, setWalletData] = useState<WalletState>(getWalletState());
+  const wallet = walletData;
   const assurance = getAssuranceState();
   const [step, setStep] = useState<FlowStep>('hub');
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
+  const walletPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Force-back to hub if wallet freezes mid-withdraw flow
+  useEffect(() => {
+    if (wallet.frozen && step.startsWith('withdraw_')) {
+      setStep('hub');
+      setAmount('');
+    }
+  }, [wallet.frozen, step]);
+
+  // Poll wallet state for cross-device freeze sync
+  useEffect(() => {
+    walletPollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/wallet');
+        const data: WalletState = await res.json();
+        if (data) setWalletData(data);
+      } catch {
+        // API not available, use local
+        setWalletData(getWalletState());
+      }
+    }, 2000);
+    return () => {
+      if (walletPollRef.current) clearInterval(walletPollRef.current);
+    };
+  }, []);
 
   // Derived financial data
   const settlements = wallet.transactions.filter((t) => t.type === 'SETTLEMENT' && t.status === 'COMPLETED');
@@ -78,6 +107,7 @@ export default function WalletHub({ onBack }: WalletHubProps) {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    animation: 'slideUpIn 0.25s ease',
   };
 
   const headerStyle: React.CSSProperties = {
@@ -190,6 +220,32 @@ export default function WalletHub({ onBack }: WalletHubProps) {
         </div>
 
         <div style={scrollStyle}>
+          {/* Wallet Frozen Banner */}
+          {wallet.frozen && (
+            <div
+              style={{
+                background: 'var(--negative-subtle)',
+                border: '1px solid var(--negative)',
+                borderRadius: 10,
+                padding: '14px 16px',
+                marginBottom: 12,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+              }}
+            >
+              <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1.2 }}>{'\u2744'}</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--negative)', marginBottom: 4 }}>
+                  Wallet Frozen
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  {wallet.frozen_reason || 'Withdrawals are disabled. Settlements will accumulate but cannot be withdrawn until the investigation is resolved.'}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Balance Card */}
           <div
             style={{
@@ -214,8 +270,12 @@ export default function WalletHub({ onBack }: WalletHubProps) {
           {/* Action buttons */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 4, marginTop: 16 }}>
             <button
-              onClick={() => setStep('withdraw_amount')}
-              style={{ ...btnOutline, flex: 1 }}
+              onClick={() => { if (!wallet.frozen) setStep('withdraw_amount'); }}
+              style={{
+                ...btnOutline,
+                flex: 1,
+                ...(wallet.frozen ? { opacity: 0.4, cursor: 'not-allowed', color: 'var(--text-muted)', borderColor: 'var(--border-subtle)' } : {}),
+              }}
             >
               Withdraw
             </button>
@@ -429,13 +489,14 @@ export default function WalletHub({ onBack }: WalletHubProps) {
           </div>
           <button
             onClick={() => {
-              if (Number(amount) > 0 && Number(amount) <= wallet.balance) {
+              if (!wallet.frozen && Number(amount) > 0 && Number(amount) <= wallet.balance) {
                 setStep('withdraw_confirm');
               }
             }}
             style={{
               ...btnPrimary,
-              opacity: Number(amount) > 0 && Number(amount) <= wallet.balance ? 1 : 0.4,
+              opacity: !wallet.frozen && Number(amount) > 0 && Number(amount) <= wallet.balance ? 1 : 0.4,
+              ...(wallet.frozen ? { cursor: 'not-allowed' } : {}),
             }}
           >
             Continue
@@ -467,7 +528,13 @@ export default function WalletHub({ onBack }: WalletHubProps) {
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>To</div>
             <div style={{ fontSize: 14, color: 'var(--text-primary)' }}>HDFC Bank ***4421</div>
           </div>
-          <button onClick={() => setStep('withdraw_receipt')} style={btnPrimary}>
+          <button
+            onClick={() => { if (!wallet.frozen) setStep('withdraw_receipt'); }}
+            style={{
+              ...btnPrimary,
+              ...(wallet.frozen ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+            }}
+          >
             Confirm Withdrawal
           </button>
         </div>

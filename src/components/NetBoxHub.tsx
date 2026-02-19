@@ -92,6 +92,7 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    animation: 'slideUpIn 0.25s ease',
   };
 
   const headerStyle: React.CSSProperties = {

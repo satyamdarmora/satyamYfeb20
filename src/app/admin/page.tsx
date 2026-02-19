@@ -15,7 +15,10 @@ import {
   updateTask,
   getBucket,
   sortTasksByQueue,
+  getTechnicians,
+  getTasksForTechnician,
 } from '@/lib/data';
+import type { Technician } from '@/lib/types';
 import { useTheme } from '@/lib/theme';
 
 const AREAS = [
@@ -83,12 +86,16 @@ export default function AdminPage() {
   const [formCreatedBy, setFormCreatedBy] = useState<CreatedBy>('SYSTEM');
   const [formReason, setFormReason] = useState(MANUAL_REASONS[0]);
 
+  const [techList, setTechList] = useState<Technician[]>([]);
+
   useEffect(() => {
     setTasks(sortTasksByQueue(getAllTasks()));
+    setTechList(getTechnicians());
   }, []);
 
   const refresh = useCallback(() => {
     setTasks(sortTasksByQueue(getAllTasks()));
+    setTechList(getTechnicians());
   }, []);
 
   const showNotification = useCallback((msg: string) => {
@@ -379,6 +386,160 @@ export default function AdminPage() {
     showNotification(`Offer ${offeredTask.task_id} claimed by another CSP. Notification sent.`);
   }, [tasks, refresh, showNotification]);
 
+  const handleTriggerCapabilityReset = useCallback(async () => {
+    await fetch('/api/assurance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        capability_reset_active: true,
+        capability_reset_reason: 'Task assignments may be paused. Complete retraining to restore full partner status. Contact your zone manager.',
+        sla_standing: 'At Risk',
+      }),
+    });
+    await fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: 'NOTIF-' + Date.now(),
+        type: 'CAPABILITY_RESET',
+        title: 'Capability Reset Program',
+        message: 'Task assignments may be paused. Complete retraining to restore full partner status. Contact your zone manager.',
+        timestamp: new Date().toISOString(),
+        dismissed: false,
+      }),
+    });
+    showNotification('Capability reset triggered. CSP will see persistent banner and notification.');
+  }, [showNotification]);
+
+  const handleClearCapabilityReset = useCallback(async () => {
+    await fetch('/api/assurance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capability_reset_active: false, capability_reset_reason: undefined }),
+    });
+    showNotification('Capability reset cleared. Banner removed from CSP app.');
+  }, [showNotification]);
+
+  const handleTriggerQualityBonus = useCallback(async () => {
+    const bonusAmount = 750;
+    // Add BONUS transaction to wallet
+    let currentBalance = 14200;
+    try {
+      const walletRes = await fetch('/api/wallet');
+      const walletData = await walletRes.json();
+      currentBalance = walletData.balance ?? 14200;
+    } catch { /* use default */ }
+    await fetch('/api/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        balance: currentBalance + bonusAmount,
+        new_transaction: {
+          id: 'TXN-BON-' + Date.now(),
+          date: new Date().toISOString(),
+          type: 'BONUS',
+          amount: bonusAmount,
+          description: 'Monthly SLA quality bonus — 100% restore compliance',
+          status: 'COMPLETED',
+        },
+      }),
+    });
+    // Increment cycle_earned
+    await fetch('/api/assurance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ increment_cycle_earned: bonusAmount }),
+    });
+    // Send notification
+    await fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: 'NOTIF-' + Date.now(),
+        type: 'SETTLEMENT_CREDIT',
+        title: 'Monthly Quality Bonus',
+        amount: bonusAmount,
+        message: 'Monthly SLA quality bonus \u2014 100% restore compliance',
+        timestamp: new Date().toISOString(),
+        dismissed: false,
+      }),
+    });
+    showNotification('\u20B9750 quality bonus triggered.');
+  }, [showNotification]);
+
+  const handleFreezeWallet = useCallback(async () => {
+    await fetch('/api/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        frozen: true,
+        frozen_reason: 'Wallet frozen due to pending complaint investigation.',
+      }),
+    });
+    await fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: 'NOTIF-' + Date.now(),
+        type: 'WALLET_FROZEN',
+        title: 'Wallet Frozen',
+        message: 'Withdrawals are disabled. Settlements will accumulate but cannot be withdrawn until the investigation is resolved.',
+        timestamp: new Date().toISOString(),
+        dismissed: false,
+      }),
+    });
+    showNotification('Wallet frozen. CSP will see freeze banner and notification.');
+  }, [showNotification]);
+
+  const handleUnfreezeWallet = useCallback(async () => {
+    await fetch('/api/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frozen: false, frozen_reason: undefined }),
+    });
+    showNotification('Wallet unfrozen. Withdrawals re-enabled for CSP.');
+  }, [showNotification]);
+
+  const handleNetboxRecoveryDeduction = useCallback(async () => {
+    const deductionAmount = 3500;
+    // First fetch current balance, then deduct
+    let currentBalance = 14200;
+    try {
+      const walletRes = await fetch('/api/wallet');
+      const walletData = await walletRes.json();
+      currentBalance = walletData.balance ?? 14200;
+    } catch { /* use default */ }
+    await fetch('/api/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        balance: Math.max(0, currentBalance - deductionAmount),
+        new_transaction: {
+          id: 'TXN-DED-' + Date.now(),
+          date: new Date().toISOString(),
+          type: 'DEDUCTION',
+          amount: -deductionAmount,
+          description: 'NetBox recovery deduction -- lost NB-MH-0455',
+          status: 'COMPLETED',
+        },
+      }),
+    });
+    await fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: 'NOTIF-' + Date.now(),
+        type: 'NETBOX_RECOVERY_DEDUCTION',
+        title: 'NetBox Recovery Deduction',
+        amount: deductionAmount,
+        message: `\u20B93,500 deducted from your available balance for lost NetBox NB-MH-0455. Raise a support ticket within 7 days to dispute.`,
+        timestamp: new Date().toISOString(),
+        dismissed: false,
+      }),
+    });
+    showNotification('NetBox recovery deduction of \u20B93,500 applied. Notification sent to CSP.');
+  }, [showNotification]);
+
   const handleSendSlaWarning = useCallback(async () => {
     await fetch('/api/notifications', {
       method: 'POST',
@@ -568,6 +729,84 @@ export default function AdminPage() {
           <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--warning)' }}>
             {pendingTasks}
           </div>
+        </div>
+      </div>
+
+      {/* Technician Activity */}
+      <div
+        style={{
+          background: 'var(--bg-secondary)',
+          borderRadius: 12,
+          padding: 24,
+          marginBottom: 32,
+        }}
+      >
+        <h2
+          style={{
+            fontSize: 16,
+            fontWeight: 600,
+            margin: '0 0 16px',
+            color: 'var(--text-primary)',
+          }}
+        >
+          Technician Activity
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+          {techList.map((t) => {
+            const techTasks = getTasksForTechnician(t.id);
+            const terminal = ['RESOLVED', 'VERIFIED', 'ACTIVATION_VERIFIED', 'RETURN_CONFIRMED', 'FAILED', 'UNRESOLVED', 'LOST_DECLARED'];
+            const activeTaskCount = techTasks.filter((tk) => !terminal.includes(tk.state)).length;
+            const currentTask = techTasks.find((tk) => !terminal.includes(tk.state));
+            return (
+              <div
+                key={t.id}
+                style={{
+                  background: 'var(--bg-card)',
+                  borderRadius: 10,
+                  padding: '14px 16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      background: t.available ? 'var(--positive)' : 'var(--text-muted)',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{t.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {t.id} &middot; Band {t.band}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <span style={{ fontWeight: 600, color: activeTaskCount > 0 ? 'var(--brand-primary)' : 'var(--text-muted)' }}>
+                    {activeTaskCount} active
+                  </span>
+                  {' \u00B7 '}
+                  <span>{t.completed_count} completed</span>
+                </div>
+                {currentTask && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 11,
+                      color: 'var(--text-muted)',
+                      background: 'var(--bg-primary)',
+                      borderRadius: 6,
+                      padding: '6px 10px',
+                    }}
+                  >
+                    Current: {currentTask.task_type} {currentTask.task_id} ({currentTask.state})
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -914,6 +1153,273 @@ export default function AdminPage() {
                   Simulates another CSP claiming an offered connection first. CSP gets a notification that the offer is no longer available.
                 </div>
               </button>
+
+              {/* Partner Alert & Wallet Action Triggers */}
+              <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+                  Partner Alerts & Wallet Actions
+                </div>
+              </div>
+
+              <button
+                onClick={handleTriggerCapabilityReset}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(255, 128, 0, 0.08)',
+                  border: '1px solid rgba(255, 128, 0, 0.25)',
+                  borderRadius: 8,
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--warning)' }}>
+                  Trigger Capability Reset
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Activates a capability reset program. CSP sees a persistent warning banner and SLA drops to At Risk.
+                </div>
+              </button>
+
+              <button
+                onClick={handleClearCapabilityReset}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(0, 128, 67, 0.08)',
+                  border: '1px solid rgba(0, 128, 67, 0.25)',
+                  borderRadius: 8,
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--positive)' }}>
+                  Clear Capability Reset
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Clears the capability reset. Warning banner disappears from CSP app.
+                </div>
+              </button>
+
+              <button
+                onClick={handleTriggerQualityBonus}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(0, 128, 67, 0.08)',
+                  border: '1px solid rgba(0, 128, 67, 0.25)',
+                  borderRadius: 8,
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--positive)' }}>
+                  Trigger Monthly Quality Bonus {'\u20B9'}750
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Credits {'\u20B9'}750 quality bonus to wallet, increments cycle earnings, and sends notification to CSP.
+                </div>
+              </button>
+
+              <button
+                onClick={handleFreezeWallet}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(224, 30, 0, 0.08)',
+                  border: '1px solid rgba(224, 30, 0, 0.25)',
+                  borderRadius: 8,
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--negative)' }}>
+                  Freeze Wallet
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Freezes the CSP wallet. Withdrawals disabled, settlements accumulate. Investigation notification sent.
+                </div>
+              </button>
+
+              <button
+                onClick={handleUnfreezeWallet}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(0, 128, 67, 0.08)',
+                  border: '1px solid rgba(0, 128, 67, 0.25)',
+                  borderRadius: 8,
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--positive)' }}>
+                  Unfreeze Wallet
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Unfreezes the wallet. Withdrawals re-enabled for the CSP.
+                </div>
+              </button>
+
+              <button
+                onClick={handleNetboxRecoveryDeduction}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(224, 30, 0, 0.08)',
+                  border: '1px solid rgba(224, 30, 0, 0.25)',
+                  borderRadius: 8,
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--negative)' }}>
+                  NetBox Recovery Deduction {'\u20B9'}3,500
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Deducts {'\u20B9'}3,500 for lost NetBox NB-MH-0455. Shows as DEDUCTION transaction in wallet. CSP notified with dispute window.
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* SLA & Exposure Triggers */}
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: 12,
+            padding: 24,
+            marginTop: 24,
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'var(--text-primary)' }}>
+              SLA & Exposure Controls
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+              Change the CSP&apos;s SLA standing and exposure state. Updates reflect on the assurance strip in real-time.
+            </p>
+
+            {/* SLA Standing */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>SLA Standing</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['Compliant', 'At Risk', 'Non-Compliant'] as const).map((val) => {
+                  const colors: Record<string, string> = { 'Compliant': 'var(--positive)', 'At Risk': 'var(--warning)', 'Non-Compliant': 'var(--negative)' };
+                  return (
+                    <button
+                      key={val}
+                      onClick={async () => {
+                        await fetch('/api/assurance', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ sla_standing: val }),
+                        });
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '10px 8px',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: 'var(--bg-card)',
+                        color: colors[val],
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {val}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Exposure State */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>Exposure State</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['ELIGIBLE', 'LIMITED', 'INELIGIBLE'] as const).map((val) => {
+                  const colors: Record<string, string> = { 'ELIGIBLE': 'var(--positive)', 'LIMITED': 'var(--warning)', 'INELIGIBLE': 'var(--negative)' };
+                  const reasons: Record<string, string> = {
+                    'ELIGIBLE': 'All SLA metrics within threshold for the current cycle.',
+                    'LIMITED': 'Restore SLA breached. New offers limited to INSTALL only.',
+                    'INELIGIBLE': 'Multiple SLA breaches. No new offers until compliance restored.',
+                  };
+                  return (
+                    <button
+                      key={val}
+                      onClick={async () => {
+                        await fetch('/api/assurance', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ exposure_state: val, exposure_reason: reasons[val] }),
+                        });
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '10px 8px',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: 'var(--bg-card)',
+                        color: colors[val],
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {val}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active Base quick set */}
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>Active Base</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[10, 25, 42, 60, 100].map((val) => (
+                  <button
+                    key={val}
+                    onClick={async () => {
+                      await fetch('/api/assurance', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ active_base: val }),
+                      });
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px 4px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: 'var(--bg-card)',
+                      color: 'var(--text-primary)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {val}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

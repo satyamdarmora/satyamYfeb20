@@ -7,6 +7,7 @@ import DrillDown from './DrillDown';
 
 interface AssuranceStripProps {
   assuranceState: AssuranceState;
+  lifetimeEarnings?: number;
 }
 
 function formatDate(dateStr: string): string {
@@ -35,7 +36,7 @@ function formatRelativeDate(dateStr: string): string {
 
 type DrillDownType = 'activeBase' | 'earnings' | 'sla' | 'exposure' | null;
 
-export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) {
+export default function AssuranceStrip({ assuranceState, lifetimeEarnings }: AssuranceStripProps) {
   const { t } = useI18n();
   const [openDrill, setOpenDrill] = useState<DrillDownType>(null);
 
@@ -53,31 +54,19 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
         ? 'var(--warning)'
         : 'var(--negative)';
 
-  const chipStyle: React.CSSProperties = {
-    background: 'var(--bg-card)',
-    borderRadius: 10,
-    padding: '12px 14px',
-    cursor: 'pointer',
-    userSelect: 'none',
-    minWidth: 0,
-    transition: 'background 0.15s ease',
-  };
+  const slaDisplay =
+    assuranceState.sla_standing === 'Compliant'
+      ? t('sla.compliant')
+      : assuranceState.sla_standing === 'At Risk'
+        ? t('sla.atRisk')
+        : t('sla.nonCompliant');
 
-  const labelStyle: React.CSSProperties = {
-    fontSize: 11,
-    fontWeight: 500,
-    color: 'var(--text-secondary)',
-    marginBottom: 4,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  };
-
-  const valueStyle: React.CSSProperties = {
-    fontSize: 18,
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-    lineHeight: 1.2,
-  };
+  const exposureDisplay =
+    assuranceState.exposure_state === 'ELIGIBLE'
+      ? t('exposure.eligible')
+      : assuranceState.exposure_state === 'LIMITED'
+        ? t('exposure.limited')
+        : t('exposure.ineligible');
 
   const drillLabelStyle: React.CSSProperties = {
     fontSize: 12,
@@ -101,72 +90,116 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
     fontSize: 13,
   };
 
-  // Translate SLA standing
-  const slaDisplay =
-    assuranceState.sla_standing === 'Compliant'
-      ? t('sla.compliant')
-      : assuranceState.sla_standing === 'At Risk'
-        ? t('sla.atRisk')
-        : t('sla.nonCompliant');
-
-  // Translate exposure state
-  const exposureDisplay =
-    assuranceState.exposure_state === 'ELIGIBLE'
-      ? t('exposure.eligible')
-      : assuranceState.exposure_state === 'LIMITED'
-        ? t('exposure.limited')
-        : t('exposure.ineligible');
-
   return (
     <>
+      {/* Assurance Strip: 2 metric cards + stacked SLA/Exposure */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
+          gridTemplateColumns: '1fr 1fr auto',
           gap: 10,
-          padding: '12px 16px',
+          padding: '16px 20px',
           background: 'var(--strip-bg)',
         }}
       >
         {/* Active Base */}
         <div
-          style={chipStyle}
           onClick={() => setOpenDrill('activeBase')}
+          style={{
+            background: 'var(--bg-card)',
+            borderRadius: 12,
+            padding: '14px 16px',
+            border: '1px solid var(--border-subtle)',
+            cursor: 'pointer',
+          }}
         >
-          <div style={labelStyle}>{t('assurance.activeBase')}</div>
-          <div style={valueStyle}>{assuranceState.active_base}</div>
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 6 }}>
+            {t('assurance.activeBase')}
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+            {assuranceState.active_base}
+          </div>
         </div>
 
         {/* Earnings */}
         <div
-          style={chipStyle}
           onClick={() => setOpenDrill('earnings')}
+          style={{
+            background: 'var(--bg-card)',
+            borderRadius: 12,
+            padding: '14px 16px',
+            border: '1px solid var(--border-subtle)',
+            cursor: 'pointer',
+          }}
         >
-          <div style={labelStyle}>{t('assurance.cycleEarnings')}</div>
-          <div style={{ ...valueStyle, color: 'var(--money)' }}>
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 6 }}>
+            {t('assurance.cycleEarnings')}
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.1 }}>
             {'\u20B9'}{formatCurrency(assuranceState.cycle_earned)}
           </div>
         </div>
 
-        {/* SLA Standing */}
-        <div
-          style={chipStyle}
-          onClick={() => setOpenDrill('sla')}
-        >
-          <div style={labelStyle}>{t('assurance.slaStanding')}</div>
-          <div style={{ ...valueStyle, color: slaColor, fontSize: 15 }}>
-            {slaDisplay}
+        {/* SLA + Exposure stacked */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* SLA */}
+          <div
+            onClick={() => setOpenDrill('sla')}
+            style={{
+              flex: 1,
+              background: 'var(--bg-card)',
+              borderRadius: 10,
+              padding: '6px 14px',
+              border: '1px solid var(--border-subtle)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: slaColor,
+                boxShadow: `0 0 6px ${slaColor}`,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: 0.3 }}>
+              SLA
+            </span>
           </div>
-        </div>
 
-        {/* Exposure */}
-        <div
-          style={chipStyle}
-          onClick={() => setOpenDrill('exposure')}
-        >
-          <div style={labelStyle}>{t('assurance.exposure')}</div>
-          <div style={{ ...valueStyle, color: exposureColor, fontSize: 15 }}>
-            {exposureDisplay}
+          {/* Exposure */}
+          <div
+            onClick={() => setOpenDrill('exposure')}
+            style={{
+              flex: 1,
+              background: 'var(--bg-card)',
+              borderRadius: 10,
+              padding: '6px 14px',
+              border: '1px solid var(--border-subtle)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: exposureColor,
+                boxShadow: `0 0 6px ${exposureColor}`,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: 0.3 }}>
+              {t('assurance.exposure')}
+            </span>
           </div>
         </div>
       </div>
@@ -215,7 +248,7 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
         ))}
       </DrillDown>
 
-      {/* Earnings Drill-Down -- cycle-only on Home (operational surface) */}
+      {/* Earnings Drill-Down */}
       <DrillDown
         isOpen={openDrill === 'earnings'}
         onClose={() => setOpenDrill(null)}
@@ -234,6 +267,16 @@ export default function AssuranceStrip({ assuranceState }: AssuranceStripProps) 
           {'\u20B9'}{formatCurrency(assuranceState.next_settlement_amount)} on{' '}
           {formatDate(assuranceState.next_settlement_date)}
         </div>
+
+        {lifetimeEarnings != null && (
+          <>
+            <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 8, marginBottom: 12 }} />
+            <div style={drillLabelStyle}>{t('assurance.lifetimeEarned')}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--money)', marginBottom: 16 }}>
+              {'\u20B9'}{formatCurrency(lifetimeEarnings)}
+            </div>
+          </>
+        )}
 
         <div
           style={{

@@ -126,7 +126,7 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
   ];
 
   const chipBaseStyle: React.CSSProperties = {
-    padding: '6px 14px',
+    padding: '8px 16px',
     borderRadius: 20,
     fontSize: 12,
     fontWeight: 600,
@@ -134,14 +134,16 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
     border: 'none',
     transition: 'all 0.15s ease',
     userSelect: 'none',
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
   };
 
   const sectionHeaderStyle: React.CSSProperties = {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
-    color: 'var(--text-secondary)',
+    color: 'var(--text-muted)',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     padding: '16px 0 8px',
   };
 
@@ -149,12 +151,13 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
   const fadingZoneA = [...fadingTasks.values()].filter((t) => t.state !== 'OFFERED');
 
   return (
-    <div style={{ padding: '0 16px' }}>
+    <div style={{ padding: '0 20px' }}>
       {/* Filter chips */}
       <div
         style={{
           display: 'flex',
-          gap: 8,
+          flexWrap: 'nowrap',
+          gap: 10,
           padding: '12px 0',
           overflowX: 'auto',
         }}
@@ -323,7 +326,7 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
       ))}
 
       {/* Bottom spacing */}
-      <div style={{ height: 80 }} />
+      <div style={{ height: 100 }} />
     </div>
   );
 }

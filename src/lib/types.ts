@@ -128,6 +128,8 @@ export interface AssuranceState {
   earnings_events: EarningsEvent[];
   active_restores: number;
   unresolved_count: number;
+  capability_reset_active: boolean;
+  capability_reset_reason?: string;
 }
 
 // ---- Technicians ------------------------------------------------------------
@@ -137,6 +139,15 @@ export interface Technician {
   name: string;
   band: 'A' | 'B' | 'C';
   available: boolean;
+  csp_id: string;
+  phone: string;
+  join_date: string;
+  completed_count: number;
+}
+
+export interface TechnicianAuth {
+  tech_id: string;
+  logged_in: boolean;
 }
 
 // ---- Queue Bucket -----------------------------------------------------------
@@ -147,7 +158,7 @@ export type QueueBucket = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export interface WalletTransaction {
   id: string;
   date: string;
-  type: 'SETTLEMENT' | 'BONUS' | 'WITHDRAWAL' | 'TOP_UP';
+  type: 'SETTLEMENT' | 'BONUS' | 'WITHDRAWAL' | 'TOP_UP' | 'DEDUCTION';
   amount: number;
   description: string;
   status: 'COMPLETED' | 'PENDING' | 'FAILED';
@@ -157,6 +168,8 @@ export interface WalletState {
   balance: number;
   pending_settlement: number;
   transactions: WalletTransaction[];
+  frozen: boolean;
+  frozen_reason?: string;
 }
 
 // ---- Support Cases --------------------------------------------------------
@@ -171,7 +184,7 @@ export interface SupportCase {
 }
 
 // ---- Notifications / Event Modals ----------------------------------------
-export type NotificationType = 'PAYMENT_RECEIVED' | 'SETTLEMENT_CREDIT' | 'NEW_OFFER' | 'HIGH_RESTORE_ALERT' | 'SLA_WARNING' | 'GENERAL';
+export type NotificationType = 'PAYMENT_RECEIVED' | 'SETTLEMENT_CREDIT' | 'NEW_OFFER' | 'HIGH_RESTORE_ALERT' | 'SLA_WARNING' | 'GENERAL' | 'CAPABILITY_RESET' | 'WALLET_FROZEN' | 'NETBOX_RECOVERY_DEDUCTION';
 
 export interface AppNotification {
   id: string;

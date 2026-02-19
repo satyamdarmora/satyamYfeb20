@@ -5,13 +5,16 @@ import { useI18n } from '@/lib/i18n';
 
 interface ProfilePageProps {
   onBack: () => void;
+  offersEnabled: boolean;
+  onOffersToggle: (v: boolean) => void;
 }
 
-export default function ProfilePage({ onBack }: ProfilePageProps) {
+export default function ProfilePage({ onBack, offersEnabled, onOffersToggle }: ProfilePageProps) {
   const { lang, setLang, t } = useI18n();
   const [taskAlerts, setTaskAlerts] = useState(true);
   const [slaWarnings, setSlaWarnings] = useState(true);
   const [settlementUpdates, setSettlementUpdates] = useState(true);
+  const [showOfferConfirm, setShowOfferConfirm] = useState(false);
 
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
@@ -21,6 +24,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    animation: 'slideUpIn 0.25s ease',
   };
 
   const headerStyle: React.CSSProperties = {
@@ -197,6 +201,107 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
         {toggleRow(t('profile.taskAlerts'), taskAlerts, setTaskAlerts)}
         {toggleRow(t('profile.slaWarnings'), slaWarnings, setSlaWarnings)}
         {toggleRow(t('profile.settlementUpdates'), settlementUpdates, setSettlementUpdates)}
+
+        {/* Offer Notifications Toggle with confirmation */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '14px 0',
+            borderBottom: '1px solid var(--border-subtle)',
+          }}
+        >
+          <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{t('profile.offerNotifications')}</span>
+          <button
+            onClick={() => {
+              if (offersEnabled) {
+                // Turning OFF -- show confirmation
+                setShowOfferConfirm(true);
+              } else {
+                // Turning ON -- no confirmation needed
+                onOffersToggle(true);
+              }
+            }}
+            style={{
+              width: 48,
+              height: 28,
+              borderRadius: 14,
+              border: 'none',
+              background: offersEnabled ? 'var(--brand-primary)' : 'var(--bg-secondary)',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'background 0.2s',
+            }}
+          >
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: '#FFFFFF',
+                position: 'absolute',
+                top: 3,
+                left: offersEnabled ? 23 : 3,
+                transition: 'left 0.2s',
+              }}
+            />
+          </button>
+        </div>
+
+        {/* Offer toggle OFF confirmation */}
+        {showOfferConfirm && (
+          <div
+            style={{
+              background: 'rgba(255,128,0,0.08)',
+              border: '1px solid rgba(255,128,0,0.25)',
+              borderRadius: 10,
+              padding: '14px 16px',
+              marginTop: 8,
+            }}
+          >
+            <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5, marginBottom: 12 }}>
+              {t('profile.offerToggleConsequence')}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setShowOfferConfirm(false)}
+                style={{
+                  flex: 1,
+                  padding: '10px 0',
+                  borderRadius: 8,
+                  border: '1px solid var(--border-subtle)',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onOffersToggle(false);
+                  setShowOfferConfirm(false);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 0',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'var(--warning)',
+                  color: '#FFFFFF',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Account Info */}
         <div style={sectionTitle}>{t('profile.accountInfo')}</div>

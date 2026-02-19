@@ -200,6 +200,7 @@ export default function PoliciesPage({ onBack }: PoliciesPageProps) {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    animation: 'slideUpIn 0.25s ease',
   };
 
   const headerStyle: React.CSSProperties = {

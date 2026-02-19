@@ -127,7 +127,7 @@ function getCTA(task: Task): { label: string; action: string; urgent: boolean } 
     }
   }
 
-  // Technician is working - allow reassignment
+  // Technician assigned (not self) — CSP can only reassign, not resolve directly
   if (isInTechnicianHands(task)) {
     return { label: 'Reassign', action: 'ASSIGN', urgent: false };
   }
@@ -243,6 +243,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          animation: 'slideUpIn 0.25s ease',
         }}
       >
         <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
@@ -323,6 +324,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          animation: 'slideUpIn 0.25s ease',
         }}
       >
         <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
@@ -532,6 +534,32 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
         {/* Info Section */}
         {!isOffer && (
           <div style={{ marginBottom: 24 }}>
+            {/* Assigned person — single clean indicator */}
+            {task.assigned_to && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  marginBottom: 14,
+                  padding: '10px 14px',
+                  background: isSelfAssigned(task) ? 'var(--brand-subtle)' : 'var(--warning-subtle)',
+                  borderRadius: 8,
+                }}
+              >
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: isSelfAssigned(task) ? 'var(--brand-primary)' : 'var(--warning)',
+                }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {isSelfAssigned(task) ? 'You are working on this' : task.assigned_to}
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                  {task.delegation_state === 'IN_PROGRESS' ? 'In Progress' : task.delegation_state === 'ASSIGNED' ? 'Assigned' : task.delegation_state}
+                </span>
+              </div>
+            )}
+
             <div style={infoRowStyle}>
               <span style={{ color: 'var(--text-secondary)' }}>Priority</span>
               <span
@@ -543,28 +571,6 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
                 {task.priority}
               </span>
             </div>
-            <div style={infoRowStyle}>
-              <span style={{ color: 'var(--text-secondary)' }}>Created By</span>
-              <span style={{ color: 'var(--text-primary)' }}>{task.created_by}</span>
-            </div>
-            <div style={infoRowStyle}>
-              <span style={{ color: 'var(--text-secondary)' }}>Created At</span>
-              <span style={{ color: 'var(--text-primary)' }}>
-                {formatFullTimestamp(task.created_at)}
-              </span>
-            </div>
-            {task.assigned_to && (
-              <div style={infoRowStyle}>
-                <span style={{ color: 'var(--text-secondary)' }}>Assigned To</span>
-                <span style={{ color: 'var(--text-primary)' }}>{task.assigned_to}</span>
-              </div>
-            )}
-            {task.delegation_state !== 'UNASSIGNED' && (
-              <div style={infoRowStyle}>
-                <span style={{ color: 'var(--text-secondary)' }}>Delegation</span>
-                <span style={{ color: 'var(--text-primary)' }}>{task.delegation_state}</span>
-              </div>
-            )}
             {task.sla_deadline_at && (
               <div style={infoRowStyle}>
                 <span style={{ color: 'var(--text-secondary)' }}>SLA Deadline</span>
@@ -573,9 +579,15 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
                 </span>
               </div>
             )}
+            <div style={infoRowStyle}>
+              <span style={{ color: 'var(--text-secondary)' }}>Created</span>
+              <span style={{ color: 'var(--text-primary)' }}>
+                {formatFullTimestamp(task.created_at)}
+              </span>
+            </div>
             {task.retry_count > 0 && (
               <div style={infoRowStyle}>
-                <span style={{ color: 'var(--text-secondary)' }}>Retry Count</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Retries</span>
                 <span style={{ color: 'var(--warning)', fontWeight: 600 }}>
                   {task.retry_count}
                 </span>
@@ -583,7 +595,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
             )}
             {task.queue_escalation_flag && (
               <div style={infoRowStyle}>
-                <span style={{ color: 'var(--text-secondary)' }}>Escalation Flag</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Escalation</span>
                 <span style={{ color: 'var(--warning)', fontWeight: 600 }}>
                   {task.queue_escalation_flag}
                 </span>
@@ -591,36 +603,10 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
             )}
             {task.blocked_reason && (
               <div style={infoRowStyle}>
-                <span style={{ color: 'var(--text-secondary)' }}>Blocked Reason</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Blocked</span>
                 <span style={{ color: 'var(--negative)' }}>{task.blocked_reason}</span>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Assigned technician status (if tech is working) */}
-        {isInTechnicianHands(task) && (
-          <div
-            style={{
-              background: 'var(--warning-subtle)',
-              border: '1px solid rgba(255, 128, 0, 0.25)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              marginBottom: 20,
-            }}
-          >
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Technician Working
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warning)' }} />
-              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
-                {task.assigned_to}
-              </span>
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--warning)', fontWeight: 500 }}>
-              Status: {task.delegation_state}
-            </div>
           </div>
         )}
 
@@ -822,7 +808,7 @@ export default function TaskDetail({ task, onBack, onAction }: TaskDetailProps) 
           ) : (
             <button
               onClick={() => onAction(task.task_id, cta.action)}
-              className={cta.urgent ? 'cta-urgent' : cta.label === 'Reassign' ? 'cta-secondary' : 'cta-primary'}
+              className={cta.urgent ? 'cta-urgent' : 'cta-primary'}
               style={{
                 width: '100%',
                 padding: '14px',
