@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Wiom CSP web</string>
+
+    <!-- Assurance Strip -->
+    <string name="assurance_active_base">सक्रिय बेस</string>
+    <string name="assurance_cycle_earnings">साइकल कमाई</string>
+    <string name="assurance_sla_standing">SLA स्थिति</string>
+    <string name="assurance_exposure">एक्सपोज़र</string>
+    <string name="assurance_connections">कनेक्शन</string>
+    <string name="assurance_current_count">वर्तमान गिनती</string>
+    <string name="assurance_recent_changes">हाल के बदलाव</string>
+    <string name="assurance_cycle_earned">साइकल कमाई</string>
+    <string name="assurance_next_settlement">अगला सेटलमेंट</string>
+    <string name="assurance_cycle_note">यह केवल वर्तमान साइकल की कमाई दिखाता है। बोनस, सेटलमेंट इतिहास और कुल कमाई के लिए देखें</string>
+    <string name="assurance_wallet">वॉलेट</string>
+    <string name="assurance_from_menu">मेन्यू से।</string>
+    <string name="assurance_current_status">वर्तमान स्थिति</string>
+    <string name="assurance_active_restores">सक्रिय रिस्टोर</string>
+    <string name="assurance_unresolved_count">अनसुलझी गिनती</string>
+    <string name="assurance_sla_note">SLA अनुपालन SLA समयसीमा के अंदर हल किए गए रिस्टोर और कुल रिस्टोर के अनुपात से निर्धारित होता है। \"अनुपालक\" स्थिति बनाए रखने से पूर्ण सेटलमेंट पात्रता सुनिश्चित होती है।</string>
+    <string name="assurance_reason_code">कारण कोड</string>
+    <string name="assurance_effective_since">प्रभावी तिथि</string>
+    <string name="assurance_qual_signal">गुणवत्ता संकेत</string>
+    <string name="assurance_exposure_ok">सभी मेट्रिक्स स्वीकार्य सीमा के अंदर हैं। वर्तमान मानक बनाए रखें।</string>
+    <string name="assurance_exposure_limited">कुछ मेट्रिक्स सीमा के नज़दीक पहुँच रहे हैं। सक्रिय कार्यों की समीक्षा करें और SLA अनुपालन को प्राथमिकता दें।</string>
+    <string name="assurance_exposure_critical">महत्वपूर्ण मेट्रिक्स ने सीमा तोड़ी है। पात्रता बहाल करने के लिए तुरंत सुधारात्मक कार्रवाई आवश्यक है।</string>
+    <string name="assurance_lifetime_earned">कुल कमाई</string>
+
+    <!-- SLA / Exposure -->
+    <string name="sla_compliant">अनुपालक</string>
+    <string name="sla_at_risk">जोखिम में</string>
+    <string name="sla_non_compliant">गैर-अनुपालक</string>
+    <string name="exposure_eligible">पात्र</string>
+    <string name="exposure_limited">सीमित</string>
+    <string name="exposure_ineligible">अपात्र</string>
+
+    <!-- Task Feed -->
+    <string name="feed_your_tasks">आपके कार्य</string>
+    <string name="feed_available">उपलब्ध</string>
+    <string name="feed_no_active">अभी कोई सक्रिय कार्य नहीं</string>
+    <string name="feed_no_available">अभी कोई नया कनेक्शन उपलब्ध नहीं</string>
+    <string name="feed_all">सभी</string>
+    <string name="feed_install">इंस्टॉल</string>
+    <string name="feed_restore">रिस्टोर</string>
+    <string name="feed_netbox">नेटबॉक्स</string>
+    <string name="feed_hidden_critical">हाई रिस्टोर कार्य फिल्टर से छिपा हुआ है</string>
+    <string name="feed_resolved">हल हो गया</string>
+
+    <!-- CTAs -->
+    <string name="cta_claim">क्लेम करें</string>
+    <string name="cta_accept">स्वीकार करें</string>
+    <string name="cta_schedule_assign">शेड्यूल / असाइन</string>
+    <string name="cta_assign">असाइन करें</string>
+    <string name="cta_mark_resolved">हल किया</string>
+    <string name="cta_collected">कलेक्ट किया</string>
+    <string name="cta_confirm_return">वापसी पुष्टि करें</string>
+    <string name="cta_verify_manually">मैन्युअल सत्यापन</string>
+    <string name="cta_mark_installed">इंस्टॉल किया</string>
+    <string name="cta_resolve_urgent">हल करें (तुरंत)</string>
+    <string name="cta_view">देखें</string>
+    <string name="cta_reassign">पुनः असाइन</string>
+    <string name="cta_resolve">हल करें</string>
+    <string name="cta_start_work">काम शुरू करें</string>
+
+    <!-- Task Card -->
+    <string name="card_high">उच्च</string>
+    <string name="card_overdue">समय बीता</string>
+    <string name="card_remaining">शेष</string>
+    <string name="card_offer_expires">ऑफर समाप्त</string>
+    <string name="card_claim_expiring">क्लेम समाप्त</string>
+    <string name="card_high_restore">हाई रिस्टोर</string>
+    <string name="card_left">शेष</string>
+    <string name="card_restore_retry">रिस्टोर पुनःप्रयास</string>
+    <string name="card_attempt">प्रयास</string>
+    <string name="card_blocked_action">रुका -- कार्रवाई आवश्यक</string>
+    <string name="card_return_overdue">वापसी समय बीता</string>
+    <string name="card_verification_pending">सत्यापन बाकी -- पुष्टि करें</string>
+    <string name="card_install_overdue">इंस्टॉल समय बीता</string>
+    <string name="card_pickup_overdue">पिकअप समय बीता</string>
+    <string name="card_assignment_unaccepted">असाइनमेंट अस्वीकृत</string>
+    <string name="card_chain_escalation">चेन एस्केलेशन बाकी</string>
+    <string name="card_manual_exception">मैन्युअल अपवाद</string>
+
+    <!-- Menu -->
+    <string name="menu_title">मेन्यू</string>
+    <string name="menu_wallet">वॉलेट</string>
+    <string name="menu_wallet_desc">बैलेंस और लेनदेन</string>
+    <string name="menu_team">टीम</string>
+    <string name="menu_team_desc">टेक्नीशियन प्रबंधन</string>
+    <string name="menu_netbox">नेटबॉक्स</string>
+    <string name="menu_netbox_desc">ऑर्डर और इंवेंट्री</string>
+    <string name="menu_support">सपोर्ट</string>
+    <string name="menu_support_desc">केस और एस्केलेशन</string>
+    <string name="menu_policies">नीतियाँ और अपडेट</string>
+    <string name="menu_policies_desc">दस्तावेज़ और बदलाव लॉग</string>
+    <string name="menu_profile">प्रोफाइल और सेटिंग्स</string>
+    <string name="menu_profile_desc">खाता और प्राथमिकताएँ</string>
+
+    <!-- Profile -->
+    <string name="profile_title">प्रोफाइल</string>
+    <string name="profile_language">भाषा</string>
+    <string name="profile_notifications">सूचना सेटिंग्स</string>
+    <string name="profile_task_alerts">कार्य सूचना</string>
+    <string name="profile_sla_warnings">SLA चेतावनी</string>
+    <string name="profile_settlement_updates">सेटलमेंट अपडेट</string>
+    <string name="profile_account_info">खाता जानकारी</string>
+    <string name="profile_csp_id">CSP आईडी</string>
+    <string name="profile_zone">ज़ोन</string>
+    <string name="profile_partner_since">पार्टनर तिथि</string>
+    <string name="profile_email">ईमेल</string>
+    <string name="profile_phone">फोन</string>
+    <string name="profile_band_partner">बैंड A पार्टनर</string>
+    <string name="profile_back">वापस</string>
+    <string name="profile_offer_notifications">ऑफर सूचना</string>
+    <string name="profile_offer_toggle_consequence">आपको नए कनेक्शन ऑफर नहीं मिलेंगे। जब तक आप इसे वापस चालू नहीं करते, आपका सक्रिय बेस नहीं बढ़ेगा।</string>
+
+    <!-- Capability Reset -->
+    <string name="capability_reset_title">क्षमता रीसेट सक्रिय</string>
+    <string name="capability_reset_desc">कार्य आवंटन रुक सकते हैं। पूर्ण पार्टनर स्थिति बहाल करने के लिए पुनर्प्रशिक्षण पूरा करें। अपने ज़ोन मैनेजर से संपर्क करें।</string>
+
+    <!-- Wallet Frozen -->
+    <string name="wallet_frozen_title">वॉलेट फ्रीज</string>
+    <string name="wallet_frozen_desc">निकासी अक्षम है। सेटलमेंट जमा होते रहेंगे लेकिन जांच पूरी होने तक निकाले नहीं जा सकते।</string>
+
+    <!-- Support -->
+    <string name="support_receipt_title">केस सबमिट हो गया</string>
+    <string name="support_receipt_desc">आपका सपोर्ट केस सबमिट हो गया है। 24 घंटे के अंदर जवाब की उम्मीद करें।</string>
+    <string name="support_back_to_support">सपोर्ट पर वापस</string>
+
+    <!-- General -->
+    <string name="consequence_label">इसका मतलब:</string>
+    <string name="home_offer_notifications">ऑफर सूचना:</string>
+    <string name="home_on">चालू</string>
+    <string name="home_off">बंद</string>
+
+    <!-- Technician App -->
+    <string name="tech_app_title">Wiom टेक्नीशियन</string>
+    <string name="tech_select_profile">जारी रखने के लिए अपना प्रोफाइल चुनें</string>
+    <string name="tech_only_csp">केवल आपके CSP द्वारा जोड़े गए टेक्नीशियन लॉग इन कर सकते हैं।</string>
+    <string name="tech_active_tasks">सक्रिय कार्य</string>
+    <string name="tech_completed">पूर्ण</string>
+    <string name="tech_no_active">अभी कोई सक्रिय कार्य नहीं</string>
+    <string name="tech_available">उपलब्ध</string>
+    <string name="tech_unavailable">अनुपलब्ध</string>
+    <string name="tech_accept_assignment">असाइनमेंट स्वीकारें</string>
+    <string name="tech_start_work">काम शुरू करें</string>
+    <string name="tech_mark_installed">इंस्टॉल किया</string>
+    <string name="tech_mark_collected">कलेक्ट किया</string>
+    <string name="tech_confirm_return">वापसी पुष्टि करें</string>
+    <string name="tech_resolve">हल करें</string>
+    <string name="tech_accept">स्वीकार</string>
+    <string name="tech_collect">कलेक्ट</string>
+    <string name="tech_return">वापसी</string>
+    <string name="tech_profile">प्रोफाइल</string>
+    <string name="tech_stats">आंकड़े</string>
+    <string name="tech_logout">लॉगआउट</string>
+    <string name="tech_timeline">टाइमलाइन</string>
+
+    <!-- Menu: Technician -->
+    <string name="menu_technician">टेक्नीशियन ऐप</string>
+    <string name="menu_technician_desc">टेक व्यू पर जाएं</string>
+</resources>

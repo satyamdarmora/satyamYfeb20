@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Wiom CSP web</string>
+
+    <!-- Assurance Strip -->
+    <string name="assurance_active_base">Active Base</string>
+    <string name="assurance_cycle_earnings">Cycle Earnings</string>
+    <string name="assurance_sla_standing">SLA Standing</string>
+    <string name="assurance_exposure">Exposure</string>
+    <string name="assurance_connections">connections</string>
+    <string name="assurance_current_count">Current Count</string>
+    <string name="assurance_recent_changes">Recent Changes</string>
+    <string name="assurance_cycle_earned">Cycle Earned</string>
+    <string name="assurance_next_settlement">Next Settlement</string>
+    <string name="assurance_cycle_note">This shows current cycle earnings only. For full financial details including bonus breakdown, settlement history, and lifetime earnings, visit</string>
+    <string name="assurance_wallet">Wallet</string>
+    <string name="assurance_from_menu">from the menu.</string>
+    <string name="assurance_current_status">Current Status</string>
+    <string name="assurance_active_restores">Active Restores</string>
+    <string name="assurance_unresolved_count">Unresolved Count</string>
+    <string name="assurance_sla_note">SLA compliance is determined by the ratio of restores resolved within the SLA deadline versus total restore tasks in the current settlement cycle. Maintaining \"Compliant\" status ensures full settlement eligibility.</string>
+    <string name="assurance_reason_code">Reason Code</string>
+    <string name="assurance_effective_since">Effective Since</string>
+    <string name="assurance_qual_signal">Qualitative Signal</string>
+    <string name="assurance_exposure_ok">All metrics are within acceptable thresholds. Continue maintaining current standards.</string>
+    <string name="assurance_exposure_limited">Some metrics are approaching threshold limits. Review active tasks and prioritize SLA compliance.</string>
+    <string name="assurance_exposure_critical">Critical metrics have breached thresholds. Immediate corrective action required to restore eligibility.</string>
+    <string name="assurance_lifetime_earned">Lifetime Earned</string>
+
+    <!-- SLA / Exposure -->
+    <string name="sla_compliant">Compliant</string>
+    <string name="sla_at_risk">At Risk</string>
+    <string name="sla_non_compliant">Non-Compliant</string>
+    <string name="exposure_eligible">ELIGIBLE</string>
+    <string name="exposure_limited">LIMITED</string>
+    <string name="exposure_ineligible">INELIGIBLE</string>
+
+    <!-- Task Feed -->
+    <string name="feed_your_tasks">Your Tasks</string>
+    <string name="feed_available">Available</string>
+    <string name="feed_no_active">No active tasks right now</string>
+    <string name="feed_no_available">No new connections available right now</string>
+    <string name="feed_all">All</string>
+    <string name="feed_install">Install</string>
+    <string name="feed_restore">Restore</string>
+    <string name="feed_netbox">NetBox</string>
+    <string name="feed_hidden_critical">HIGH RESTORE task(s) hidden by filter</string>
+    <string name="feed_resolved">Resolved</string>
+
+    <!-- CTAs -->
+    <string name="cta_claim">Claim</string>
+    <string name="cta_accept">Accept</string>
+    <string name="cta_schedule_assign">Schedule / Assign</string>
+    <string name="cta_assign">Assign</string>
+    <string name="cta_mark_resolved">Mark Resolved</string>
+    <string name="cta_collected">Collected</string>
+    <string name="cta_confirm_return">Confirm Return</string>
+    <string name="cta_verify_manually">Verify Manually</string>
+    <string name="cta_mark_installed">Mark Installed</string>
+    <string name="cta_resolve_urgent">Resolve (Urgent)</string>
+    <string name="cta_view">View</string>
+    <string name="cta_reassign">Reassign</string>
+    <string name="cta_resolve">Resolve</string>
+    <string name="cta_start_work">Start Work</string>
+
+    <!-- Task Card -->
+    <string name="card_high">HIGH</string>
+    <string name="card_overdue">Overdue</string>
+    <string name="card_remaining">remaining</string>
+    <string name="card_offer_expires">Offer expires</string>
+    <string name="card_claim_expiring">Claim expiring</string>
+    <string name="card_high_restore">High restore</string>
+    <string name="card_left">left</string>
+    <string name="card_restore_retry">Restore retry</string>
+    <string name="card_attempt">attempt</string>
+    <string name="card_blocked_action">Blocked -- action needed</string>
+    <string name="card_return_overdue">Return overdue</string>
+    <string name="card_verification_pending">Verification pending -- confirm</string>
+    <string name="card_install_overdue">Install overdue</string>
+    <string name="card_pickup_overdue">Pickup overdue</string>
+    <string name="card_assignment_unaccepted">Assignment unaccepted</string>
+    <string name="card_chain_escalation">Chain escalation pending</string>
+    <string name="card_manual_exception">Manual exception</string>
+
+    <!-- Menu -->
+    <string name="menu_title">Menu</string>
+    <string name="menu_wallet">Wallet</string>
+    <string name="menu_wallet_desc">Balance &amp; transactions</string>
+    <string name="menu_team">Team</string>
+    <string name="menu_team_desc">Manage technicians</string>
+    <string name="menu_netbox">NetBox</string>
+    <string name="menu_netbox_desc">Orders &amp; inventory</string>
+    <string name="menu_support">Support</string>
+    <string name="menu_support_desc">Cases &amp; escalation</string>
+    <string name="menu_policies">Policies &amp; Updates</string>
+    <string name="menu_policies_desc">Documents &amp; changelog</string>
+    <string name="menu_profile">Profile &amp; Settings</string>
+    <string name="menu_profile_desc">Account &amp; preferences</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_notifications">Notification Settings</string>
+    <string name="profile_task_alerts">Task Alerts</string>
+    <string name="profile_sla_warnings">SLA Warnings</string>
+    <string name="profile_settlement_updates">Settlement Updates</string>
+    <string name="profile_account_info">Account Information</string>
+    <string name="profile_csp_id">CSP ID</string>
+    <string name="profile_zone">Zone</string>
+    <string name="profile_partner_since">Partner Since</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_phone">Phone</string>
+    <string name="profile_band_partner">Band A Partner</string>
+    <string name="profile_back">Back</string>
+    <string name="profile_offer_notifications">Offer Notifications</string>
+    <string name="profile_offer_toggle_consequence">You will not receive new connection offers. Your active base will not grow until you turn this back on.</string>
+
+    <!-- Capability Reset -->
+    <string name="capability_reset_title">Capability Reset Active</string>
+    <string name="capability_reset_desc">Task assignments may be paused. Complete retraining to restore full partner status. Contact your zone manager.</string>
+
+    <!-- Wallet Frozen -->
+    <string name="wallet_frozen_title">Wallet Frozen</string>
+    <string name="wallet_frozen_desc">Withdrawals are disabled. Settlements will accumulate but cannot be withdrawn until the investigation is resolved.</string>
+
+    <!-- Support -->
+    <string name="support_receipt_title">Case Submitted</string>
+    <string name="support_receipt_desc">Your support case has been submitted. Expect a response within 24 hours.</string>
+    <string name="support_back_to_support">Back to Support</string>
+
+    <!-- General -->
+    <string name="consequence_label">What this means:</string>
+    <string name="home_offer_notifications">Offer notifications:</string>
+    <string name="home_on">ON</string>
+    <string name="home_off">OFF</string>
+
+    <!-- Technician App -->
+    <string name="tech_app_title">Wiom Technician</string>
+    <string name="tech_select_profile">Select your profile to continue</string>
+    <string name="tech_only_csp">Only technicians added by your CSP can log in.</string>
+    <string name="tech_active_tasks">Active Tasks</string>
+    <string name="tech_completed">Completed</string>
+    <string name="tech_no_active">No active tasks right now</string>
+    <string name="tech_available">Available</string>
+    <string name="tech_unavailable">Unavailable</string>
+    <string name="tech_accept_assignment">Accept Assignment</string>
+    <string name="tech_start_work">Start Work</string>
+    <string name="tech_mark_installed">Mark Installed</string>
+    <string name="tech_mark_collected">Mark Collected</string>
+    <string name="tech_confirm_return">Confirm Return</string>
+    <string name="tech_resolve">Resolve</string>
+    <string name="tech_accept">Accept</string>
+    <string name="tech_collect">Collect</string>
+    <string name="tech_return">Return</string>
+    <string name="tech_profile">Profile</string>
+    <string name="tech_stats">Stats</string>
+    <string name="tech_logout">Logout</string>
+    <string name="tech_timeline">Timeline</string>
+
+    <!-- Menu: Technician -->
+    <string name="menu_technician">Technician App</string>
+    <string name="menu_technician_desc">Switch to tech view</string>
+</resources>
