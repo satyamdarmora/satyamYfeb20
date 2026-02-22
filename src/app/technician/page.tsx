@@ -6,10 +6,19 @@ import TechLogin from '@/components/TechLogin';
 import TechDashboard from '@/components/TechDashboard';
 import TechTaskDetail from '@/components/TechTaskDetail';
 import TechProfile from '@/components/TechProfile';
+import AuthGuard from '@/components/AuthGuard';
 
 type View = 'login' | 'dashboard' | 'task_detail' | 'profile';
 
 export default function TechnicianPage() {
+  return (
+    <AuthGuard>
+      <TechnicianPageContent />
+    </AuthGuard>
+  );
+}
+
+function TechnicianPageContent() {
   const [techId, setTechId] = useState<string | null>(null);
   const [tech, setTech] = useState<Technician | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);

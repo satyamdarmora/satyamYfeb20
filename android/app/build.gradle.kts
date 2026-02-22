@@ -22,6 +22,7 @@ android {
 
         // Default API base URL (overridden per flavor)
         buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.173:3457\"")
+        buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.0.173:4000\"")
     }
 
     flavorDimensions += "target"
@@ -29,10 +30,12 @@ android {
         create("device") {
             dimension = "target"
             buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.173:3457\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.0.173:4000\"")
         }
         create("emulator") {
             dimension = "target"
             buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3457\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:4000\"")
         }
     }
 

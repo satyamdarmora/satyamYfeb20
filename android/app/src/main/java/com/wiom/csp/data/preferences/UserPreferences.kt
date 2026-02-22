@@ -24,6 +24,11 @@ class UserPreferences @Inject constructor(
         private val KEY_SETTLEMENT_UPDATES = booleanPreferencesKey("settlement_updates")
         private val KEY_OFFER_NOTIFICATIONS = booleanPreferencesKey("offer_notifications")
         private val KEY_TECH_ID = stringPreferencesKey("tech_id")
+        private val KEY_JWT_TOKEN = stringPreferencesKey("jwt_token")
+        private val KEY_USER_NAME = stringPreferencesKey("user_name")
+        private val KEY_USER_MOBILE = stringPreferencesKey("user_mobile")
+        private val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+        private val KEY_IS_PROFILE_COMPLETE = booleanPreferencesKey("is_profile_complete")
     }
 
     // ---- Language ----
@@ -97,6 +102,50 @@ class UserPreferences @Inject constructor(
         dataStore.edit { prefs ->
             if (id != null) prefs[KEY_TECH_ID] = id
             else prefs.remove(KEY_TECH_ID)
+        }
+    }
+
+    // ---- Auth (JWT login) ----
+    val jwtToken: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[KEY_JWT_TOKEN]
+    }
+
+    val isLoggedIn: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[KEY_IS_LOGGED_IN] ?: false
+    }
+
+    val isProfileComplete: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[KEY_IS_PROFILE_COMPLETE] ?: false
+    }
+
+    suspend fun setProfileComplete(complete: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_IS_PROFILE_COMPLETE] = complete }
+    }
+
+    val userName: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[KEY_USER_NAME]
+    }
+
+    val userMobile: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[KEY_USER_MOBILE]
+    }
+
+    suspend fun setAuth(token: String, name: String, mobile: String) {
+        dataStore.edit { prefs ->
+            prefs[KEY_JWT_TOKEN] = token
+            prefs[KEY_USER_NAME] = name
+            prefs[KEY_USER_MOBILE] = mobile
+            prefs[KEY_IS_LOGGED_IN] = true
+        }
+    }
+
+    suspend fun clearAuth() {
+        dataStore.edit { prefs ->
+            prefs.remove(KEY_JWT_TOKEN)
+            prefs.remove(KEY_USER_NAME)
+            prefs.remove(KEY_USER_MOBILE)
+            prefs[KEY_IS_LOGGED_IN] = false
+            prefs[KEY_IS_PROFILE_COMPLETE] = false
         }
     }
 }

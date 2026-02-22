@@ -22,7 +22,8 @@ import com.wiom.csp.ui.theme.WiomCspTheme
 fun ProfileScreen(
     onBack: () -> Unit,
     offersEnabled: Boolean,
-    onOffersToggle: (Boolean) -> Unit
+    onOffersToggle: (Boolean) -> Unit,
+    onLogout: () -> Unit = {}
 ) {
     val colors = WiomCspTheme.colors
     var taskAlerts by remember { mutableStateOf(true) }
@@ -142,6 +143,27 @@ fun ProfileScreen(
                 InfoRow("Partner Since", "2025-01-15")
                 InfoRow("Email", "csp.mh1001@wiom.in")
                 InfoRow("Phone", "+91 98765 00001")
+            }
+
+            // Logout
+            Spacer(Modifier.height(32.dp))
+            Button(
+                onClick = onLogout,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colors.negative.copy(alpha = 0.1f)
+                )
+            ) {
+                Text(
+                    "Logout",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.negative
+                )
             }
 
             Spacer(Modifier.height(80.dp))

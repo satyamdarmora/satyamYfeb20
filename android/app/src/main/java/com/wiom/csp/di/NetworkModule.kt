@@ -3,6 +3,8 @@ package com.wiom.csp.di
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.wiom.csp.BuildConfig
 import com.wiom.csp.data.remote.ApiService
+import com.wiom.csp.data.remote.AuthApiService
+import com.wiom.csp.data.remote.BackendApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -60,5 +63,39 @@ object NetworkModule {
     @Singleton
     fun provideApiService(retrofit: Retrofit): ApiService {
         return retrofit.create(ApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @Named("auth")
+    fun provideAuthRetrofit(client: OkHttpClient, json: Json): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://services.qa.i2e1.in/")
+            .client(client)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthApiService(@Named("auth") retrofit: Retrofit): AuthApiService {
+        return retrofit.create(AuthApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @Named("backend")
+    fun provideBackendRetrofit(client: OkHttpClient, json: Json): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.BACKEND_BASE_URL)
+            .client(client)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideBackendApiService(@Named("backend") retrofit: Retrofit): BackendApiService {
+        return retrofit.create(BackendApiService::class.java)
     }
 }

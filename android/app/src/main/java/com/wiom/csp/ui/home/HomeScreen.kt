@@ -261,7 +261,8 @@ fun HomeScreen(
             "profile" -> ProfileScreen(
                 onBack = { viewModel.backToHome() },
                 offersEnabled = state.offersEnabled,
-                onOffersToggle = { viewModel.setOffersEnabled(it) }
+                onOffersToggle = { viewModel.setOffersEnabled(it) },
+                onLogout = { viewModel.logout() }
             )
             "policies" -> PoliciesScreen(onBack = { viewModel.backToHome() })
             "technician" -> TechnicianAppScreen(onBack = { viewModel.backToHome() })

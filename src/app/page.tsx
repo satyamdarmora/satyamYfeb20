@@ -32,6 +32,8 @@ import NetBoxHub from '@/components/NetBoxHub';
 import ProfilePage from '@/components/ProfilePage';
 import PoliciesPage from '@/components/PoliciesPage';
 import { notifyNewConnection, notifyUrgentAlert } from '@/lib/feedback';
+import AuthGuard from '@/components/AuthGuard';
+import { getAuth } from '@/lib/auth';
 
 type ActiveSection = null | 'wallet' | 'team' | 'netbox' | 'support' | 'policies' | 'profile';
 
@@ -51,7 +53,17 @@ function makeTimelineEvent(
 }
 
 export default function HomePage() {
+  return (
+    <AuthGuard>
+      <HomePageContent />
+    </AuthGuard>
+  );
+}
+
+function HomePageContent() {
   const { t } = useI18n();
+  const auth = getAuth();
+  const userName = auth?.user?.name || 'CSP Partner';
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assurance, setAssurance] = useState<AssuranceState | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -574,10 +586,10 @@ export default function HomePage() {
                 color: '#FFFFFF',
               }}
             >
-              C
+              {userName.charAt(0).toUpperCase()}
             </div>
             <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
-              CSP-MH-1001
+              {userName}
             </span>
           </div>
           <button

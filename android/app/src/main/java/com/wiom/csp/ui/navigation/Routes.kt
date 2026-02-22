@@ -11,4 +11,6 @@ sealed class Routes(val route: String) {
     data object NetBox : Routes("netbox")
     data object Profile : Routes("profile")
     data object Policies : Routes("policies")
+    data object Login : Routes("login")
+    data object Onboarding : Routes("onboarding")
 }

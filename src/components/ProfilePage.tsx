@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
+import { clearAuth, getAuth } from '@/lib/auth';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -10,11 +12,19 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ onBack, offersEnabled, onOffersToggle }: ProfilePageProps) {
+  const router = useRouter();
   const { lang, setLang, t } = useI18n();
   const [taskAlerts, setTaskAlerts] = useState(true);
   const [slaWarnings, setSlaWarnings] = useState(true);
   const [settlementUpdates, setSettlementUpdates] = useState(true);
   const [showOfferConfirm, setShowOfferConfirm] = useState(false);
+  const auth = getAuth();
+  const userName = auth?.user?.name || 'CSP Partner';
+
+  const handleLogout = () => {
+    clearAuth();
+    router.replace('/login');
+  };
 
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
@@ -140,7 +150,7 @@ export default function ProfilePage({ onBack, offersEnabled, onOffersToggle }: P
               C
             </div>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>CSP-MH-1001</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{userName}</div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Mumbai West Zone</div>
             </div>
           </div>
@@ -330,6 +340,26 @@ export default function ProfilePage({ onBack, offersEnabled, onOffersToggle }: P
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('profile.phone')}</span>
             <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>+91 98XXX XXXXX</span>
           </div>
+        </div>
+
+        {/* Logout */}
+        <div style={{ padding: '0 16px', marginTop: 32 }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: 'rgba(224, 30, 0, 0.08)',
+              border: '1px solid rgba(224, 30, 0, 0.25)',
+              borderRadius: 12,
+              fontSize: 15,
+              fontWeight: 600,
+              color: 'var(--negative)',
+              cursor: 'pointer',
+            }}
+          >
+            Logout
+          </button>
         </div>
 
         <div style={{ height: 40 }} />

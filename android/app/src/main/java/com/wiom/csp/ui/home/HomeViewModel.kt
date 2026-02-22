@@ -231,6 +231,10 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { prefs.setOffersEnabled(enabled) }
     }
 
+    fun logout() {
+        viewModelScope.launch { prefs.clearAuth() }
+    }
+
     // ---- Task actions (port from page.tsx handleAction) ----
 
     fun handleAction(taskId: String, action: String, extra: Map<String, String> = emptyMap()) {
