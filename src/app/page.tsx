@@ -29,11 +29,12 @@ import WalletHub from '@/components/WalletHub';
 import TeamHub from '@/components/TeamHub';
 import SupportHub from '@/components/SupportHub';
 import NetBoxHub from '@/components/NetBoxHub';
+import SLAHub from '@/components/SLAHub';
 import ProfilePage from '@/components/ProfilePage';
 import PoliciesPage from '@/components/PoliciesPage';
 import { notifyNewConnection, notifyUrgentAlert } from '@/lib/feedback';
 
-type ActiveSection = null | 'wallet' | 'team' | 'netbox' | 'support' | 'policies' | 'profile';
+type ActiveSection = null | 'wallet' | 'team' | 'netbox' | 'sla' | 'support' | 'policies' | 'profile';
 
 function makeTimelineEvent(
   eventType: string,
@@ -601,7 +602,7 @@ export default function HomePage() {
           </button>
         </div>
 
-        <AssuranceStrip assuranceState={assurance} lifetimeEarnings={lifetimeEarnings} />
+        <AssuranceStrip assuranceState={assurance} lifetimeEarnings={lifetimeEarnings} onOpenSLA={() => setActiveSection('sla')} />
       </div>
 
       {/* Capability Reset Banner */}
@@ -869,6 +870,7 @@ export default function HomePage() {
       {activeSection === 'team' && <TeamHub onBack={handleBackToHome} />}
       {activeSection === 'support' && <SupportHub onBack={handleBackToHome} />}
       {activeSection === 'netbox' && <NetBoxHub onBack={handleBackToHome} />}
+      {activeSection === 'sla' && <SLAHub onBack={handleBackToHome} />}
       {activeSection === 'profile' && <ProfilePage onBack={handleBackToHome} offersEnabled={offersEnabled} onOffersToggle={setOffersEnabled} />}
       {activeSection === 'policies' && <PoliciesPage onBack={handleBackToHome} />}
     </div>

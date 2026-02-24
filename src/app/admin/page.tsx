@@ -17,8 +17,13 @@ import {
   sortTasksByQueue,
   getTechnicians,
   getTasksForTechnician,
+  getDepositLedger,
+  getNetBoxUnits,
+  getRateCard,
+  updateNetBoxUnit,
+  addDepositTransaction,
 } from '@/lib/data';
-import type { Technician } from '@/lib/types';
+import type { Technician, DepositLedger, NetBoxUnit, RateCard } from '@/lib/types';
 import { useTheme } from '@/lib/theme';
 
 const AREAS = [
@@ -87,15 +92,20 @@ export default function AdminPage() {
   const [formReason, setFormReason] = useState(MANUAL_REASONS[0]);
 
   const [techList, setTechList] = useState<Technician[]>([]);
+  const [depositLedger, setDepositLedger] = useState<DepositLedger | null>(null);
+  const [selectedNetboxForLoss, setSelectedNetboxForLoss] = useState('');
+  const [selectedNetboxForRefund, setSelectedNetboxForRefund] = useState('');
 
   useEffect(() => {
     setTasks(sortTasksByQueue(getAllTasks()));
     setTechList(getTechnicians());
+    setDepositLedger(getDepositLedger());
   }, []);
 
   const refresh = useCallback(() => {
     setTasks(sortTasksByQueue(getAllTasks()));
     setTechList(getTechnicians());
+    setDepositLedger(getDepositLedger());
   }, []);
 
   const showNotification = useCallback((msg: string) => {
@@ -1465,6 +1475,257 @@ export default function AdminPage() {
                   boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                 }} />
               </button>
+            </div>
+          </div>
+
+          {/* NetBox & Deposit Controls */}
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: 12,
+            padding: 24,
+            marginTop: 24,
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 20px', color: 'var(--text-primary)' }}>
+              NetBox &amp; Deposit Controls
+            </h2>
+
+            {/* Deposit Ledger Summary */}
+            {depositLedger && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10 }}>
+                  Deposit Ledger Overview
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 8,
+                }}>
+                  <div style={{ background: 'var(--bg-card)', borderRadius: 8, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3 }}>Total Issued</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{depositLedger.total_issued}</div>
+                  </div>
+                  <div style={{ background: 'var(--bg-card)', borderRadius: 8, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3 }}>Active</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--brand-primary)' }}>{depositLedger.total_active}</div>
+                  </div>
+                  <div style={{ background: 'var(--bg-card)', borderRadius: 8, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3 }}>Returned</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--positive)' }}>{depositLedger.total_returned}</div>
+                  </div>
+                  <div style={{ background: 'var(--bg-card)', borderRadius: 8, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3 }}>Lost</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--negative)' }}>{depositLedger.total_lost}</div>
+                  </div>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 8,
+                  marginTop: 8,
+                }}>
+                  <div style={{ background: 'var(--bg-card)', borderRadius: 8, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3 }}>Deposit Balance</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{'\u20B9'}{depositLedger.deposit_balance.toLocaleString('en-IN')}</div>
+                  </div>
+                  <div style={{ background: 'var(--bg-card)', borderRadius: 8, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3 }}>Exit Refund Est.</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--positive)' }}>{'\u20B9'}{depositLedger.exit_refund_estimate.toLocaleString('en-IN')}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Declare NetBox Lost */}
+              <div style={{
+                padding: '12px 16px',
+                background: 'rgba(224, 30, 0, 0.08)',
+                border: '1px solid rgba(224, 30, 0, 0.25)',
+                borderRadius: 8,
+              }}>
+                <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--negative)', fontSize: 13 }}>
+                  Declare NetBox Lost
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
+                  Mark an active NetBox unit as lost. Deducts {'\u20B9'}1,500 from deposit ledger.
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={labelStyle}>Select Active Unit</label>
+                  <select
+                    style={inputStyle}
+                    value={selectedNetboxForLoss}
+                    onChange={(e) => setSelectedNetboxForLoss(e.target.value)}
+                  >
+                    <option value="">-- Select NetBox --</option>
+                    {depositLedger?.units
+                      .filter((u) => ['WITH_CUSTOMER', 'EXPIRED_WITH_CUSTOMER', 'COLLECTED_IN_TRANSIT'].includes(u.status))
+                      .map((u) => (
+                        <option key={u.netbox_id} value={u.netbox_id}>
+                          {u.netbox_id} — {u.status.replace(/_/g, ' ')} {u.customer_area ? `(${u.customer_area})` : ''}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <button
+                  disabled={!selectedNetboxForLoss}
+                  onClick={() => {
+                    if (!selectedNetboxForLoss) return;
+                    const now = new Date().toISOString();
+                    updateNetBoxUnit(selectedNetboxForLoss, {
+                      status: 'LOST',
+                      lost_declared_at: now,
+                    });
+                    addDepositTransaction({
+                      id: 'DEP-TXN-' + Date.now(),
+                      date: now,
+                      type: 'LOSS_DEDUCTION',
+                      amount: -1500,
+                      netbox_id: selectedNetboxForLoss,
+                      description: `Loss deduction for ${selectedNetboxForLoss} — declared lost by admin`,
+                    });
+                    setSelectedNetboxForLoss('');
+                    refresh();
+                    showNotification(`NetBox ${selectedNetboxForLoss} declared LOST. \u20B91,500 deposit deduction applied.`);
+                  }}
+                  style={{
+                    padding: '10px 16px',
+                    background: selectedNetboxForLoss ? 'var(--negative)' : 'var(--bg-card)',
+                    border: 'none',
+                    borderRadius: 8,
+                    color: selectedNetboxForLoss ? '#FFFFFF' : 'var(--text-muted)',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: selectedNetboxForLoss ? 'pointer' : 'not-allowed',
+                    width: '100%',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  Declare Lost &amp; Deduct {'\u20B9'}1,500
+                </button>
+              </div>
+
+              {/* Trigger Carry Fee Deduction */}
+              <button
+                onClick={async () => {
+                  try {
+                    const eligibleUnits = depositLedger?.units.filter((u) => u.carry_fee_eligible) || [];
+                    if (eligibleUnits.length === 0) {
+                      showNotification('No units eligible for carry fee deduction.');
+                      return;
+                    }
+                    const totalFee = eligibleUnits.reduce((sum, u) => sum + u.carry_fee_accrued, 0);
+                    let currentBalance = 14200;
+                    try {
+                      const walletRes = await fetch('/api/wallet');
+                      const walletData = await walletRes.json();
+                      currentBalance = walletData.balance ?? 14200;
+                    } catch { /* use default */ }
+                    await fetch('/api/wallet', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        balance: Math.max(0, currentBalance - totalFee),
+                        new_transaction: {
+                          id: 'TXN-CARRY-' + Date.now(),
+                          date: new Date().toISOString(),
+                          type: 'CARRY_FEE',
+                          amount: -totalFee,
+                          description: `Carry fee deduction for ${eligibleUnits.length} overdue unit(s)`,
+                          status: 'COMPLETED',
+                        },
+                      }),
+                    });
+                    refresh();
+                    showNotification(`Carry fee of \u20B9${totalFee.toLocaleString('en-IN')} deducted for ${eligibleUnits.length} unit(s).`);
+                  } catch {
+                    showNotification('Failed to process carry fee deduction.');
+                  }
+                }}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(217, 150, 0, 0.08)',
+                  border: '1px solid rgba(217, 150, 0, 0.25)',
+                  borderRadius: 8,
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textAlign: 'left' as const,
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--warning)' }}>
+                  Trigger Carry Fee Deduction
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Deducts accrued carry fees from wallet for all overdue NetBox units past grace period.
+                </div>
+              </button>
+
+              {/* Refund Deposit */}
+              <div style={{
+                padding: '12px 16px',
+                background: 'rgba(0, 128, 67, 0.08)',
+                border: '1px solid rgba(0, 128, 67, 0.25)',
+                borderRadius: 8,
+              }}>
+                <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--positive)', fontSize: 13 }}>
+                  Refund Deposit
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
+                  Refund security deposit for a returned NetBox unit currently in warehouse.
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={labelStyle}>Select In-Warehouse Unit</label>
+                  <select
+                    style={inputStyle}
+                    value={selectedNetboxForRefund}
+                    onChange={(e) => setSelectedNetboxForRefund(e.target.value)}
+                  >
+                    <option value="">-- Select NetBox --</option>
+                    {depositLedger?.units
+                      .filter((u) => u.status === 'IN_WAREHOUSE')
+                      .map((u) => (
+                        <option key={u.netbox_id} value={u.netbox_id}>
+                          {u.netbox_id} — IN WAREHOUSE {u.customer_area ? `(${u.customer_area})` : ''}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <button
+                  disabled={!selectedNetboxForRefund}
+                  onClick={() => {
+                    if (!selectedNetboxForRefund) return;
+                    const now = new Date().toISOString();
+                    const refundAmount = depositLedger?.security_deposit_per_unit ?? 1500;
+                    addDepositTransaction({
+                      id: 'DEP-TXN-' + Date.now(),
+                      date: now,
+                      type: 'DEPOSIT_REFUND',
+                      amount: refundAmount,
+                      netbox_id: selectedNetboxForRefund,
+                      description: `Deposit refund for ${selectedNetboxForRefund} — unit returned to warehouse`,
+                    });
+                    setSelectedNetboxForRefund('');
+                    refresh();
+                    showNotification(`Deposit of \u20B9${refundAmount.toLocaleString('en-IN')} refunded for ${selectedNetboxForRefund}.`);
+                  }}
+                  style={{
+                    padding: '10px 16px',
+                    background: selectedNetboxForRefund ? 'var(--positive)' : 'var(--bg-card)',
+                    border: 'none',
+                    borderRadius: 8,
+                    color: selectedNetboxForRefund ? '#FFFFFF' : 'var(--text-muted)',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: selectedNetboxForRefund ? 'pointer' : 'not-allowed',
+                    width: '100%',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  Refund Deposit
+                </button>
+              </div>
             </div>
           </div>
         </div>

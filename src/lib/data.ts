@@ -12,6 +12,14 @@ import type {
   WalletTransaction,
   SupportCase,
   AppNotification,
+  DepositLedger,
+  DepositTransaction,
+  NetBoxUnit,
+  RateCard,
+  SLAOverallState,
+  SLADomain,
+  SLAConsequence,
+  SLAStateTransition,
 } from './types';
 
 // ---- Date helpers (all relative to "now") -----------------------------------
@@ -738,6 +746,8 @@ export function getAllTasks(): Task[] {
 }
 
 export function getAssuranceState(): AssuranceState {
+  // Sync SLA standing from the 4-domain state engine (single source of truth)
+  assuranceState.sla_standing = getSLAState().overall_standing;
   return assuranceState;
 }
 
@@ -916,9 +926,155 @@ const supportCases: SupportCase[] = [
 
 const notifications: AppNotification[] = [];
 
+// ---- Rate Card ------------------------------------------------------------
+
+const rateCard: RateCard = {
+  version: '1.0',
+  effective_from: '2026-01-01',
+  base_payout_per_recharge: 85,
+  short_duration_payout: 45,
+  install_handling_fee: 150,
+  collection_handling_fee: 100,
+  bonus_tiers: [
+    { tier: 'Good',      quality_band: 'Meets minimum stability threshold', multiplier_percent: 5  },
+    { tier: 'Very Good', quality_band: 'Above defined band',                multiplier_percent: 10 },
+    { tier: 'Excellent', quality_band: 'Top defined band',                  multiplier_percent: 15 },
+  ],
+  security_deposit_per_netbox: 1500,
+  replacement_cost: 1500,
+  carry_fee_per_day: 2,
+  carry_fee_grace_days: 15,
+  withdrawal_cycle: 'Weekly',
+  min_withdrawal: 500,
+};
+
+// ---- NetBox Inventory & Deposit Ledger ------------------------------------
+
+const netboxUnits: NetBoxUnit[] = [
+  // Active with customer -- healthy
+  { netbox_id: 'NB-MH-0440', connection_id: 'WM-CON-2650', customer_area: 'Goregaon East',    status: 'WITH_CUSTOMER', issued_at: iso(-90 * DAY), subscription_expiry_at: iso(30 * DAY), carry_fee_eligible: false, carry_fee_accrued: 0, days_past_expiry: 0 },
+  { netbox_id: 'NB-MH-0441', connection_id: 'WM-CON-2780', customer_area: 'Malad West',       status: 'WITH_CUSTOMER', issued_at: iso(-60 * DAY), subscription_expiry_at: iso(15 * DAY), carry_fee_eligible: false, carry_fee_accrued: 0, days_past_expiry: 0 },
+  { netbox_id: 'NB-MH-0442', connection_id: 'WM-CON-2845', customer_area: 'Andheri West',     status: 'WITH_CUSTOMER', issued_at: iso(-45 * DAY), subscription_expiry_at: iso(20 * DAY), carry_fee_eligible: false, carry_fee_accrued: 0, days_past_expiry: 0 },
+  { netbox_id: 'NB-MH-0443', connection_id: 'WM-CON-2901', customer_area: 'Powai',            status: 'WITH_CUSTOMER', issued_at: iso(-30 * DAY), subscription_expiry_at: iso(25 * DAY), carry_fee_eligible: false, carry_fee_accrued: 0, days_past_expiry: 0 },
+  // Expired with customer -- past grace, carry fee accruing
+  { netbox_id: 'NB-MH-0450', connection_id: 'WM-CON-2390', customer_area: 'Borivali East',    status: 'EXPIRED_WITH_CUSTOMER', issued_at: iso(-120 * DAY), subscription_expiry_at: iso(-25 * DAY), carry_fee_eligible: true, carry_fee_start_at: iso(-10 * DAY), carry_fee_accrued: 20, days_past_expiry: 25 },
+  // Expired with customer -- within grace, no carry fee yet
+  { netbox_id: 'NB-MH-0451', connection_id: 'WM-CON-2510', customer_area: 'Jogeshwari West',  status: 'EXPIRED_WITH_CUSTOMER', issued_at: iso(-100 * DAY), subscription_expiry_at: iso(-10 * DAY), carry_fee_eligible: false, carry_fee_accrued: 0, days_past_expiry: 10 },
+  // Collected, in transit back to warehouse
+  { netbox_id: 'NB-MH-0455', connection_id: 'WM-CON-2510', customer_area: 'Jogeshwari West',  status: 'COLLECTED_IN_TRANSIT', issued_at: iso(-110 * DAY), subscription_expiry_at: iso(-20 * DAY), collected_at: iso(-2 * DAY), carry_fee_eligible: false, carry_fee_start_at: iso(-5 * DAY), carry_fee_accrued: 6, days_past_expiry: 20 },
+  // In warehouse (returned successfully)
+  { netbox_id: 'NB-MH-0430', connection_id: 'WM-CON-2100', customer_area: 'Dadar West',       status: 'IN_WAREHOUSE', issued_at: iso(-180 * DAY), subscription_expiry_at: iso(-60 * DAY), returned_at: iso(-45 * DAY), carry_fee_eligible: false, carry_fee_accrued: 0, days_past_expiry: 0 },
+  // Lost unit
+  { netbox_id: 'NB-MH-0420', connection_id: 'WM-CON-1980', customer_area: 'Worli',            status: 'LOST', issued_at: iso(-200 * DAY), subscription_expiry_at: iso(-90 * DAY), lost_declared_at: iso(-60 * DAY), carry_fee_eligible: false, carry_fee_accrued: 0, days_past_expiry: 0 },
+  // Damaged unit
+  { netbox_id: 'NB-MH-0425', connection_id: 'WM-CON-2050', customer_area: 'Parel',            status: 'DAMAGED', issued_at: iso(-150 * DAY), subscription_expiry_at: iso(-40 * DAY), returned_at: iso(-30 * DAY), carry_fee_eligible: false, carry_fee_accrued: 0, days_past_expiry: 0 },
+];
+
+const depositTransactions: DepositTransaction[] = [
+  { id: 'DEP-001', date: iso(-200 * DAY), type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0420', description: 'Security deposit collected -- NB-MH-0420' },
+  { id: 'DEP-002', date: iso(-180 * DAY), type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0430', description: 'Security deposit collected -- NB-MH-0430' },
+  { id: 'DEP-003', date: iso(-150 * DAY), type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0425', description: 'Security deposit collected -- NB-MH-0425' },
+  { id: 'DEP-004', date: iso(-120 * DAY), type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0450', description: 'Security deposit collected -- NB-MH-0450' },
+  { id: 'DEP-005', date: iso(-110 * DAY), type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0455', description: 'Security deposit collected -- NB-MH-0455' },
+  { id: 'DEP-006', date: iso(-100 * DAY), type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0451', description: 'Security deposit collected -- NB-MH-0451' },
+  { id: 'DEP-007', date: iso(-90 * DAY),  type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0440', description: 'Security deposit collected -- NB-MH-0440' },
+  { id: 'DEP-008', date: iso(-60 * DAY),  type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0441', description: 'Security deposit collected -- NB-MH-0441' },
+  { id: 'DEP-009', date: iso(-45 * DAY),  type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0442', description: 'Security deposit collected -- NB-MH-0442' },
+  { id: 'DEP-010', date: iso(-30 * DAY),  type: 'DEPOSIT_COLLECTED', amount: 1500,  netbox_id: 'NB-MH-0443', description: 'Security deposit collected -- NB-MH-0443' },
+  // Loss deduction
+  { id: 'DEP-011', date: iso(-60 * DAY),  type: 'LOSS_DEDUCTION',    amount: -1500, netbox_id: 'NB-MH-0420', description: 'Loss recovery -- NB-MH-0420 declared lost' },
+  // Damage deduction
+  { id: 'DEP-012', date: iso(-30 * DAY),  type: 'DAMAGE_DEDUCTION',  amount: -800,  netbox_id: 'NB-MH-0425', description: 'Damage repair cost -- NB-MH-0425' },
+  // Refund for returned unit
+  { id: 'DEP-013', date: iso(-45 * DAY),  type: 'DEPOSIT_REFUND',    amount: -1500, netbox_id: 'NB-MH-0430', description: 'Deposit refund -- NB-MH-0430 returned' },
+];
+
+function computeDepositLedger(): DepositLedger {
+  const securityPerUnit = rateCard.security_deposit_per_netbox;
+  const activeStatuses: NetBoxUnit['status'][] = ['WITH_CUSTOMER', 'EXPIRED_WITH_CUSTOMER', 'COLLECTED_IN_TRANSIT'];
+  const activeUnits = netboxUnits.filter((u) => activeStatuses.includes(u.status));
+  const lostUnits = netboxUnits.filter((u) => u.status === 'LOST');
+  const returnedUnits = netboxUnits.filter((u) => u.status === 'IN_WAREHOUSE');
+  const totalLossDeductions = lostUnits.length * rateCard.replacement_cost;
+  const damageDeductions = depositTransactions
+    .filter((t) => t.type === 'DAMAGE_DEDUCTION')
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+  const refunds = depositTransactions
+    .filter((t) => t.type === 'DEPOSIT_REFUND')
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalCollected = netboxUnits.length * securityPerUnit;
+  const depositBalance = totalCollected - totalLossDeductions - damageDeductions - refunds;
+  const exitRefund = (activeUnits.length * securityPerUnit) - (lostUnits.length * rateCard.replacement_cost) - damageDeductions;
+
+  return {
+    security_deposit_per_unit: securityPerUnit,
+    replacement_cost: rateCard.replacement_cost,
+    carry_fee_per_day: rateCard.carry_fee_per_day,
+    carry_fee_grace_days: rateCard.carry_fee_grace_days,
+    total_issued: netboxUnits.length,
+    total_returned: returnedUnits.length,
+    total_lost: lostUnits.length,
+    total_active: activeUnits.length,
+    deposit_balance: depositBalance,
+    total_loss_deductions: totalLossDeductions,
+    exit_refund_estimate: Math.max(0, exitRefund),
+    transactions: depositTransactions,
+    units: netboxUnits,
+  };
+}
+
+// ---- Wallet carry fee & loss recovery seed transactions -------------------
+// These go into the existing wallet transactions array
+const carryFeeAndLossTxns: WalletTransaction[] = [
+  {
+    id: 'TXN-CF-001',
+    date: iso(-1 * DAY),
+    type: 'CARRY_FEE',
+    amount: -20,
+    description: 'Carry fee -- NB-MH-0450 (10 days x ₹2/day)',
+    status: 'COMPLETED',
+  },
+  {
+    id: 'TXN-CF-002',
+    date: iso(-2 * DAY),
+    type: 'CARRY_FEE',
+    amount: -6,
+    description: 'Carry fee -- NB-MH-0455 (3 days x ₹2/day)',
+    status: 'COMPLETED',
+  },
+  {
+    id: 'TXN-IH-001',
+    date: iso(-5 * DAY),
+    type: 'INSTALL_HANDLING',
+    amount: 150,
+    description: 'Install handling fee -- WM-CON-2650',
+    status: 'COMPLETED',
+  },
+  {
+    id: 'TXN-CH-001',
+    date: iso(-3 * DAY),
+    type: 'COLLECTION_HANDLING',
+    amount: 100,
+    description: 'Collection handling fee -- NB-MH-0455',
+    status: 'COMPLETED',
+  },
+];
+
 // ---- Wallet helpers -------------------------------------------------------
 
+// Inject carry fee / handling txns into wallet on first access
+let walletSeeded = false;
+function seedWalletExtras() {
+  if (walletSeeded) return;
+  walletSeeded = true;
+  walletState.transactions.push(...carryFeeAndLossTxns);
+  // Adjust balance for carry fee debits
+  const cfTotal = carryFeeAndLossTxns.reduce((s, t) => s + t.amount, 0);
+  walletState.balance += cfTotal;
+}
+
 export function getWalletState(): WalletState {
+  seedWalletExtras();
   return walletState;
 }
 
@@ -953,4 +1109,298 @@ export function addNotification(n: AppNotification): void {
 export function dismissNotification(id: string): void {
   const n = notifications.find((x) => x.id === id);
   if (n) n.dismissed = true;
+}
+
+// ---- Rate Card helpers ----------------------------------------------------
+
+export function getRateCard(): RateCard {
+  return rateCard;
+}
+
+// ---- Deposit & NetBox Inventory helpers -----------------------------------
+
+export function getDepositLedger(): DepositLedger {
+  return computeDepositLedger();
+}
+
+export function getNetBoxUnits(): NetBoxUnit[] {
+  return netboxUnits;
+}
+
+export function getNetBoxUnitById(id: string): NetBoxUnit | undefined {
+  return netboxUnits.find((u) => u.netbox_id === id);
+}
+
+export function updateNetBoxUnit(id: string, updates: Partial<NetBoxUnit>): void {
+  const idx = netboxUnits.findIndex((u) => u.netbox_id === id);
+  if (idx !== -1) {
+    netboxUnits[idx] = { ...netboxUnits[idx], ...updates } as NetBoxUnit;
+  }
+}
+
+export function addNetBoxUnit(unit: NetBoxUnit): void {
+  netboxUnits.push(unit);
+}
+
+export function addDepositTransaction(txn: DepositTransaction): void {
+  depositTransactions.push(txn);
+}
+
+export function getDepositTransactions(): DepositTransaction[] {
+  return depositTransactions;
+}
+
+// ---- SLA Framework (4-Domain State Engine) --------------------------------
+
+// Domain-level state computation helper
+function computeDomainState(domain: SLADomain): 'Compliant' | 'At Risk' | 'Non-Compliant' {
+  let anyBelowMin = false;
+  let anySevere = false;
+
+  for (const m of domain.sub_metrics) {
+    if (m.sample_count < m.min_sample) continue; // skip if insufficient sample
+    const breached = m.threshold_direction === 'above'
+      ? m.value < m.threshold
+      : m.value > m.threshold;
+    const severe = m.threshold_direction === 'above'
+      ? m.value < m.severe_threshold
+      : m.value > m.severe_threshold;
+    if (severe) anySevere = true;
+    if (breached) anyBelowMin = true;
+  }
+
+  if (anySevere) return 'Non-Compliant';
+  if (anyBelowMin) return 'At Risk';
+  return 'Compliant';
+}
+
+// Compute overall SLA state from domain pattern
+function computeOverallStanding(domains: SLADomain[]): 'Compliant' | 'At Risk' | 'Non-Compliant' {
+  const states = domains.map((d) => d.state);
+  if (states.includes('Non-Compliant')) return 'Non-Compliant';
+  const atRiskCount = states.filter((s) => s === 'At Risk').length;
+  if (atRiskCount >= 2) return 'Non-Compliant'; // 2+ domains at risk = non-compliant
+  if (atRiskCount >= 1) return 'At Risk';
+  return 'Compliant';
+}
+
+function getConsequence(standing: 'Compliant' | 'At Risk' | 'Non-Compliant'): SLAConsequence {
+  switch (standing) {
+    case 'Compliant':
+      return { routing: 'Full', bonus_eligibility: 'Eligible', enablement: 'None' };
+    case 'At Risk':
+      return { routing: 'Graduated taper', bonus_eligibility: 'Bonus pause', enablement: 'Available' };
+    case 'Non-Compliant':
+      return { routing: 'Significant taper', bonus_eligibility: 'Bonus removal', enablement: 'Mandatory' };
+  }
+}
+
+// Seed SLA domains with realistic data
+// Scenario: CSP is "At Risk" because Domain 2 (Service Resolution) is breaching
+const slaDomains: SLADomain[] = [
+  // DOMAIN 1 — Installation Integrity
+  {
+    id: 'installation',
+    name: 'Installation Integrity',
+    purpose: 'Protect connection creation and early trust',
+    state: 'Compliant',
+    control_level: 'High',
+    consequence_type: 'Economic + Enablement',
+    sub_metrics: [
+      {
+        id: 'install_ontime',
+        name: '% On-Time Install',
+        value: 88,
+        unit: '%',
+        threshold: 80,
+        severe_threshold: 65,
+        threshold_direction: 'above',
+        trend: 'stable',
+        window_days: 30,
+        sample_count: 17,
+        min_sample: 5,
+      },
+      {
+        id: 'early_failure',
+        name: '% Early Failure Rate',
+        value: 6,
+        unit: '%',
+        threshold: 15,
+        severe_threshold: 25,
+        threshold_direction: 'below',
+        trend: 'improving',
+        window_days: 30,
+        sample_count: 17,
+        min_sample: 5,
+      },
+    ],
+  },
+  // DOMAIN 2 — Service Resolution (BREACHING)
+  {
+    id: 'resolution',
+    name: 'Service Resolution',
+    purpose: 'Protect recovery trust when issues occur',
+    state: 'At Risk',
+    control_level: 'Moderate-High',
+    consequence_type: 'Economic + Enablement',
+    sub_metrics: [
+      {
+        id: 'resolved_in_sla',
+        name: '% Not Resolved Within SLA Window (4h)',
+        value: 22,
+        unit: '%',
+        threshold: 15,
+        severe_threshold: 30,
+        threshold_direction: 'below',
+        trend: 'declining',
+        window_days: 30,
+        sample_count: 41,
+        min_sample: 10,
+      },
+      {
+        id: 'long_unresolved',
+        name: '% Long-Unresolved Complaints (24h)',
+        value: 8,
+        unit: '%',
+        threshold: 10,
+        severe_threshold: 20,
+        threshold_direction: 'below',
+        trend: 'stable',
+        window_days: 30,
+        sample_count: 41,
+        min_sample: 10,
+      },
+    ],
+  },
+  // DOMAIN 3 — Service Stability
+  {
+    id: 'stability',
+    name: 'Service Stability',
+    purpose: 'Protect ongoing service continuity',
+    state: 'Compliant',
+    control_level: 'Mixed',
+    consequence_type: 'Routing + Enablement',
+    sub_metrics: [
+      {
+        id: 'uptime',
+        name: '% Uptime (Rolling Window)',
+        value: 98.7,
+        unit: '%',
+        threshold: 98,
+        severe_threshold: 95,
+        threshold_direction: 'above',
+        trend: 'stable',
+        window_days: 30,
+        sample_count: 45,
+        min_sample: 20,
+      },
+      {
+        id: 'speed_latency',
+        name: 'Speed / Latency Compliance Band',
+        value: 92,
+        unit: '%',
+        threshold: 85,
+        severe_threshold: 70,
+        threshold_direction: 'above',
+        trend: 'improving',
+        window_days: 30,
+        sample_count: 45,
+        min_sample: 20,
+      },
+    ],
+  },
+  // DOMAIN 4 — Complaint & Experience Signals
+  {
+    id: 'experience',
+    name: 'Complaint & Experience Signals',
+    purpose: 'Detect dissatisfaction trends beyond raw uptime',
+    state: 'Compliant',
+    control_level: 'Mixed',
+    consequence_type: 'Routing + Enablement',
+    sub_metrics: [
+      {
+        id: 'complaint_ratio',
+        name: 'Complaint Ratio (per 100 connections)',
+        value: 4.2,
+        unit: 'ratio',
+        threshold: 8,
+        severe_threshold: 15,
+        threshold_direction: 'below',
+        trend: 'stable',
+        window_days: 30,
+        sample_count: 45,
+        min_sample: 20,
+      },
+      {
+        id: 'repeat_complaint',
+        name: '% Repeat Complaint Ratio',
+        value: 2.1,
+        unit: '%',
+        threshold: 5,
+        severe_threshold: 10,
+        threshold_direction: 'below',
+        trend: 'improving',
+        window_days: 30,
+        sample_count: 45,
+        min_sample: 20,
+      },
+    ],
+  },
+];
+
+// Compute domain states
+slaDomains.forEach((d) => {
+  d.state = computeDomainState(d);
+});
+
+const slaStateHistory: SLAStateTransition[] = [
+  { from: 'Compliant', to: 'Compliant', date: iso(-90 * DAY), reason: 'All domains compliant — quarterly review' },
+  { from: 'Compliant', to: 'Compliant', date: iso(-60 * DAY), reason: 'All domains compliant — monthly evaluation' },
+  { from: 'Compliant', to: 'At Risk', date: iso(-12 * DAY), reason: 'Domain 2 (Service Resolution): % Not Resolved Within SLA Window breached minimum threshold (22% > 15%)' },
+];
+
+const overallStanding = computeOverallStanding(slaDomains);
+const consequence = getConsequence(overallStanding);
+
+function getHysteresis(standing: 'Compliant' | 'At Risk' | 'Non-Compliant') {
+  switch (standing) {
+    case 'Compliant':
+      return { upgrade_requirement: 'Already at highest state', current_clean_windows: 2, required_clean_windows: 0 };
+    case 'At Risk':
+      return { upgrade_requirement: '1 full clean evaluation window with no breaches to return to Compliant', current_clean_windows: 0, required_clean_windows: 1 };
+    case 'Non-Compliant':
+      return { upgrade_requirement: '2 consecutive clean windows to return to Compliant (1 clean window for At Risk)', current_clean_windows: 0, required_clean_windows: 2 };
+  }
+}
+
+const slaOverallState: SLAOverallState = {
+  overall_standing: overallStanding,
+  domains: slaDomains,
+  consequence,
+  state_since: iso(-12 * DAY),
+  windows_in_current_state: 1,
+  evaluation_window_days: 30,
+  next_evaluation: iso(18 * DAY),
+  state_history: slaStateHistory,
+  hysteresis: getHysteresis(overallStanding),
+};
+
+export function getSLAState(): SLAOverallState {
+  // Recompute domain states dynamically
+  slaDomains.forEach((d) => {
+    d.state = computeDomainState(d);
+  });
+  const standing = computeOverallStanding(slaDomains);
+  slaOverallState.overall_standing = standing;
+  slaOverallState.consequence = getConsequence(standing);
+  slaOverallState.hysteresis = getHysteresis(standing);
+  return slaOverallState;
+}
+
+export function updateSLAMetric(domainId: string, metricId: string, value: number): void {
+  const domain = slaDomains.find((d) => d.id === domainId);
+  if (!domain) return;
+  const metric = domain.sub_metrics.find((m) => m.id === metricId);
+  if (!metric) return;
+  metric.value = value;
 }
