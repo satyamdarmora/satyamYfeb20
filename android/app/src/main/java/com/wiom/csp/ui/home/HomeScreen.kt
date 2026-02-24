@@ -28,6 +28,7 @@ import com.wiom.csp.ui.support.SupportHubScreen
 import com.wiom.csp.ui.netbox.NetBoxHubScreen
 import com.wiom.csp.ui.profile.ProfileScreen
 import com.wiom.csp.ui.policies.PoliciesScreen
+import com.wiom.csp.ui.sla.SLAHubScreen
 import com.wiom.csp.ui.technician.TechnicianAppScreen
 
 @Composable
@@ -104,7 +105,8 @@ fun HomeScreen(
                         assuranceState = assurance,
                         lifetimeEarnings = viewModel.lifetimeEarnings,
                         activeDrillDown = activeDrillDown,
-                        onDrillDown = { activeDrillDown = it }
+                        onDrillDown = { activeDrillDown = it },
+                        onOpenSLA = { viewModel.navigate("sla") }
                     )
                 } else if (state.isLoading) {
                     // Loading placeholder
@@ -258,6 +260,7 @@ fun HomeScreen(
             "team" -> TeamHubScreen(onBack = { viewModel.backToHome() })
             "support" -> SupportHubScreen(onBack = { viewModel.backToHome() })
             "netbox" -> NetBoxHubScreen(onBack = { viewModel.backToHome() })
+            "sla" -> SLAHubScreen(onBack = { viewModel.backToHome() })
             "profile" -> ProfileScreen(
                 onBack = { viewModel.backToHome() },
                 offersEnabled = state.offersEnabled,

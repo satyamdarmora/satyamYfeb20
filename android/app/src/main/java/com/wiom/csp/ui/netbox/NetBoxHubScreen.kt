@@ -20,10 +20,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wiom.csp.data.repository.SLARepository
 import com.wiom.csp.data.repository.TaskRepository
-import com.wiom.csp.domain.model.Task
-import com.wiom.csp.domain.model.TaskType
-import com.wiom.csp.ui.common.formatCountdown
+import com.wiom.csp.data.repository.WalletRepository
+import com.wiom.csp.domain.model.*
+import com.wiom.csp.ui.common.formatCurrency
 import com.wiom.csp.ui.common.formatDate
 import com.wiom.csp.ui.theme.WiomCspTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -52,12 +53,22 @@ private val MOCK_ORDERS = listOf(
         java.time.Instant.now().minusSeconds(2 * 86400).toString())
 )
 
+private const val DEPOSIT_PER_UNIT = 1500
+
 @HiltViewModel
 class NetBoxViewModel @Inject constructor(
-    private val taskRepo: TaskRepository
+    private val taskRepo: TaskRepository,
+    private val walletRepo: WalletRepository,
+    private val slaRepo: SLARepository
 ) : ViewModel() {
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks
+
+    private val _walletBalance = MutableStateFlow(0)
+    val walletBalance: StateFlow<Int> = _walletBalance
+
+    private val _processing = MutableStateFlow(false)
+    val processing: StateFlow<Boolean> = _processing
 
     init { load() }
 
@@ -66,6 +77,61 @@ class NetBoxViewModel @Inject constructor(
             taskRepo.getTasks().onSuccess { all ->
                 _tasks.value = all.filter { it.taskType == TaskType.NETBOX && !it.isTerminal }
             }
+            walletRepo.getWallet().onSuccess { _walletBalance.value = it.balance }
+        }
+    }
+
+    fun placeOrderWithWallet(qty: Int, area: String, onDone: (NetBoxOrder) -> Unit) {
+        if (_processing.value) return
+        _processing.value = true
+        val depositTotal = qty * DEPOSIT_PER_UNIT
+        viewModelScope.launch {
+            // Deduct from wallet
+            val txn = WalletTransaction(
+                id = "DEP-W-${System.currentTimeMillis()}",
+                date = java.time.Instant.now().toString(),
+                type = WalletTransactionType.DEDUCTION,
+                amount = -depositTotal,
+                description = "NetBox deposit ($qty unit${if (qty > 1) "s" else ""})",
+                status = TransactionStatus.COMPLETED
+            )
+            walletRepo.updateWallet(
+                balance = _walletBalance.value - depositTotal,
+                newTransaction = txn
+            )
+            // Record deposit transactions
+            repeat(qty) {
+                slaRepo.collectDeposit(DEPOSIT_PER_UNIT, "Deposit for NetBox order")
+            }
+            _walletBalance.value -= depositTotal
+            val order = NetBoxOrder(
+                id = "ORD-${System.currentTimeMillis().toString().takeLast(4)}",
+                quantity = qty,
+                deliveryArea = area,
+                status = "ORDERED",
+                createdAt = java.time.Instant.now().toString()
+            )
+            _processing.value = false
+            onDone(order)
+        }
+    }
+
+    fun placeOrderExternal(qty: Int, area: String, onDone: (NetBoxOrder) -> Unit) {
+        if (_processing.value) return
+        _processing.value = true
+        viewModelScope.launch {
+            repeat(qty) {
+                slaRepo.collectDeposit(DEPOSIT_PER_UNIT, "Deposit for NetBox order")
+            }
+            val order = NetBoxOrder(
+                id = "ORD-${System.currentTimeMillis().toString().takeLast(4)}",
+                quantity = qty,
+                deliveryArea = area,
+                status = "ORDERED",
+                createdAt = java.time.Instant.now().toString()
+            )
+            _processing.value = false
+            onDone(order)
         }
     }
 }
@@ -87,11 +153,14 @@ fun NetBoxHubScreen(
 ) {
     val colors = WiomCspTheme.colors
     val tasks by viewModel.tasks.collectAsState()
-    var step by remember { mutableStateOf("hub") } // hub, create_order, order_detail
+    val walletBalance by viewModel.walletBalance.collectAsState()
+    val isProcessing by viewModel.processing.collectAsState()
+    var step by remember { mutableStateOf("hub") } // hub, create_order, pay_deposit, confirm_order, order_receipt, order_detail
     var orders by remember { mutableStateOf(MOCK_ORDERS) }
     var selectedOrder by remember { mutableStateOf<NetBoxOrder?>(null) }
     var quantity by remember { mutableStateOf("") }
     var deliveryArea by remember { mutableStateOf(AREAS[0]) }
+    var payMethod by remember { mutableStateOf("wallet") } // wallet, upi, netbanking, debit_card
 
     // Group tasks by state
     val tasksByState = remember(tasks) {
@@ -296,121 +365,239 @@ fun NetBoxHubScreen(
             }
 
             "create_order" -> {
-                val canSubmit = (quantity.toIntOrNull() ?: 0) > 0
+                val qty = quantity.toIntOrNull() ?: 0
+                val canSubmit = qty > 0
+                val depositTotal = qty * DEPOSIT_PER_UNIT
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Header
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .drawBehind {
-                                drawLine(colors.borderSubtle, Offset(0f, size.height), Offset(size.width, size.height), 1f)
-                            }
+                        modifier = Modifier.fillMaxWidth()
+                            .drawBehind { drawLine(colors.borderSubtle, Offset(0f, size.height), Offset(size.width, size.height), 1f) }
                             .padding(16.dp)
                     ) {
-                        Text(
-                            "\u2190 Back",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = colors.textSecondary,
-                            modifier = Modifier.clickable { step = "hub" }.padding(vertical = 4.dp)
-                        )
+                        Text("\u2190 Back", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textSecondary,
+                            modifier = Modifier.clickable { step = "hub" }.padding(vertical = 4.dp))
                         Spacer(Modifier.height(12.dp))
-                        Text("Request New NetBox", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                        Text("Request NetBox", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                     }
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp)
-                    ) {
-                        // Quantity
+                    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
                         Text("Quantity", fontSize = 12.sp, color = colors.textSecondary)
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
-                            value = quantity,
-                            onValueChange = { quantity = it },
-                            placeholder = { Text("Number of NetBox units", fontSize = 14.sp) },
+                            value = quantity, onValueChange = { quantity = it },
+                            placeholder = { Text("Number of units", fontSize = 14.sp) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = colors.bgSecondary,
-                                unfocusedContainerColor = colors.bgSecondary,
-                                focusedBorderColor = colors.brandPrimary,
-                                unfocusedBorderColor = colors.borderSubtle,
-                                focusedTextColor = colors.textPrimary,
-                                unfocusedTextColor = colors.textPrimary,
-                                cursorColor = colors.brandPrimary
+                                focusedContainerColor = colors.bgSecondary, unfocusedContainerColor = colors.bgSecondary,
+                                focusedBorderColor = colors.brandPrimary, unfocusedBorderColor = colors.borderSubtle,
+                                focusedTextColor = colors.textPrimary, unfocusedTextColor = colors.textPrimary, cursorColor = colors.brandPrimary
                             ),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth()
                         )
-
                         Spacer(Modifier.height(16.dp))
-
-                        // Delivery Area
                         Text("Delivery Area", fontSize = 12.sp, color = colors.textSecondary)
                         Spacer(Modifier.height(6.dp))
-
-                        // Area chips
-                        val chunkedAreas = AREAS.chunked(2)
-                        chunkedAreas.forEach { row ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
+                        AREAS.chunked(2).forEach { row ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 row.forEach { area ->
                                     val selected = area == deliveryArea
                                     Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(8.dp))
+                                        modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
                                             .background(if (selected) colors.brandPrimary.copy(alpha = 0.15f) else colors.bgSecondary)
-                                            .border(
-                                                1.dp,
-                                                if (selected) colors.brandPrimary else colors.borderSubtle,
-                                                RoundedCornerShape(8.dp)
-                                            )
-                                            .clickable { deliveryArea = area }
-                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            .border(1.dp, if (selected) colors.brandPrimary else colors.borderSubtle, RoundedCornerShape(8.dp))
+                                            .clickable { deliveryArea = area }.padding(horizontal = 12.dp, vertical = 10.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            area,
-                                            fontSize = 13.sp,
+                                        Text(area, fontSize = 13.sp,
                                             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                            color = if (selected) colors.brandPrimary else colors.textPrimary
-                                        )
+                                            color = if (selected) colors.brandPrimary else colors.textPrimary)
                                     }
                                 }
                             }
                             Spacer(Modifier.height(8.dp))
                         }
-
+                        Spacer(Modifier.height(16.dp))
+                        // Deposit summary
+                        if (canSubmit) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0x0FFF8000)).border(1.dp, Color(0x26FF8000), RoundedCornerShape(8.dp)).padding(14.dp)
+                            ) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Deposit per unit", fontSize = 13.sp, color = colors.textSecondary)
+                                    Text(formatCurrency(DEPOSIT_PER_UNIT), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                                }
+                                Spacer(Modifier.height(6.dp))
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Total deposit", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                    Text(formatCurrency(depositTotal), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.accentGold)
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text("Refundable on unit return", fontSize = 11.sp, color = colors.textMuted)
+                            }
+                        }
                         Spacer(Modifier.height(24.dp))
-
-                        // Submit
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
                                 .background(colors.brandPrimary.copy(alpha = if (canSubmit) 1f else 0.4f))
-                                .clickable(enabled = canSubmit) {
-                                    val newOrder = NetBoxOrder(
-                                        id = "ORD-${System.currentTimeMillis().toString().takeLast(4)}",
-                                        quantity = quantity.toInt(),
-                                        deliveryArea = deliveryArea,
-                                        status = "ORDERED",
-                                        createdAt = java.time.Instant.now().toString()
-                                    )
-                                    orders = orders + newOrder
-                                    selectedOrder = newOrder
-                                    step = "order_detail"
+                                .clickable(enabled = canSubmit) { step = "pay_deposit" }.padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Continue to Payment", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                        }
+                    }
+                }
+            }
+
+            "pay_deposit" -> {
+                val qty = quantity.toIntOrNull() ?: 1
+                val depositTotal = qty * DEPOSIT_PER_UNIT
+                val canPayWallet = walletBalance >= depositTotal
+                data class PayOption(val id: String, val label: String, val sub: String, val disabled: Boolean = false)
+                val options = listOf(
+                    PayOption("wallet", "Pay from Wallet", if (canPayWallet) "Balance: ${formatCurrency(walletBalance)}" else "Insufficient (${formatCurrency(walletBalance)})", !canPayWallet),
+                    PayOption("upi", "UPI", "GPay, PhonePe, Paytm"),
+                    PayOption("netbanking", "Net Banking", "All major banks"),
+                    PayOption("debit_card", "Debit Card", "Visa, Mastercard, RuPay"),
+                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .drawBehind { drawLine(colors.borderSubtle, Offset(0f, size.height), Offset(size.width, size.height), 1f) }
+                            .padding(16.dp)
+                    ) {
+                        Text("\u2190 Back", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textSecondary,
+                            modifier = Modifier.clickable { step = "create_order" }.padding(vertical = 4.dp))
+                        Spacer(Modifier.height(12.dp))
+                        Text("Pay Deposit", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                    }
+                    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                        Text("$qty unit${if (qty > 1) "s" else ""} \u00B7 $deliveryArea", fontSize = 13.sp, color = colors.textSecondary)
+                        Spacer(Modifier.height(4.dp))
+                        Text(formatCurrency(depositTotal), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = colors.accentGold)
+                        Spacer(Modifier.height(20.dp))
+                        options.forEach { opt ->
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(RoundedCornerShape(10.dp))
+                                    .background(colors.bgCard).border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
+                                    .clickable(enabled = !opt.disabled) { payMethod = opt.id; step = "confirm_order" }
+                                    .padding(16.dp).then(if (opt.disabled) Modifier.background(Color.Transparent) else Modifier),
+                            ) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Column(modifier = Modifier.weight(1f).then(if (opt.disabled) Modifier else Modifier)) {
+                                        Text(opt.label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                                            color = if (opt.disabled) colors.textMuted else colors.textPrimary)
+                                        Text(opt.sub, fontSize = 12.sp,
+                                            color = if (opt.disabled) colors.negative else colors.textMuted)
+                                    }
+                                    if (!opt.disabled) Text("\u203A", fontSize = 14.sp, color = colors.textMuted)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            "confirm_order" -> {
+                val qty = quantity.toIntOrNull() ?: 1
+                val depositTotal = qty * DEPOSIT_PER_UNIT
+                val methodLabel = when (payMethod) { "wallet" -> "Wallet Balance"; "upi" -> "UPI"; "netbanking" -> "Net Banking"; else -> "Debit Card" }
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .drawBehind { drawLine(colors.borderSubtle, Offset(0f, size.height), Offset(size.width, size.height), 1f) }
+                            .padding(16.dp)
+                    ) {
+                        Text("\u2190 Back", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textSecondary,
+                            modifier = Modifier.clickable { step = "pay_deposit" }.padding(vertical = 4.dp))
+                        Spacer(Modifier.height(12.dp))
+                        Text("Confirm Order", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                    }
+                    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.bgCard).padding(20.dp)
+                        ) {
+                            listOf("Quantity" to "$qty unit${if (qty > 1) "s" else ""}", "Delivery Area" to deliveryArea, "Payment" to methodLabel).forEach { (label, value) ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .drawBehind { drawLine(colors.borderSubtle, Offset(0f, size.height), Offset(size.width, size.height), 1f) }
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(label, fontSize = 13.sp, color = colors.textSecondary)
+                                    Text(value, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                                }
+                            }
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Deposit Amount", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                Text(formatCurrency(depositTotal), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.accentGold)
+                            }
+                        }
+                        if (payMethod == "wallet") {
+                            Spacer(Modifier.height(8.dp))
+                            Text("${formatCurrency(depositTotal)} will be deducted from your wallet.", fontSize = 12.sp, color = colors.textMuted)
+                        }
+                        Spacer(Modifier.height(24.dp))
+                        Box(
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                                .background(colors.brandPrimary.copy(alpha = if (isProcessing) 0.5f else 1f))
+                                .clickable(enabled = !isProcessing) {
+                                    val cb: (NetBoxOrder) -> Unit = { order ->
+                                        orders = listOf(order) + orders
+                                        selectedOrder = order
+                                        step = "order_receipt"
+                                    }
+                                    if (payMethod == "wallet") viewModel.placeOrderWithWallet(qty, deliveryArea, cb)
+                                    else viewModel.placeOrderExternal(qty, deliveryArea, cb)
                                 }
                                 .padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Submit Order", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text(
+                                if (isProcessing) "Processing..." else "Pay ${formatCurrency(depositTotal)} & Place Order",
+                                fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                         }
+                    }
+                }
+            }
+
+            "order_receipt" -> {
+                val qty = quantity.toIntOrNull() ?: 1
+                val depositTotal = qty * DEPOSIT_PER_UNIT
+                val methodLabel = when (payMethod) { "wallet" -> "Wallet"; "upi" -> "UPI"; "netbanking" -> "Net Banking"; else -> "Debit Card" }
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .drawBehind { drawLine(colors.borderSubtle, Offset(0f, size.height), Offset(size.width, size.height), 1f) }
+                            .padding(16.dp)
+                    ) {
+                        Text("Order Placed", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                    }
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier.size(60.dp).clip(CircleShape).background(Color(0x1F008043)),
+                            contentAlignment = Alignment.Center
+                        ) { Text("\u2713", fontSize = 28.sp, color = colors.positive) }
+                        Spacer(Modifier.height(16.dp))
+                        Text("Deposit paid", fontSize = 14.sp, color = colors.textSecondary)
+                        Text(formatCurrency(depositTotal), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                        Text("via $methodLabel", fontSize = 13.sp, color = colors.textMuted)
+                        Spacer(Modifier.height(4.dp))
+                        Text("$qty unit${if (qty > 1) "s" else ""} \u00B7 $deliveryArea", fontSize = 12.sp, color = colors.textSecondary)
+                        Spacer(Modifier.height(4.dp))
+                        Text("Refundable when units are returned", fontSize = 11.sp, color = colors.textMuted)
+                        Spacer(Modifier.height(32.dp))
+                        Box(
+                            modifier = Modifier.fillMaxWidth(0.7f).clip(RoundedCornerShape(10.dp)).background(colors.brandPrimary)
+                                .clickable {
+                                    if (selectedOrder != null) step = "order_detail"
+                                    else { step = "hub"; quantity = ""; deliveryArea = AREAS[0] }
+                                }.padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) { Text("View Order", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White) }
                     }
                 }
             }

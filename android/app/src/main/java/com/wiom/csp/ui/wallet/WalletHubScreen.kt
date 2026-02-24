@@ -73,6 +73,16 @@ fun WalletHubScreen(
     val wallet by viewModel.wallet.collectAsState()
     val data = wallet ?: return
 
+    // Weekly withdrawal cycle check
+    val lastWithdrawal = data.transactions.firstOrNull { it.type == WalletTransactionType.WITHDRAWAL && it.status == com.wiom.csp.domain.model.TransactionStatus.COMPLETED }
+    val daysSinceLastWithdrawal = if (lastWithdrawal != null) {
+        try {
+            val lastDate = java.time.Instant.parse(lastWithdrawal.date).toEpochMilli()
+            ((System.currentTimeMillis() - lastDate) / 86400000).toInt()
+        } catch (_: Exception) { Int.MAX_VALUE }
+    } else Int.MAX_VALUE
+    val withdrawalCooldown = daysSinceLastWithdrawal < 7
+
     var showWithdraw by remember { mutableStateOf(false) }
 
     Box(
@@ -149,16 +159,25 @@ fun WalletHubScreen(
                 Spacer(Modifier.height(16.dp))
 
                 if (!data.frozen) {
+                    val canWithdraw = !withdrawalCooldown
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(colors.brandPrimary)
-                                .clickable { showWithdraw = true }
+                                .background(if (canWithdraw) colors.brandPrimary else colors.bgSecondary)
+                                .clickable(enabled = canWithdraw) { showWithdraw = true }
                                 .padding(horizontal = 20.dp, vertical = 10.dp)
                         ) {
-                            Text("Withdraw", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color.White)
+                            Text("Withdraw", fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+                                color = if (canWithdraw) Color.White else colors.textMuted)
                         }
+                    }
+                    if (withdrawalCooldown) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Next withdrawal in ${7 - daysSinceLastWithdrawal} day${if (7 - daysSinceLastWithdrawal != 1) "s" else ""}",
+                            fontSize = 12.sp, color = colors.warning
+                        )
                     }
                 }
             }

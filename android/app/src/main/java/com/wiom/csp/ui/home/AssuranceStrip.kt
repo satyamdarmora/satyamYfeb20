@@ -32,6 +32,7 @@ fun AssuranceStrip(
     lifetimeEarnings: Int?,
     activeDrillDown: String?,
     onDrillDown: (String?) -> Unit,
+    onOpenSLA: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = WiomCspTheme.colors
@@ -123,7 +124,7 @@ fun AssuranceStrip(
                     .clip(RoundedCornerShape(10.dp))
                     .background(colors.bgCard)
                     .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
-                    .clickable { onDrillDown("sla") }
+                    .clickable { if (onOpenSLA != null) onOpenSLA() else onDrillDown("sla") }
                     .padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
