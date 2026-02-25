@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Task } from '@/lib/types';
-import { getAllTasks } from '@/lib/data';
 
 interface NetBoxHubProps {
   onBack: () => void;
@@ -73,16 +72,30 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
   const [quantity, setQuantity] = useState('');
   const [deliveryArea, setDeliveryArea] = useState(AREAS[0]);
 
-  // Get NETBOX tasks grouped by state
+  // Fetch NETBOX tasks from API
+  const [allNetboxTasks, setAllNetboxTasks] = useState<Task[]>([]);
+  useEffect(() => {
+    const fetchNetbox = async () => {
+      try {
+        const res = await fetch('/api/tasks');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setAllNetboxTasks(data.filter((t: Task) => t.task_type === 'NETBOX'));
+        }
+      } catch {}
+    };
+    fetchNetbox();
+  }, []);
+
+  // Group by state
   const netboxTasks = useMemo(() => {
-    const all = getAllTasks().filter((t: Task) => t.task_type === 'NETBOX');
     const groups: Record<string, Task[]> = {};
-    all.forEach((t: Task) => {
+    allNetboxTasks.forEach((t: Task) => {
       if (!groups[t.state]) groups[t.state] = [];
       groups[t.state].push(t);
     });
     return groups;
-  }, []);
+  }, [allNetboxTasks]);
 
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Technician, Task } from '@/lib/types';
-import { getTechnicians, getAllTasks } from '@/lib/data';
+import type { Technician } from '@/lib/types';
 
 interface TeamHubProps {
   onBack: () => void;
@@ -14,7 +13,7 @@ const BANDS: Technician['band'][] = ['A', 'B', 'C'];
 
 export default function TeamHub({ onBack }: TeamHubProps) {
   const [step, setStep] = useState<FlowStep>('roster');
-  const [techs, setTechs] = useState<Technician[]>(getTechnicians());
+  const [techs, setTechs] = useState<Technician[]>([]);
   const [selectedTech, setSelectedTech] = useState<Technician | null>(null);
   const [editBand, setEditBand] = useState<Technician['band']>('A');
 
@@ -25,14 +24,35 @@ export default function TeamHub({ onBack }: TeamHubProps) {
 
   // Active task count per technician
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
+
+  // Fetch technicians from API
   useEffect(() => {
-    const terminal = ['RESOLVED', 'VERIFIED', 'ACTIVATION_VERIFIED', 'RETURN_CONFIRMED', 'FAILED', 'UNRESOLVED', 'LOST_DECLARED'];
-    const allTasks = getAllTasks();
-    const counts: Record<string, number> = {};
-    techs.forEach((t) => {
-      counts[t.id] = allTasks.filter((task) => task.assigned_to === t.name && !terminal.includes(task.state)).length;
-    });
-    setTaskCounts(counts);
+    const fetchTechs = async () => {
+      try {
+        const res = await fetch('/api/technician/register');
+        const data = await res.json();
+        if (Array.isArray(data)) setTechs(data);
+      } catch {}
+    };
+    fetchTechs();
+  }, []);
+
+  // Fetch tasks to compute counts
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const res = await fetch('/api/tasks');
+        const allTasks = await res.json();
+        if (!Array.isArray(allTasks)) return;
+        const terminal = ['RESOLVED', 'VERIFIED', 'ACTIVATION_VERIFIED', 'RETURN_CONFIRMED', 'FAILED', 'UNRESOLVED', 'LOST_DECLARED'];
+        const counts: Record<string, number> = {};
+        techs.forEach((t) => {
+          counts[t.id] = allTasks.filter((task: any) => task.assigned_to === t.name && !terminal.includes(task.state)).length;
+        });
+        setTaskCounts(counts);
+      } catch {}
+    };
+    if (techs.length > 0) fetchCounts();
   }, [techs]);
 
   const overlayStyle: React.CSSProperties = {
@@ -264,20 +284,7 @@ export default function TeamHub({ onBack }: TeamHubProps) {
                   if (data.ok) {
                     setTechs([...techs, data.technician]);
                   }
-                } catch {
-                  // fallback: add locally
-                  const newTech: Technician = {
-                    id: `TECH-${Date.now().toString().slice(-4)}`,
-                    name: newName.trim(),
-                    band: newBand,
-                    available: true,
-                    csp_id: 'CSP-MH-1001',
-                    phone: newPhone.trim(),
-                    join_date: new Date().toISOString().split('T')[0],
-                    completed_count: 0,
-                  };
-                  setTechs([...techs, newTech]);
-                }
+                } catch {}
                 setStep('roster');
               }
             }}

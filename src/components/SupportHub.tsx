@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { SupportCase } from '@/lib/types';
-import { getSupportCases, addSupportCase } from '@/lib/data';
 
 interface SupportHubProps {
   onBack: () => void;
@@ -34,7 +33,7 @@ function getStatusStyle(status: SupportCase['status']): { color: string; bg: str
 
 export default function SupportHub({ onBack }: SupportHubProps) {
   const [step, setStep] = useState<FlowStep>('list');
-  const [cases, setCases] = useState<SupportCase[]>(getSupportCases());
+  const [cases, setCases] = useState<SupportCase[]>([]);
   const [selectedCase, setSelectedCase] = useState<SupportCase | null>(null);
   const [replyText, setReplyText] = useState('');
 
@@ -45,6 +44,18 @@ export default function SupportHub({ onBack }: SupportHubProps) {
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [linkedTaskId, setLinkedTaskId] = useState('');
+
+  // Fetch cases from API on mount
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        const res = await fetch('/api/support');
+        const data = await res.json();
+        if (Array.isArray(data)) setCases(data);
+      } catch {}
+    };
+    fetchCases();
+  }, []);
 
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
@@ -250,27 +261,29 @@ export default function SupportHub({ onBack }: SupportHubProps) {
             />
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (canSubmit) {
-                const now = new Date().toISOString();
-                const newCase: SupportCase = {
-                  case_id: `SUP-${Date.now().toString().slice(-4)}`,
-                  subject: subject.trim(),
-                  status: 'OPEN',
-                  created_at: now,
-                  updated_at: now,
-                  linked_task_id: linkedTaskId.trim() || undefined,
-                  messages: [
-                    {
-                      sender: 'CSP-MH-1001',
-                      text: description.trim(),
-                      timestamp: now,
-                    },
-                  ],
-                };
-                addSupportCase(newCase);
-                setCases([...cases, newCase]);
-                setSubmittedCaseId(newCase.case_id);
+                try {
+                  const res = await fetch('/api/support', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      subject: subject.trim(),
+                      description: description.trim(),
+                      linked_task_id: linkedTaskId.trim() || undefined,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (data.ok && data.case) {
+                    setCases([...cases, data.case]);
+                    setSubmittedCaseId(data.case.case_id);
+                  } else {
+                    // Fallback: generate local ID
+                    setSubmittedCaseId(`SUP-${Date.now().toString().slice(-4)}`);
+                  }
+                } catch {
+                  setSubmittedCaseId(`SUP-${Date.now().toString().slice(-4)}`);
+                }
                 setStep('create_receipt');
               }
             }}
@@ -315,6 +328,49 @@ export default function SupportHub({ onBack }: SupportHubProps) {
   // Case detail
   if (step === 'case_detail' && selectedCase) {
     const statusStyle = getStatusStyle(selectedCase.status);
+
+    const sendReply = async () => {
+      if (!replyText.trim()) return;
+      try {
+        const res = await fetch(`/api/support/${selectedCase.case_id}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: replyText.trim(), sender: 'CSP-MH-1001' }),
+        });
+        const data = await res.json();
+        if (data.ok && data.case) {
+          setSelectedCase(data.case);
+          setCases(cases.map((c) => (c.case_id === selectedCase.case_id ? data.case : c)));
+        } else {
+          // Fallback: update locally
+          const now = new Date().toISOString();
+          const updatedCase = {
+            ...selectedCase,
+            updated_at: now,
+            messages: [
+              ...selectedCase.messages,
+              { sender: 'CSP-MH-1001', text: replyText.trim(), timestamp: now },
+            ],
+          };
+          setSelectedCase(updatedCase);
+          setCases(cases.map((c) => (c.case_id === selectedCase.case_id ? updatedCase : c)));
+        }
+      } catch {
+        const now = new Date().toISOString();
+        const updatedCase = {
+          ...selectedCase,
+          updated_at: now,
+          messages: [
+            ...selectedCase.messages,
+            { sender: 'CSP-MH-1001', text: replyText.trim(), timestamp: now },
+          ],
+        };
+        setSelectedCase(updatedCase);
+        setCases(cases.map((c) => (c.case_id === selectedCase.case_id ? updatedCase : c)));
+      }
+      setReplyText('');
+    };
+
     return (
       <div style={overlayStyle}>
         <div style={headerStyle}>
@@ -359,7 +415,7 @@ export default function SupportHub({ onBack }: SupportHubProps) {
                     borderRadius: 12,
                     padding: '12px 14px',
                     maxWidth: '85%',
-                    border: isCSP ? '1px solid #352D42' : '1px solid #352D42',
+                    border: '1px solid #352D42',
                   }}
                 >
                   <div style={{ fontSize: 11, fontWeight: 600, color: isCSP ? '#D9008D' : '#FF8000', marginBottom: 4 }}>
@@ -387,39 +443,11 @@ export default function SupportHub({ onBack }: SupportHubProps) {
               placeholder="Type a reply..."
               style={{ ...inputStyle, flex: 1 }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && replyText.trim()) {
-                  const now = new Date().toISOString();
-                  const updatedCase = {
-                    ...selectedCase,
-                    updated_at: now,
-                    messages: [
-                      ...selectedCase.messages,
-                      { sender: 'CSP-MH-1001', text: replyText.trim(), timestamp: now },
-                    ],
-                  };
-                  setSelectedCase(updatedCase);
-                  setCases(cases.map((c) => (c.case_id === selectedCase.case_id ? updatedCase : c)));
-                  setReplyText('');
-                }
+                if (e.key === 'Enter') sendReply();
               }}
             />
             <button
-              onClick={() => {
-                if (replyText.trim()) {
-                  const now = new Date().toISOString();
-                  const updatedCase = {
-                    ...selectedCase,
-                    updated_at: now,
-                    messages: [
-                      ...selectedCase.messages,
-                      { sender: 'CSP-MH-1001', text: replyText.trim(), timestamp: now },
-                    ],
-                  };
-                  setSelectedCase(updatedCase);
-                  setCases(cases.map((c) => (c.case_id === selectedCase.case_id ? updatedCase : c)));
-                  setReplyText('');
-                }
-              }}
+              onClick={sendReply}
               style={{
                 padding: '10px 20px',
                 background: '#D9008D',

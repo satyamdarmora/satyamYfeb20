@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { WalletTransaction, WalletState } from '@/lib/types';
-import { getWalletState, getAssuranceState } from '@/lib/data';
+import type { WalletTransaction, WalletState, AssuranceState } from '@/lib/types';
 
 interface WalletHubProps {
   onBack: () => void;
@@ -56,21 +55,39 @@ function getStatusBadge(status: WalletTransaction['status']): { color: string; b
 const PAYMENT_METHODS = ['UPI', 'Net Banking', 'Debit Card'];
 
 export default function WalletHub({ onBack }: WalletHubProps) {
-  const [walletData, setWalletData] = useState<WalletState>(getWalletState());
-  const wallet = walletData;
-  const assurance = getAssuranceState();
+  const [walletData, setWalletData] = useState<WalletState | null>(null);
+  const [assurance, setAssurance] = useState<AssuranceState | null>(null);
   const [step, setStep] = useState<FlowStep>('hub');
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
   const walletPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Fetch wallet and assurance on mount
+  useEffect(() => {
+    const fetchInitial = async () => {
+      try {
+        const [walletRes, assuranceRes] = await Promise.all([
+          fetch('/api/wallet'),
+          fetch('/api/assurance'),
+        ]);
+        const wd = await walletRes.json();
+        const ad = await assuranceRes.json();
+        if (wd) setWalletData(wd);
+        if (ad) setAssurance(ad);
+      } catch {}
+    };
+    fetchInitial();
+  }, []);
+
+  const wallet = walletData;
+
   // Force-back to hub if wallet freezes mid-withdraw flow
   useEffect(() => {
-    if (wallet.frozen && step.startsWith('withdraw_')) {
+    if (wallet?.frozen && step.startsWith('withdraw_')) {
       setStep('hub');
       setAmount('');
     }
-  }, [wallet.frozen, step]);
+  }, [wallet?.frozen, step]);
 
   // Poll wallet state for cross-device freeze sync
   useEffect(() => {
@@ -79,25 +96,12 @@ export default function WalletHub({ onBack }: WalletHubProps) {
         const res = await fetch('/api/wallet');
         const data: WalletState = await res.json();
         if (data) setWalletData(data);
-      } catch {
-        // API not available, use local
-        setWalletData(getWalletState());
-      }
+      } catch {}
     }, 2000);
     return () => {
       if (walletPollRef.current) clearInterval(walletPollRef.current);
     };
   }, []);
-
-  // Derived financial data
-  const settlements = wallet.transactions.filter((t) => t.type === 'SETTLEMENT' && t.status === 'COMPLETED');
-  const bonuses = wallet.transactions.filter((t) => t.type === 'BONUS' && t.status === 'COMPLETED');
-  const totalSettlements = settlements.reduce((s, t) => s + t.amount, 0);
-  const totalBonuses = bonuses.reduce((s, t) => s + t.amount, 0);
-  const totalWithdrawals = wallet.transactions
-    .filter((t) => t.type === 'WITHDRAWAL' && t.status === 'COMPLETED')
-    .reduce((s, t) => s + Math.abs(t.amount), 0);
-  const lifetimeEarnings = totalSettlements + totalBonuses;
 
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
@@ -193,6 +197,31 @@ export default function WalletHub({ onBack }: WalletHubProps) {
       &larr; Back
     </button>
   );
+
+  // Loading state
+  if (!wallet || !assurance) {
+    return (
+      <div style={overlayStyle}>
+        <div style={headerStyle}>
+          <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 14, cursor: 'pointer', padding: '4px 0', marginBottom: 12, fontWeight: 500 }}>&larr; Back</button>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Wallet</div>
+        </div>
+        <div style={{ ...scrollStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Derived financial data (wallet is guaranteed non-null after loading guard)
+  const settlements = wallet.transactions.filter((t) => t.type === 'SETTLEMENT' && t.status === 'COMPLETED');
+  const bonuses = wallet.transactions.filter((t) => t.type === 'BONUS' && t.status === 'COMPLETED');
+  const totalSettlements = settlements.reduce((s, t) => s + t.amount, 0);
+  const totalBonuses = bonuses.reduce((s, t) => s + t.amount, 0);
+  const totalWithdrawals = wallet.transactions
+    .filter((t) => t.type === 'WITHDRAWAL' && t.status === 'COMPLETED')
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+  const lifetimeEarnings = totalSettlements + totalBonuses;
 
   // Hub view -- full financial surface
   if (step === 'hub') {

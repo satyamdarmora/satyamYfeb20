@@ -1,30 +1,30 @@
-import { NextResponse } from 'next/server';
-import { addTechnician, getTechnicians } from '@/lib/data';
-import type { Technician } from '@/lib/types';
+import { NextRequest, NextResponse } from 'next/server';
+import { backendGet, backendPost, transformTechnician } from '@/lib/backend';
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const { name, phone, band, csp_id } = body;
-
-  if (!name || !band || !csp_id) {
-    return NextResponse.json({ error: 'name, band, and csp_id are required' }, { status: 400 });
+export async function GET(req: NextRequest) {
+  const auth = req.headers.get('authorization');
+  try {
+    const data = await backendGet('/v1/technicians', auth);
+    const technicians = (data.technicians || data || []).map(transformTechnician);
+    return NextResponse.json(technicians);
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
   }
-
-  const newTech: Technician = {
-    id: `TECH-${Date.now().toString().slice(-4)}`,
-    name: name.trim(),
-    band,
-    available: true,
-    csp_id,
-    phone: phone || '',
-    join_date: new Date().toISOString().split('T')[0],
-    completed_count: 0,
-  };
-
-  addTechnician(newTech);
-  return NextResponse.json({ ok: true, technician: newTech });
 }
 
-export async function GET() {
-  return NextResponse.json(getTechnicians());
+export async function POST(req: NextRequest) {
+  const auth = req.headers.get('authorization');
+  const body = await req.json();
+  const { name, phone, band } = body;
+
+  if (!name || !band) {
+    return NextResponse.json({ error: 'name and band are required' }, { status: 400 });
+  }
+
+  try {
+    const created = await backendPost('/v1/technicians', { name, phone, band }, auth);
+    return NextResponse.json({ ok: true, technician: transformTechnician(created) });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }

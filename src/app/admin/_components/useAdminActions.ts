@@ -8,16 +8,7 @@ import type {
   CreatedBy,
   Technician,
 } from '@/lib/types';
-import {
-  getAllTasks,
-  getAssuranceState,
-  addTask,
-  updateTask,
-  getBucket,
-  sortTasksByQueue,
-  getTechnicians,
-  getTasksForTechnician,
-} from '@/lib/data';
+import { getBucket, sortTasksByQueue } from '@/lib/task-queue';
 import { useTheme } from '@/lib/theme';
 import type { ThemeName } from '@/lib/theme';
 import { BACKEND_URL, AREAS, MANUAL_REASONS } from './AdminTypes';
@@ -121,6 +112,26 @@ export function useAdminActions(): AdminActions {
   const [reviewReason, setReviewReason] = useState('');
   const [reviewLoading, setReviewLoading] = useState(false);
 
+  const fetchTasks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tasks');
+      const data = await res.json();
+      if (Array.isArray(data)) setTasks(sortTasksByQueue(data));
+    } catch (err) {
+      console.error('Failed to fetch tasks:', err);
+    }
+  }, []);
+
+  const fetchTechnicians = useCallback(async () => {
+    try {
+      const res = await fetch('/api/technician/register');
+      const data = await res.json();
+      if (Array.isArray(data)) setTechList(data);
+    } catch (err) {
+      console.error('Failed to fetch technicians:', err);
+    }
+  }, []);
+
   const fetchRegistrations = useCallback(async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/v1/partner/registrations`);
@@ -134,16 +145,16 @@ export function useAdminActions(): AdminActions {
   }, []);
 
   useEffect(() => {
-    setTasks(sortTasksByQueue(getAllTasks()));
-    setTechList(getTechnicians());
+    fetchTasks();
+    fetchTechnicians();
     fetchRegistrations();
-  }, [fetchRegistrations]);
+  }, [fetchTasks, fetchTechnicians, fetchRegistrations]);
 
   const refresh = useCallback(() => {
-    setTasks(sortTasksByQueue(getAllTasks()));
-    setTechList(getTechnicians());
+    fetchTasks();
+    fetchTechnicians();
     fetchRegistrations();
-  }, [fetchRegistrations]);
+  }, [fetchTasks, fetchTechnicians, fetchRegistrations]);
 
   const showNotification = useCallback((msg: string) => {
     setNotification(msg);
@@ -186,66 +197,33 @@ export function useAdminActions(): AdminActions {
   }, [refresh, showNotification]);
 
   const handleCreateTask = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
 
       const connId = formConnectionId.trim() || `WM-CON-${Date.now().toString().slice(-6)}`;
       const netboxId = formType === 'NETBOX' ? `NB-MH-${Date.now().toString().slice(-4)}` : undefined;
-      const now = new Date().toISOString();
 
-      const initialState =
-        formType === 'INSTALL'
-          ? 'OFFERED'
-          : formType === 'RESTORE'
-            ? 'ALERTED'
-            : 'PICKUP_REQUIRED';
-
-      const MIN = 60 * 1000;
-      const HOUR = 60 * MIN;
-
-      const newTask: Task = {
-        task_id: `TSK-${Date.now().toString().slice(-4)}`,
-        task_type: formType,
-        state: initialState,
-        priority: formPriority,
-        created_by: formCreatedBy,
-        created_at: now,
-        offer_expires_at:
-          formType === 'INSTALL'
-            ? new Date(Date.now() + 45 * MIN).toISOString()
-            : undefined,
-        sla_deadline_at:
-          formType === 'RESTORE'
-            ? new Date(
-                Date.now() + (formPriority === 'HIGH' ? 75 * MIN : 4 * HOUR)
-              ).toISOString()
-            : undefined,
-        pickup_due_at:
-          formType === 'NETBOX'
-            ? new Date(Date.now() + 24 * HOUR).toISOString()
-            : undefined,
-        delegation_state: 'UNASSIGNED',
-        owner_entity: 'CSP-MH-1001',
-        retry_count: 0,
-        connection_id: formType !== 'NETBOX' ? connId : undefined,
-        netbox_id: netboxId,
-        customer_area: formArea,
-        proof_bundle: {},
-        event_log: [
-          {
-            timestamp: now,
-            event_type: 'TASK_CREATED',
-            actor: formCreatedBy === 'SYSTEM' ? 'wiom-scheduler' : 'Admin Portal',
-            actor_type: formCreatedBy === 'SYSTEM' ? 'SYSTEM' : 'ADMIN',
-            detail: `${formType} task created (${formPriority} priority) for ${formType === 'NETBOX' ? netboxId : connId} in ${formArea}.${formCreatedBy === 'MANUAL_EXCEPTION' ? ` Reason: ${formReason}` : ''}`,
-          },
-        ],
-      };
-
-      addTask(newTask);
-      refresh();
-      setFormConnectionId('');
-      showNotification(`Task ${newTask.task_id} created successfully.`);
+      try {
+        await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task: {
+              task_type: formType,
+              priority: formPriority,
+              created_by: formCreatedBy,
+              connection_id: formType !== 'NETBOX' ? connId : undefined,
+              netbox_id: netboxId,
+              customer_area: formArea,
+            },
+          }),
+        });
+        refresh();
+        setFormConnectionId('');
+        showNotification(`Task created successfully.`);
+      } catch {
+        showNotification('Failed to create task.');
+      }
     },
     [
       formType,
@@ -259,61 +237,53 @@ export function useAdminActions(): AdminActions {
     ]
   );
 
-  const handleSimulateRecharge = useCallback(() => {
-    const assurance = getAssuranceState();
-    showNotification(
-      `Recharge event simulated. Cycle earnings would increase by Rs.1,500. (Current: Rs.${assurance.cycle_earned.toLocaleString('en-IN')})`
-    );
+  const handleSimulateRecharge = useCallback(async () => {
+    try {
+      const res = await fetch('/api/assurance');
+      const assurance = await res.json();
+      showNotification(
+        `Recharge event simulated. Cycle earnings would increase by Rs.1,500. (Current: Rs.${(assurance.cycle_earned || 0).toLocaleString('en-IN')})`
+      );
+    } catch {
+      showNotification('Recharge event simulated.');
+    }
   }, [showNotification]);
 
-  const handleSimulateSettlement = useCallback(() => {
-    const assurance = getAssuranceState();
-    showNotification(
-      `Settlement credit simulated. Rs.${assurance.next_settlement_amount.toLocaleString('en-IN')} would be credited on ${assurance.next_settlement_date}.`
-    );
+  const handleSimulateSettlement = useCallback(async () => {
+    try {
+      const res = await fetch('/api/assurance');
+      const assurance = await res.json();
+      showNotification(
+        `Settlement credit simulated. Rs.${(assurance.next_settlement_amount || 0).toLocaleString('en-IN')} would be credited on ${assurance.next_settlement_date || 'next cycle'}.`
+      );
+    } catch {
+      showNotification('Settlement credit simulated.');
+    }
   }, [showNotification]);
 
-  const handleGenerateHighRestore = useCallback(() => {
-    const now = new Date().toISOString();
-    const MIN = 60 * 1000;
-
-    const newTask: Task = {
-      task_id: `TSK-${Date.now().toString().slice(-4)}`,
-      task_type: 'RESTORE',
-      state: 'ALERTED',
-      priority: 'HIGH',
-      created_by: 'SYSTEM',
-      created_at: now,
-      sla_deadline_at: new Date(Date.now() + 75 * MIN).toISOString(),
-      delegation_state: 'UNASSIGNED',
-      owner_entity: 'CSP-MH-1001',
-      retry_count: 0,
-      connection_id: `WM-CON-${Date.now().toString().slice(-6)}`,
-      customer_area: AREAS[Math.floor(Math.random() * AREAS.length)],
-      proof_bundle: {},
-      event_log: [
-        {
-          timestamp: now,
-          event_type: 'CONNECTIVITY_LOSS_DETECTED',
-          actor: 'wiom-monitor',
-          actor_type: 'SYSTEM',
-          detail: 'Packet loss exceeded threshold. HIGH priority restore generated.',
-        },
-        {
-          timestamp: now,
-          event_type: 'TASK_CREATED',
-          actor: 'wiom-monitor',
-          actor_type: 'SYSTEM',
-          detail: 'Restore task created with HIGH priority. SLA 75 min.',
-        },
-      ],
-    };
-
-    addTask(newTask);
-    refresh();
-    showNotification(
-      `HIGH RESTORE ${newTask.task_id} generated for ${newTask.customer_area}. SLA: 75 min.`
-    );
+  const handleGenerateHighRestore = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: {
+            task_type: 'RESTORE',
+            priority: 'HIGH',
+            created_by: 'SYSTEM',
+            connection_id: `WM-CON-${Date.now().toString().slice(-6)}`,
+            customer_area: AREAS[Math.floor(Math.random() * AREAS.length)],
+          },
+        }),
+      });
+      const data = await res.json();
+      refresh();
+      showNotification(
+        `HIGH RESTORE generated. SLA: 75 min.`
+      );
+    } catch {
+      showNotification('Failed to generate restore task.');
+    }
   }, [refresh, showNotification]);
 
   const handleSendPaymentNotification = useCallback(async () => {
@@ -334,53 +304,45 @@ export function useAdminActions(): AdminActions {
   }, [showNotification]);
 
   const handleSendNewOfferNotification = useCallback(async () => {
-    const now = new Date().toISOString();
-    const MIN = 60 * 1000;
     const connId = `WM-CON-${Date.now().toString().slice(-6)}`;
-    const taskId = `TSK-${Date.now().toString().slice(-4)}`;
+    const area = AREAS[Math.floor(Math.random() * AREAS.length)];
 
-    const newTask: Task = {
-      task_id: taskId,
-      task_type: 'INSTALL',
-      state: 'OFFERED',
-      priority: 'NORMAL',
-      created_by: 'SYSTEM',
-      created_at: now,
-      due_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      offer_expires_at: new Date(Date.now() + 45 * MIN).toISOString(),
-      delegation_state: 'UNASSIGNED',
-      owner_entity: 'CSP-MH-1001',
-      retry_count: 0,
-      connection_id: connId,
-      customer_area: AREAS[Math.floor(Math.random() * AREAS.length)],
-      proof_bundle: {},
-      event_log: [
-        {
-          timestamp: now,
-          event_type: 'TASK_CREATED',
-          actor: 'wiom-scheduler',
-          actor_type: 'SYSTEM',
-          detail: `Install order created for ${connId}. Offer TTL 45 min.`,
-        },
-      ],
-    };
+    try {
+      // Create task via API
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: {
+            task_type: 'INSTALL',
+            priority: 'NORMAL',
+            created_by: 'SYSTEM',
+            connection_id: connId,
+            customer_area: area,
+          },
+        }),
+      });
+      const data = await res.json();
+      const taskId = data.task?.task_id || `TSK-${Date.now().toString().slice(-4)}`;
 
-    addTask(newTask);
-    await fetch('/api/notifications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: 'NOTIF-' + Date.now(),
-        type: 'NEW_OFFER',
-        title: 'New Install Offer',
-        message: `New install offer available for ${connId} in ${newTask.customer_area}. Claim within 45 min.`,
-        task_id: taskId,
-        timestamp: now,
-        dismissed: false,
-      }),
-    });
-    refresh();
-    showNotification(`New offer ${taskId} created and notification sent.`);
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 'NOTIF-' + Date.now(),
+          type: 'NEW_OFFER',
+          title: 'New Install Offer',
+          message: `New install offer available for ${connId} in ${area}. Claim within 45 min.`,
+          task_id: taskId,
+          timestamp: new Date().toISOString(),
+          dismissed: false,
+        }),
+      });
+      refresh();
+      showNotification(`New offer ${taskId} created and notification sent.`);
+    } catch {
+      showNotification('Failed to create offer.');
+    }
   }, [refresh, showNotification]);
 
   const handleRevokeTimedOutOffer = useCallback(async () => {
@@ -391,18 +353,16 @@ export function useAdminActions(): AdminActions {
     }
 
     const now = new Date().toISOString();
-    updateTask(offeredTask.task_id, {
-      state: 'FAILED',
-      event_log: [
-        ...offeredTask.event_log,
-        {
-          timestamp: now,
-          event_type: 'OFFER_REVOKED',
-          actor: 'wiom-scheduler',
-          actor_type: 'SYSTEM',
+    await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        task_id: offeredTask.task_id,
+        updates: {
+          state: 'FAILED',
           detail: `Offer timed out and has been revoked. Connection ${offeredTask.connection_id} will be reassigned to another CSP.`,
         },
-      ],
+      }),
     });
 
     await fetch('/api/notifications', {
@@ -431,18 +391,16 @@ export function useAdminActions(): AdminActions {
     }
 
     const now = new Date().toISOString();
-    updateTask(offeredTask.task_id, {
-      state: 'FAILED',
-      event_log: [
-        ...offeredTask.event_log,
-        {
-          timestamp: now,
-          event_type: 'CLAIMED_BY_ANOTHER',
-          actor: 'wiom-scheduler',
-          actor_type: 'SYSTEM',
+    await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        task_id: offeredTask.task_id,
+        updates: {
+          state: 'FAILED',
           detail: `Connection ${offeredTask.connection_id} has been claimed by another CSP (CSP-MH-2045). Offer is no longer available.`,
         },
-      ],
+      }),
     });
 
     await fetch('/api/notifications', {
@@ -629,6 +587,15 @@ export function useAdminActions(): AdminActions {
     showNotification('SLA warning notification sent to CSP app.');
   }, [showNotification]);
 
+  // Helper: get tasks assigned to a technician
+  const getTasksForTechnicianFn = useCallback((techId: string): Task[] => {
+    const terminal = ['RESOLVED', 'VERIFIED', 'ACTIVATION_VERIFIED', 'RETURN_CONFIRMED', 'FAILED', 'UNRESOLVED', 'LOST_DECLARED'];
+    // techId is like TECH-001, find the tech name
+    const tech = techList.find(t => t.id === techId);
+    if (!tech) return [];
+    return tasks.filter(t => t.assigned_to === tech.name && !terminal.includes(t.state));
+  }, [tasks, techList]);
+
   // Stats
   const totalTasks = tasks.length;
   const activeTasks = tasks.filter((t) =>
@@ -686,7 +653,7 @@ export function useAdminActions(): AdminActions {
     handleUnfreezeWallet,
     handleNetboxRecoveryDeduction,
     handleSendSlaWarning,
-    getTasksForTechnician,
+    getTasksForTechnician: getTasksForTechnicianFn,
     getBucket,
   };
 }

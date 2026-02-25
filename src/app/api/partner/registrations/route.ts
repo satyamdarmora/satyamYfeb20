@@ -1,37 +1,32 @@
-import { NextResponse } from 'next/server';
-import { getRegistrations, updateRegistration } from '@/lib/data';
+import { NextRequest, NextResponse } from 'next/server';
+import { backendGet, backendPost } from '@/lib/backend';
 
-export async function GET() {
-  return NextResponse.json(getRegistrations());
+export async function GET(req: NextRequest) {
+  const auth = req.headers.get('authorization');
+  try {
+    const data = await backendGet('/v1/partner/registrations', auth);
+    return NextResponse.json(data.registrations || data || []);
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }
 
-export async function POST(request: Request) {
-  const body = await request.json();
+export async function POST(req: NextRequest) {
+  const auth = req.headers.get('authorization');
+  const body = await req.json();
   const { id, action, rejectionReason } = body;
 
   if (!id || !action) {
-    return NextResponse.json(
-      { error: 'id and action required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'id and action required' }, { status: 400 });
   }
 
-  if (action === 'APPROVE') {
-    updateRegistration(id, {
-      status: 'APPROVED',
-      reviewedAt: new Date().toISOString(),
-    });
-    return NextResponse.json({ ok: true, status: 'APPROVED' });
+  try {
+    const result = await backendPost(`/v1/partner/registrations/${id}/review`, {
+      action,
+      reviewReason: rejectionReason || action,
+    }, auth);
+    return NextResponse.json({ ok: true, status: action === 'APPROVE' ? 'APPROVED' : 'REJECTED' });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
   }
-
-  if (action === 'REJECT') {
-    updateRegistration(id, {
-      status: 'REJECTED',
-      reviewedAt: new Date().toISOString(),
-      rejectionReason: rejectionReason || 'Registration rejected.',
-    });
-    return NextResponse.json({ ok: true, status: 'REJECTED' });
-  }
-
-  return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 }

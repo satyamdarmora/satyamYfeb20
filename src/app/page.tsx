@@ -2,23 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Task, AssuranceState, TimelineEvent, AppNotification, Technician, WalletState } from '@/lib/types';
-import {
-  getAllTasks,
-  getAssuranceState,
-  updateTask as _updateTask,
-  getTaskById,
-  getTechnicians,
-} from '@/lib/data';
-
-// Wrapper: update client-side AND sync to server so API routes see the change
-function updateTask(id: string, updates: Partial<Task>) {
-  _updateTask(id, updates);
-  fetch('/api/tasks', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ task_id: id, updates }),
-  }).catch(() => {});
-}
 import { useI18n } from '@/lib/i18n';
 import AssuranceStrip from '@/components/AssuranceStrip';
 import TaskFeed from '@/components/TaskFeed';
@@ -37,6 +20,13 @@ import { getAuth } from '@/lib/auth';
 
 type ActiveSection = null | 'wallet' | 'team' | 'netbox' | 'support' | 'policies' | 'profile';
 
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('wiom_token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
 function makeTimelineEvent(
   eventType: string,
   actor: string,
@@ -50,6 +40,15 @@ function makeTimelineEvent(
     actor_type: actorType,
     detail,
   };
+}
+
+// API-only task update: POST to /api/tasks with state transition
+async function updateTaskViaApi(taskId: string, updates: Partial<Task> & { detail?: string }) {
+  await fetch('/api/tasks', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ task_id: taskId, updates }),
+  });
 }
 
 export default function HomePage() {
@@ -85,23 +84,61 @@ function HomePageContent() {
   // Technician picker state
   const [assignPickerOpen, setAssignPickerOpen] = useState(false);
   const [assignTaskId, setAssignTaskId] = useState<string | null>(null);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
 
-  useEffect(() => {
-    setTasks(getAllTasks());
-    setAssurance(getAssuranceState());
+  // Fetch tasks from API
+  const fetchTasks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tasks', { headers: authHeaders() });
+      const data = await res.json();
+      if (Array.isArray(data)) setTasks(data);
+    } catch {
+      // API not available, skip
+    }
   }, []);
 
-  // Poll server for assurance state changes (admin SLA/exposure triggers)
+  // Initial data load
+  useEffect(() => {
+    const loadInitial = async () => {
+      await Promise.all([
+        fetchTasks(),
+        (async () => {
+          try {
+            const res = await fetch('/api/assurance', { headers: authHeaders() });
+            const data = await res.json();
+            if (data) setAssurance(data);
+          } catch {}
+        })(),
+        (async () => {
+          try {
+            const res = await fetch('/api/technician/register', { headers: authHeaders() });
+            const data = await res.json();
+            if (Array.isArray(data)) setTechnicians(data);
+          } catch {}
+        })(),
+      ]);
+    };
+    loadInitial();
+  }, [fetchTasks]);
+
+  // Poll tasks every 3 seconds
+  const taskPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    taskPollRef.current = setInterval(fetchTasks, 3000);
+    return () => {
+      if (taskPollRef.current) clearInterval(taskPollRef.current);
+    };
+  }, [fetchTasks]);
+
+  // Poll server for assurance state changes
   const assurancePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     assurancePollRef.current = setInterval(async () => {
       try {
-        const res = await fetch('/api/assurance');
+        const res = await fetch('/api/assurance', { headers: authHeaders() });
         const data = await res.json();
         if (data) setAssurance(data);
-      } catch {
-        // API not available, skip
-      }
+      } catch {}
     }, 2000);
     return () => {
       if (assurancePollRef.current) clearInterval(assurancePollRef.current);
@@ -112,12 +149,10 @@ function HomePageContent() {
   useEffect(() => {
     const fetchWallet = async () => {
       try {
-        const res = await fetch('/api/wallet');
+        const res = await fetch('/api/wallet', { headers: authHeaders() });
         const data: WalletState = await res.json();
         if (data) setWalletData(data);
-      } catch {
-        // API not available, skip
-      }
+      } catch {}
     };
     fetchWallet();
     walletPollRef.current = setInterval(fetchWallet, 5000);
@@ -139,10 +174,10 @@ function HomePageContent() {
     const handlePopState = () => {
       if (selectedTaskId) {
         setSelectedTaskId(null);
-        setTasks(getAllTasks());
+        fetchTasks();
       } else if (activeSection) {
         setActiveSection(null);
-        setTasks(getAllTasks());
+        fetchTasks();
       } else if (menuOpen) {
         setMenuOpen(false);
       } else if (assignPickerOpen) {
@@ -154,17 +189,16 @@ function HomePageContent() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedTaskId, activeSection, menuOpen, assignPickerOpen]);
+  }, [selectedTaskId, activeSection, menuOpen, assignPickerOpen, fetchTasks]);
 
-  // Poll server API for notifications every 2 seconds (works cross-device)
+  // Poll server API for notifications every 2 seconds
   useEffect(() => {
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch('/api/notifications');
+        const res = await fetch('/api/notifications', { headers: authHeaders() });
         const notifications: AppNotification[] = await res.json();
         const undismissed = notifications.find((n: AppNotification) => {
           if (n.dismissed) return false;
-          // If offers are off, suppress offer notifications
           if (!offersEnabled && n.type === 'NEW_OFFER') return false;
           return true;
         });
@@ -176,19 +210,16 @@ function HomePageContent() {
             notifyNewConnection();
           }
         }
-      } catch {
-        // API not available, skip
-      }
+      } catch {}
     }, 2000);
-
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [activeNotification, offersEnabled]);
 
   const refreshTasks = useCallback(() => {
-    setTasks(getAllTasks());
-  }, []);
+    fetchTasks();
+  }, [fetchTasks]);
 
   const showConfirmation = useCallback((msg: string) => {
     setConfirmMsg(msg);
@@ -200,12 +231,10 @@ function HomePageContent() {
       try {
         await fetch('/api/notifications/dismiss', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ id: activeNotification.id }),
         });
-      } catch {
-        // Fallback silently
-      }
+      } catch {}
       setActiveNotification(null);
     }
   }, [activeNotification]);
@@ -221,12 +250,9 @@ function HomePageContent() {
 
   // Perform the actual assign with a specific technician
   const doAssign = useCallback(
-    (taskId: string, tech: Technician) => {
-      const task = getTaskById(taskId);
+    async (taskId: string, tech: Technician) => {
+      const task = tasks.find(t => t.task_id === taskId);
       if (!task) return;
-
-      const newEvent = (type: string, detail: string): TimelineEvent =>
-        makeTimelineEvent(type, 'CSP-MH-1001', 'CSP', detail);
 
       // Advance state based on task type
       let nextState = task.state;
@@ -238,34 +264,24 @@ function HomePageContent() {
         nextState = task.state === 'ACCEPTED' ? 'SCHEDULED' : task.state;
       }
 
-      updateTask(taskId, {
+      await updateTaskViaApi(taskId, {
         state: nextState,
         delegation_state: 'ASSIGNED',
         assigned_to: tech.name,
-        event_log: [
-          ...task.event_log,
-          newEvent(
-            'ASSIGNED',
-            `Task assigned to ${tech.name} (${tech.id}). Delegation state: ASSIGNED.`
-          ),
-        ],
+        detail: `Task assigned to ${tech.name} (${tech.id}). Delegation state: ASSIGNED.`,
       });
 
       showConfirmation(`${taskId} assigned to ${tech.name}.`);
-      // Go back to home after assigning
       setSelectedTaskId(null);
       refreshTasks();
     },
-    [refreshTasks, showConfirmation]
+    [tasks, refreshTasks, showConfirmation]
   );
 
   const handleAction = useCallback(
-    (taskId: string, action: string, extra?: Record<string, string>) => {
-      const task = getTaskById(taskId);
+    async (taskId: string, action: string, extra?: Record<string, string>) => {
+      const task = tasks.find(t => t.task_id === taskId);
       if (!task) return;
-
-      const newEvent = (type: string, detail: string): TimelineEvent =>
-        makeTimelineEvent(type, 'CSP-MH-1001', 'CSP', detail);
 
       const terminalStates = [
         'ACTIVATION_VERIFIED',
@@ -279,17 +295,9 @@ function HomePageContent() {
 
       switch (action) {
         case 'CLAIM': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'CLAIMED',
-            offer_expires_at: undefined,
-            queue_escalation_flag: undefined,
-            accept_expires_at: new Date(
-              Date.now() + 15 * 60 * 1000
-            ).toISOString(),
-            event_log: [
-              ...task.event_log,
-              newEvent('CLAIMED', 'CSP claimed this task. Accept deadline: 15 min.'),
-            ],
+            detail: 'CSP claimed this task. Accept deadline: 15 min.',
           });
           notifyNewConnection();
           showConfirmation(`Claimed ${taskId}. Accept within 15 min.`);
@@ -297,24 +305,15 @@ function HomePageContent() {
         }
 
         case 'CLAIM_AND_ASSIGN': {
-          // Claim + accept + schedule in one flow, then open technician picker
           const slot = extra?.preferred_slot || 'Today';
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'ACCEPTED',
-            offer_expires_at: undefined,
-            accept_expires_at: undefined,
-            queue_escalation_flag: undefined,
-            event_log: [
-              ...task.event_log,
-              newEvent('CLAIMED', `CSP claimed this task. Preferred slot: ${slot}.`),
-              makeTimelineEvent('ACCEPTED', 'CSP-MH-1001', 'CSP', `CSP accepted. Scheduled for: ${slot}.`),
-            ],
+            detail: `CSP claimed and accepted. Preferred slot: ${slot}.`,
           });
           notifyNewConnection();
           showConfirmation(`Claimed ${taskId}. Slot: ${slot}. Now assign a technician.`);
           setSelectedTaskId(null);
-          refreshTasks();
-          // Open technician picker
+          await refreshTasks();
           setAssignTaskId(taskId);
           setAssignPickerOpen(true);
           return;
@@ -322,13 +321,9 @@ function HomePageContent() {
 
         case 'DECLINE': {
           const reason = extra?.reason || 'No reason provided';
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'FAILED',
-            queue_escalation_flag: undefined,
-            event_log: [
-              ...task.event_log,
-              newEvent('DECLINED', `CSP declined this offer. Reason: ${reason}`),
-            ],
+            detail: `CSP declined this offer. Reason: ${reason}`,
           });
           showConfirmation(`${taskId} declined.`);
           setSelectedTaskId(null);
@@ -336,14 +331,9 @@ function HomePageContent() {
         }
 
         case 'ACCEPT': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'ACCEPTED',
-            accept_expires_at: undefined,
-            queue_escalation_flag: undefined,
-            event_log: [
-              ...task.event_log,
-              newEvent('ACCEPTED', 'CSP accepted this task. Ready to schedule.'),
-            ],
+            detail: 'CSP accepted this task. Ready to schedule.',
           });
           showConfirmation(`Accepted ${taskId}. Schedule or assign a technician.`);
           break;
@@ -351,112 +341,81 @@ function HomePageContent() {
 
         case 'SCHEDULE':
         case 'ASSIGN': {
-          // Open technician picker instead of auto-assigning
           setAssignTaskId(taskId);
           setAssignPickerOpen(true);
-          return; // Don't refresh yet; picker will handle it
+          return;
         }
 
         case 'START_WORK': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'IN_PROGRESS',
             delegation_state: 'IN_PROGRESS',
-            event_log: [
-              ...task.event_log,
-              newEvent('IN_PROGRESS', `CSP started work on this task (self-assigned).`),
-            ],
+            detail: 'CSP started work on this task (self-assigned).',
           });
           showConfirmation(`${taskId} -- Work started.`);
           break;
         }
 
         case 'RESOLVE': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'RESOLVED',
-            queue_escalation_flag: undefined,
             delegation_state: 'DONE',
-            event_log: [
-              ...task.event_log,
-              newEvent('RESOLVED', 'Task marked as resolved by CSP.'),
-            ],
+            detail: 'Task marked as resolved by CSP.',
           });
           showConfirmation(`${taskId} marked as resolved.`);
           break;
         }
 
         case 'RESOLVE_BLOCKED': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'IN_PROGRESS',
-            queue_escalation_flag: undefined,
-            blocked_reason: undefined,
-            event_log: [
-              ...task.event_log,
-              newEvent('UNBLOCKED', 'Block resolved. Task resumed.'),
-            ],
+            detail: 'Block resolved. Task resumed.',
           });
           showConfirmation(`${taskId} unblocked and resumed.`);
           break;
         }
 
         case 'COLLECTED': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'COLLECTED',
-            event_log: [
-              ...task.event_log,
-              newEvent('COLLECTED', 'NetBox collected from customer premises.'),
-            ],
+            detail: 'NetBox collected from customer premises.',
           });
           showConfirmation(`${taskId} -- NetBox marked as collected.`);
           break;
         }
 
         case 'CONFIRM_RETURN': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'RETURN_CONFIRMED',
-            queue_escalation_flag: undefined,
             delegation_state: 'DONE',
-            event_log: [
-              ...task.event_log,
-              newEvent('RETURN_CONFIRMED', 'NetBox return confirmed and recorded.'),
-            ],
+            detail: 'NetBox return confirmed and recorded.',
           });
           showConfirmation(`${taskId} -- Return confirmed.`);
           break;
         }
 
         case 'VERIFY': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'ACTIVATION_VERIFIED',
-            queue_escalation_flag: undefined,
-            event_log: [
-              ...task.event_log,
-              newEvent(
-                'ACTIVATION_VERIFIED',
-                'Activation manually verified by CSP.'
-              ),
-            ],
+            detail: 'Activation manually verified by CSP.',
           });
           showConfirmation(`${taskId} -- Activation verified. \u20B9300 earned.`);
 
-          // Credit ₹300 per-install earning
-          const connId = task.connection_id || taskId;
+          // Credit earning
           fetch('/api/assurance', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              increment_cycle_earned: 300,
-              increment_next_settlement: 300,
-            }),
+            headers: authHeaders(),
+            body: JSON.stringify({ increment_cycle_earned: 300 }),
           }).catch(() => {});
           fetch('/api/notifications', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(),
             body: JSON.stringify({
               id: 'NOTIF-' + Date.now(),
               type: 'SETTLEMENT_CREDIT',
               title: 'Install Earning Credited',
               amount: 300,
-              message: `\u20B9300 earned \u2014 Install activation for ${connId}`,
+              message: `\u20B9300 earned \u2014 Install activation for ${task.connection_id || taskId}`,
               timestamp: new Date().toISOString(),
               dismissed: false,
             }),
@@ -465,16 +424,9 @@ function HomePageContent() {
         }
 
         case 'INSTALL': {
-          updateTask(taskId, {
+          await updateTaskViaApi(taskId, {
             state: 'INSTALLED',
-            queue_escalation_flag: 'VERIFICATION_PENDING',
-            event_log: [
-              ...task.event_log,
-              newEvent(
-                'INSTALLED',
-                'Hardware installation completed. Pending activation verification.'
-              ),
-            ],
+            detail: 'Hardware installation completed. Pending activation verification.',
           });
           showConfirmation(`${taskId} -- Installation completed. Verification pending.`);
           break;
@@ -487,15 +439,21 @@ function HomePageContent() {
           return;
       }
 
-      // After action: check if the task moved to a terminal state
-      const updated = getTaskById(taskId);
-      if (updated && terminalStates.includes(updated.state)) {
+      // After action: refresh and check terminal
+      await refreshTasks();
+      // Check from the action we just performed if it's terminal
+      if (terminalStates.includes(
+        action === 'CLAIM' ? 'CLAIMED' :
+        action === 'DECLINE' ? 'FAILED' :
+        action === 'RESOLVE' ? 'RESOLVED' :
+        action === 'VERIFY' ? 'ACTIVATION_VERIFIED' :
+        action === 'CONFIRM_RETURN' ? 'RETURN_CONFIRMED' :
+        ''
+      )) {
         setSelectedTaskId(null);
       }
-
-      refreshTasks();
     },
-    [refreshTasks, showConfirmation]
+    [tasks, refreshTasks, showConfirmation]
   );
 
   const handleCardClick = useCallback((taskId: string) => {
@@ -507,10 +465,7 @@ function HomePageContent() {
     refreshTasks();
   }, [refreshTasks]);
 
-  const selectedTask = selectedTaskId ? getTaskById(selectedTaskId) : null;
-
-  // Get technicians for picker
-  const technicians = getTechnicians();
+  const selectedTask = selectedTaskId ? tasks.find(t => t.task_id === selectedTaskId) || null : null;
 
   if (!assurance) return null;
 
@@ -655,26 +610,8 @@ function HomePageContent() {
         <TaskDetail
           task={selectedTask}
           onBack={handleBack}
-          onAction={(taskId, action, extra) => {
-            handleAction(taskId, action, extra);
-            // Refresh the selected task after action
-            const updated = getTaskById(taskId);
-            if (updated) {
-              // If it moved to a terminal state, go back
-              const terminalStates = [
-                'ACTIVATION_VERIFIED',
-                'VERIFIED',
-                'RETURN_CONFIRMED',
-                'LOST_DECLARED',
-                'FAILED',
-                'RESOLVED',
-                'UNRESOLVED',
-              ];
-              if (terminalStates.includes(updated.state)) {
-                setSelectedTaskId(null);
-              }
-            }
-            refreshTasks();
+          onAction={async (taskId, action, extra) => {
+            await handleAction(taskId, action, extra);
           }}
         />
       )}

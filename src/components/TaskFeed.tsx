@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Task, TaskType } from '@/lib/types';
-import { getBucket, sortTasksByQueue } from '@/lib/data';
+import { getBucket, sortTasksByQueue } from '@/lib/task-queue';
 import { useI18n } from '@/lib/i18n';
 import TaskCard from './TaskCard';
 
