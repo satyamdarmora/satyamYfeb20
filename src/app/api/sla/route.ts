@@ -15,6 +15,15 @@ export async function GET() {
       domains: [],
       last_updated: new Date().toISOString(),
       evaluation_window_days: 30,
+      next_evaluation: new Date(Date.now() + 30 * 86400000).toISOString(),
+      consequence: {
+        routing: 'Full',
+        bonus_eligibility: 'Eligible',
+      },
+      hysteresis: {
+        required_clean_windows: 0,
+        current_clean_windows: 0,
+      },
     });
   }
 }

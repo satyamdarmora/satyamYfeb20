@@ -21,8 +21,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Default API base URL (overridden per flavor)
-        buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.173:3457\"")
-        buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.0.173:4000\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://satyam.wiom.in/csp\"")
+        buildConfigField("String", "BACKEND_BASE_URL", "\"http://satyam.wiom.in\"")
     }
 
     flavorDimensions += "target"
@@ -36,6 +36,11 @@ android {
             dimension = "target"
             buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3457\"")
             buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:4000\"")
+        }
+        create("production") {
+            dimension = "target"
+            buildConfigField("String", "API_BASE_URL", "\"http://satyam.wiom.in/csp\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"http://satyam.wiom.in\"")
         }
     }
 

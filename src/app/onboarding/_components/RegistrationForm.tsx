@@ -56,8 +56,8 @@ export function OnboardingContent() {
       .then((r) => r.json())
       .then((json) => {
         const d = json?.data;
-        if (!d?.isRegistered) {
-          setInitialCheck(false); // Show form
+        if (!d?.isRegistered || d.status === 'REJECTED') {
+          setInitialCheck(false); // Show form (also show form for rejected — allow re-registration)
           return;
         }
         if (d.partnerStatus === 'ACTIVE') {

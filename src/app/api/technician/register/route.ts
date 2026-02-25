@@ -7,8 +7,8 @@ export async function GET(req: NextRequest) {
     const data = await backendGet('/v1/technicians', auth);
     const technicians = (data.technicians || data || []).map(transformTechnician);
     return NextResponse.json(technicians);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch {
+    return NextResponse.json([]);
   }
 }
 

@@ -7,8 +7,8 @@ export async function GET(req: NextRequest) {
     const data = await backendGet('/v1/notifications/undismissed', auth);
     const notifications = (data || []).map(transformNotification);
     return NextResponse.json(notifications);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch {
+    return NextResponse.json([]);
   }
 }
 

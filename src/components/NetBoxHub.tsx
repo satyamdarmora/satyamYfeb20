@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { Task } from '@/lib/types';
+import type { Task, DepositLedger, NetBoxUnit, DepositTransaction } from '@/lib/types';
 
 interface NetBoxHubProps {
   onBack: () => void;
 }
 
-type FlowStep = 'hub' | 'create_order' | 'order_detail';
+type FlowStep = 'hub' | 'create_order' | 'order_detail' | 'deposit_ledger';
 
 interface NetBoxOrder {
   id: string;
@@ -72,7 +72,10 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
   const [quantity, setQuantity] = useState('');
   const [deliveryArea, setDeliveryArea] = useState(AREAS[0]);
 
-  // Fetch NETBOX tasks from API
+  // Deposit ledger state
+  const [deposit, setDeposit] = useState<{ ledger: DepositLedger; units: NetBoxUnit[] } | null>(null);
+
+  // Fetch NETBOX tasks and deposit data from API
   const [allNetboxTasks, setAllNetboxTasks] = useState<Task[]>([]);
   useEffect(() => {
     const fetchNetbox = async () => {
@@ -84,7 +87,18 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
         }
       } catch {}
     };
+    const fetchDeposit = async () => {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('wiom_token') : null;
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api/deposit', { headers });
+        const data = await res.json();
+        if (data && data.ledger) setDeposit(data);
+      } catch {}
+    };
     fetchNetbox();
+    fetchDeposit();
   }, []);
 
   // Group by state
@@ -256,6 +270,47 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
               ))}
             </div>
           ))}
+
+          {/* Deposit Ledger Card */}
+          <button
+            onClick={() => setStep('deposit_ledger')}
+            style={{
+              width: '100%',
+              background: 'linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end))',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 12,
+              padding: '16px 20px',
+              marginTop: 20,
+              marginBottom: 8,
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Security Deposit Ledger</div>
+              <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{'\u203A'}</span>
+            </div>
+            {deposit?.ledger ? (
+              <div style={{ display: 'flex', gap: 20 }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--positive)' }}>{'\u20B9'}{deposit.ledger.deposit_balance.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Balance</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{deposit.ledger.total_active}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Active units</div>
+                </div>
+                {deposit.ledger.total_loss_deductions > 0 && (
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--negative)' }}>-{'\u20B9'}{deposit.ledger.total_loss_deductions.toLocaleString('en-IN')}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Deductions</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Tap to view deposit details</div>
+            )}
+          </button>
 
           {/* Orders */}
           <div style={{
@@ -462,6 +517,166 @@ export default function NetBoxHub({ onBack }: NetBoxHubProps) {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Deposit Ledger Detail
+  if (step === 'deposit_ledger') {
+    const ledger = deposit?.ledger;
+    const units = ledger?.units || [];
+    const txns = ledger?.transactions || [];
+
+    const unitStatusColor = (s: string) =>
+      s === 'WITH_CUSTOMER' ? 'var(--positive)' :
+      s === 'EXPIRED_WITH_CUSTOMER' ? 'var(--warning)' :
+      s === 'COLLECTED_IN_TRANSIT' ? 'var(--brand-primary)' :
+      s === 'IN_WAREHOUSE' ? 'var(--text-secondary)' :
+      s === 'LOST' ? 'var(--negative)' :
+      s === 'DAMAGED' ? 'var(--negative)' : 'var(--text-muted)';
+
+    const txnTypeLabel = (t: string) =>
+      t === 'DEPOSIT_COLLECTED' ? 'Deposit Collected' :
+      t === 'LOSS_DEDUCTION' ? 'Loss Deduction' :
+      t === 'DAMAGE_DEDUCTION' ? 'Damage Deduction' :
+      t === 'DEPOSIT_REFUND' ? 'Refund' : t;
+
+    const txnColor = (t: string) =>
+      t === 'DEPOSIT_COLLECTED' ? 'var(--positive)' :
+      t.includes('DEDUCTION') ? 'var(--negative)' :
+      t === 'DEPOSIT_REFUND' ? 'var(--brand-primary)' : 'var(--text-primary)';
+
+    return (
+      <div style={overlayStyle}>
+        <div style={headerStyle}>
+          <button
+            onClick={() => setStep('hub')}
+            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 14, cursor: 'pointer', padding: '4px 0', marginBottom: 12, fontWeight: 500 }}
+          >
+            &larr; Back
+          </button>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Security Deposit Ledger</div>
+        </div>
+
+        <div style={scrollStyle}>
+          {/* Summary Card */}
+          <div style={{
+            background: 'linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end))',
+            borderRadius: 14, padding: '20px', marginBottom: 16,
+            border: '1px solid var(--border-subtle)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--positive)' }}>{'\u20B9'}{(ledger?.deposit_balance || 0).toLocaleString('en-IN')}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Deposit Balance</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{'\u20B9'}{(ledger?.exit_refund_estimate || 0).toLocaleString('en-IN')}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Exit Refund Est.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+              <div><span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{ledger?.total_issued || 0}</span> <span style={{ color: 'var(--text-muted)' }}>Issued</span></div>
+              <div><span style={{ fontWeight: 700, color: 'var(--positive)' }}>{ledger?.total_active || 0}</span> <span style={{ color: 'var(--text-muted)' }}>Active</span></div>
+              <div><span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{ledger?.total_returned || 0}</span> <span style={{ color: 'var(--text-muted)' }}>Returned</span></div>
+              <div><span style={{ fontWeight: 700, color: 'var(--negative)' }}>{ledger?.total_lost || 0}</span> <span style={{ color: 'var(--text-muted)' }}>Lost</span></div>
+            </div>
+            {(ledger?.total_loss_deductions || 0) > 0 && (
+              <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(220,38,38,0.08)', borderRadius: 8, fontSize: 12, color: 'var(--negative)', fontWeight: 500 }}>
+                Total deductions: {'\u20B9'}{(ledger?.total_loss_deductions || 0).toLocaleString('en-IN')}
+              </div>
+            )}
+          </div>
+
+          {/* Rate Info */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <div style={{ flex: 1, background: 'var(--bg-card)', borderRadius: 10, padding: '12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{'\u20B9'}{ledger?.security_deposit_per_unit || 1500}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Deposit / Unit</div>
+            </div>
+            <div style={{ flex: 1, background: 'var(--bg-card)', borderRadius: 10, padding: '12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{'\u20B9'}{ledger?.carry_fee_per_day || 0}/day</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Carry Fee</div>
+            </div>
+            <div style={{ flex: 1, background: 'var(--bg-card)', borderRadius: 10, padding: '12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{ledger?.carry_fee_grace_days || 0}d</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Grace Period</div>
+            </div>
+          </div>
+
+          {/* Units */}
+          {units.length > 0 && (
+            <>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+                Units ({units.length})
+              </div>
+              {units.map((u) => (
+                <div key={u.netbox_id} style={{
+                  background: 'var(--bg-card)', borderRadius: 10, padding: '12px 14px', marginBottom: 8,
+                  borderLeft: `3px solid ${unitStatusColor(u.status)}`,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{u.netbox_id}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: unitStatusColor(u.status), background: `${unitStatusColor(u.status)}1A`, padding: '2px 8px', borderRadius: 4 }}>
+                      {u.status.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>
+                    {u.connection_id && <>{u.connection_id} &middot; </>}{u.customer_area || 'N/A'}
+                  </div>
+                  {/* Carry fee info */}
+                  {u.carry_fee_eligible && (
+                    <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(255,128,0,0.08)', borderRadius: 6, fontSize: 11, display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--warning)', fontWeight: 500 }}>
+                        Carry fee accruing &middot; {u.days_past_expiry}d past expiry
+                      </span>
+                      <span style={{ color: 'var(--negative)', fontWeight: 700 }}>
+                        {'\u20B9'}{u.carry_fee_accrued.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  )}
+                  {u.status === 'LOST' && u.lost_declared_at && (
+                    <div style={{ marginTop: 6, padding: '6px 10px', background: 'rgba(220,38,38,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--negative)', fontWeight: 500 }}>
+                      Lost on {formatDate(u.lost_declared_at)} &middot; {'\u20B9'}{ledger?.replacement_cost || 1500} deducted
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Transactions */}
+          {txns.length > 0 && (
+            <>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 20, marginBottom: 10 }}>
+                Transactions ({txns.length})
+              </div>
+              {txns.map((t) => (
+                <div key={t.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '12px 14px', background: 'var(--bg-card)', borderRadius: 8, marginBottom: 6,
+                }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{txnTypeLabel(t.type)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t.netbox_id} &middot; {formatDate(t.date)}</div>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: txnColor(t.type) }}>
+                    {t.amount >= 0 ? '+' : ''}{'\u20B9'}{Math.abs(t.amount).toLocaleString('en-IN')}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Empty state */}
+          {units.length === 0 && txns.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 14 }}>
+              No deposit data yet. Deposits are collected when NetBox units are issued.
+            </div>
+          )}
+
+          <div style={{ height: 40 }} />
         </div>
       </div>
     );

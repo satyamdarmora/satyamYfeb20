@@ -6,8 +6,8 @@ export async function GET(req: NextRequest) {
   try {
     const data = await backendGet('/v1/wallet', auth);
     return NextResponse.json(transformWallet(data));
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ balance: 0, pending_settlement: 0, frozen: false, transactions: [] });
   }
 }
 
