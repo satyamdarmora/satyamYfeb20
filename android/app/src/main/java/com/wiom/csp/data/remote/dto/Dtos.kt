@@ -130,3 +130,18 @@ data class TechTasksResponse(
 data class TechActionResponse(
     val ok: Boolean = false
 )
+
+// ---- Deposit ----
+
+@Serializable
+data class DepositActionRequest(
+    val action: String,
+    val amount: Int? = null,
+    val description: String? = null,
+    @SerialName("netbox_id") val netboxId: String? = null
+)
+
+@Serializable
+data class DepositActionResponse(
+    val ok: Boolean = false
+)

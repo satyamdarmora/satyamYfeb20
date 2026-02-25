@@ -72,7 +72,22 @@ enum class ExposureState {
 
 @Serializable
 enum class WalletTransactionType {
-    SETTLEMENT, BONUS, WITHDRAWAL, TOP_UP, DEDUCTION
+    SETTLEMENT, BONUS, WITHDRAWAL, TOP_UP, DEDUCTION, CARRY_FEE, LOSS_RECOVERY, INSTALL_HANDLING, COLLECTION_HANDLING
+}
+
+@Serializable
+enum class SLADomainId {
+    @SerialName("installation") INSTALLATION,
+    @SerialName("resolution") RESOLUTION,
+    @SerialName("stability") STABILITY,
+    @SerialName("experience") EXPERIENCE
+}
+
+@Serializable
+enum class SLATrend {
+    @SerialName("improving") IMPROVING,
+    @SerialName("stable") STABLE,
+    @SerialName("declining") DECLINING
 }
 
 @Serializable

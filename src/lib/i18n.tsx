@@ -114,6 +114,8 @@ const translations: Record<string, Record<Lang, string>> = {
   'menu.teamDesc': { en: 'Manage technicians', hi: '\u091F\u0947\u0915\u094D\u0928\u0940\u0936\u093F\u092F\u0928 \u092A\u094D\u0930\u092C\u0902\u0927\u0928' },
   'menu.netbox': { en: 'NetBox', hi: '\u0928\u0947\u091F\u092C\u0949\u0915\u094D\u0938' },
   'menu.netboxDesc': { en: 'Orders & inventory', hi: '\u0911\u0930\u094D\u0921\u0930 \u0914\u0930 \u0907\u0902\u0935\u0947\u0902\u091F\u094D\u0930\u0940' },
+  'menu.sla': { en: 'SLA Execution', hi: 'SLA निष्पादन' },
+  'menu.slaDesc': { en: 'Compliance & restores', hi: 'अनुपालन और रिस्टोर' },
   'menu.support': { en: 'Support', hi: '\u0938\u092A\u094B\u0930\u094D\u091F' },
   'menu.supportDesc': { en: 'Cases & escalation', hi: '\u0915\u0947\u0938 \u0914\u0930 \u090F\u0938\u094D\u0915\u0947\u0932\u0947\u0936\u0928' },
   'menu.policies': { en: 'Policies & Updates', hi: '\u0928\u0940\u0924\u093F\u092F\u093E\u0901 \u0914\u0930 \u0905\u092A\u0921\u0947\u091F' },

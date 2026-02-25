@@ -8,6 +8,7 @@ import DrillDown from './DrillDown';
 interface AssuranceStripProps {
   assuranceState: AssuranceState;
   lifetimeEarnings?: number;
+  onOpenSLA?: () => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -36,7 +37,7 @@ function formatRelativeDate(dateStr: string): string {
 
 type DrillDownType = 'activeBase' | 'earnings' | 'sla' | 'exposure' | null;
 
-export default function AssuranceStrip({ assuranceState, lifetimeEarnings }: AssuranceStripProps) {
+export default function AssuranceStrip({ assuranceState, lifetimeEarnings, onOpenSLA }: AssuranceStripProps) {
   const { t } = useI18n();
   const [openDrill, setOpenDrill] = useState<DrillDownType>(null);
 
@@ -144,7 +145,7 @@ export default function AssuranceStrip({ assuranceState, lifetimeEarnings }: Ass
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {/* SLA */}
           <div
-            onClick={() => setOpenDrill('sla')}
+            onClick={() => onOpenSLA ? onOpenSLA() : setOpenDrill('sla')}
             style={{
               flex: 1,
               background: 'var(--bg-card)',

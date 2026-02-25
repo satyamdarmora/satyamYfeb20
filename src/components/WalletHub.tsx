@@ -38,6 +38,14 @@ function getTypeBadge(type: WalletTransaction['type']): { label: string; color: 
       return { label: 'Top Up', color: 'var(--brand-primary)', bg: 'var(--brand-subtle)' };
     case 'DEDUCTION':
       return { label: 'Deduction', color: 'var(--negative)', bg: 'var(--negative-subtle)' };
+    case 'CARRY_FEE':
+      return { label: 'Carry Fee', color: 'var(--warning)', bg: 'rgba(255,128,0,0.12)' };
+    case 'LOSS_RECOVERY':
+      return { label: 'Loss Recovery', color: 'var(--negative)', bg: 'var(--negative-subtle)' };
+    case 'INSTALL_HANDLING':
+      return { label: 'Install Fee', color: 'var(--positive)', bg: 'var(--positive-subtle)' };
+    case 'COLLECTION_HANDLING':
+      return { label: 'Collection Fee', color: 'var(--positive)', bg: 'var(--positive-subtle)' };
   }
 }
 

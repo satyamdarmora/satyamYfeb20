@@ -7,6 +7,7 @@ import com.wiom.csp.domain.model.SupportCase
 import com.wiom.csp.domain.model.Task
 import com.wiom.csp.domain.model.Technician
 import com.wiom.csp.domain.model.WalletState
+import com.wiom.csp.domain.model.SLAOverallState
 import retrofit2.http.*
 
 interface ApiService {
@@ -61,6 +62,14 @@ interface ApiService {
 
     @POST("/api/technician/action")
     suspend fun technicianAction(@Body body: Map<String, String>): TechActionResponse
+
+    // ---- SLA ----
+    @GET("/api/sla")
+    suspend fun getSLA(): SLAOverallState
+
+    // ---- Deposit ----
+    @POST("/api/deposit")
+    suspend fun postDeposit(@Body request: DepositActionRequest): DepositActionResponse
 
     // ---- Support ----
     @GET("/api/support")

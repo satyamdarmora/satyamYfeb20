@@ -158,7 +158,7 @@ export type QueueBucket = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export interface WalletTransaction {
   id: string;
   date: string;
-  type: 'SETTLEMENT' | 'BONUS' | 'WITHDRAWAL' | 'TOP_UP' | 'DEDUCTION';
+  type: 'SETTLEMENT' | 'BONUS' | 'WITHDRAWAL' | 'TOP_UP' | 'DEDUCTION' | 'CARRY_FEE' | 'LOSS_RECOVERY' | 'INSTALL_HANDLING' | 'COLLECTION_HANDLING';
   amount: number;
   description: string;
   status: 'COMPLETED' | 'PENDING' | 'FAILED';
@@ -172,6 +172,75 @@ export interface WalletState {
   frozen_reason?: string;
 }
 
+// ---- NetBox Inventory & Deposit Ledger ------------------------------------
+
+export type NetBoxUnitStatus = 'WITH_CUSTOMER' | 'EXPIRED_WITH_CUSTOMER' | 'COLLECTED_IN_TRANSIT' | 'IN_WAREHOUSE' | 'LOST' | 'DAMAGED';
+
+export interface NetBoxUnit {
+  netbox_id: string;
+  connection_id?: string;
+  customer_area?: string;
+  status: NetBoxUnitStatus;
+  issued_at: string;
+  subscription_expiry_at?: string;
+  collected_at?: string;
+  returned_at?: string;
+  lost_declared_at?: string;
+  carry_fee_eligible: boolean;     // true if > grace days past expiry and not returned
+  carry_fee_start_at?: string;     // date carry fee started accruing
+  carry_fee_accrued: number;       // total ₹ accrued so far
+  days_past_expiry: number;
+}
+
+export interface DepositTransaction {
+  id: string;
+  date: string;
+  type: 'DEPOSIT_COLLECTED' | 'LOSS_DEDUCTION' | 'DAMAGE_DEDUCTION' | 'DEPOSIT_REFUND';
+  amount: number;
+  netbox_id: string;
+  description: string;
+}
+
+export interface DepositLedger {
+  security_deposit_per_unit: number;
+  replacement_cost: number;
+  carry_fee_per_day: number;
+  carry_fee_grace_days: number;
+  total_issued: number;
+  total_returned: number;
+  total_lost: number;
+  total_active: number;
+  deposit_balance: number;
+  total_loss_deductions: number;
+  exit_refund_estimate: number;
+  transactions: DepositTransaction[];
+  units: NetBoxUnit[];
+}
+
+// ---- Rate Card ------------------------------------------------------------
+
+export interface BonusTier {
+  tier: 'Good' | 'Very Good' | 'Excellent';
+  quality_band: string;
+  multiplier_percent: number;
+}
+
+export interface RateCard {
+  version: string;
+  effective_from: string;
+  base_payout_per_recharge: number;
+  short_duration_payout: number;
+  install_handling_fee: number;
+  collection_handling_fee: number;
+  bonus_tiers: BonusTier[];
+  security_deposit_per_netbox: number;
+  replacement_cost: number;
+  carry_fee_per_day: number;
+  carry_fee_grace_days: number;
+  withdrawal_cycle: string;
+  min_withdrawal: number;
+}
+
 // ---- Support Cases --------------------------------------------------------
 export interface SupportCase {
   case_id: string;
@@ -181,6 +250,65 @@ export interface SupportCase {
   updated_at: string;
   linked_task_id?: string;
   messages: { sender: string; text: string; timestamp: string }[];
+}
+
+// ---- SLA Framework (4-Domain State Engine) --------------------------------
+
+export type SLAStanding = 'Compliant' | 'At Risk' | 'Non-Compliant';
+export type SLADomainId = 'installation' | 'resolution' | 'stability' | 'experience';
+export type SLATrend = 'improving' | 'stable' | 'declining';
+
+export interface SLASubMetric {
+  id: string;
+  name: string;
+  value: number;
+  unit: '%' | 'ratio' | 'rating';
+  threshold: number;
+  severe_threshold: number;
+  threshold_direction: 'above' | 'below';  // 'above' = value must be >= threshold; 'below' = value must be <= threshold
+  trend: SLATrend;
+  window_days: number;
+  sample_count: number;
+  min_sample: number;
+}
+
+export interface SLADomain {
+  id: SLADomainId;
+  name: string;
+  purpose: string;
+  state: SLAStanding;
+  control_level: 'High' | 'Moderate-High' | 'Mixed';
+  consequence_type: 'Economic + Enablement' | 'Routing + Enablement';
+  sub_metrics: SLASubMetric[];
+}
+
+export interface SLAConsequence {
+  routing: 'Full' | 'Graduated taper' | 'Significant taper';
+  bonus_eligibility: 'Eligible' | 'Bonus pause' | 'Bonus removal';
+  enablement: 'None' | 'Available' | 'Mandatory';
+}
+
+export interface SLAStateTransition {
+  from: SLAStanding;
+  to: SLAStanding;
+  date: string;
+  reason: string;
+}
+
+export interface SLAOverallState {
+  overall_standing: SLAStanding;
+  domains: SLADomain[];
+  consequence: SLAConsequence;
+  state_since: string;
+  windows_in_current_state: number;
+  evaluation_window_days: number;
+  next_evaluation: string;
+  state_history: SLAStateTransition[];
+  hysteresis: {
+    upgrade_requirement: string;
+    current_clean_windows: number;
+    required_clean_windows: number;
+  };
 }
 
 // ---- Notifications / Event Modals ----------------------------------------
