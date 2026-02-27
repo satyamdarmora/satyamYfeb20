@@ -342,7 +342,8 @@ private fun InfoRequiredState(
         if (submitting) {
             CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
         } else {
-            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+            @Suppress("DEPRECATION")
+            Icon(Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Text("Submit Response", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         }
