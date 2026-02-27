@@ -28,6 +28,7 @@ export interface AdminActions {
   totalTasks: number;
   activeTasks: number;
   pendingTasks: number;
+  needsAttention: number;
 
   // Theme
   theme: ThemeName;
@@ -151,6 +152,11 @@ export function useAdminActions(): AdminActions {
     fetchTasks();
     fetchTechnicians();
     fetchRegistrations();
+    // Poll registrations every 15s so admin sees new partner responses
+    const interval = setInterval(() => {
+      fetchRegistrations();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [fetchTasks, fetchTechnicians, fetchRegistrations]);
 
   const refresh = useCallback(() => {
@@ -615,6 +621,10 @@ export function useAdminActions(): AdminActions {
   const pendingTasks = tasks.filter((t) =>
     ['OFFERED', 'PICKUP_REQUIRED', 'INSTALLED', 'COLLECTED'].includes(t.state)
   ).length;
+  const needsAttention = registrations.filter((r) => {
+    const last = r.infoExchanges?.length ? r.infoExchanges[r.infoExchanges.length - 1] : null;
+    return r.status === 'INFO_REQUIRED' && last?.sender === 'PARTNER';
+  }).length;
 
   return {
     tasks,
@@ -624,6 +634,7 @@ export function useAdminActions(): AdminActions {
     totalTasks,
     activeTasks,
     pendingTasks,
+    needsAttention,
     theme,
     setTheme,
     expandedRegId,

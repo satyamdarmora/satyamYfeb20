@@ -29,6 +29,7 @@ class UserPreferences @Inject constructor(
         private val KEY_USER_MOBILE = stringPreferencesKey("user_mobile")
         private val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
         private val KEY_IS_PROFILE_COMPLETE = booleanPreferencesKey("is_profile_complete")
+        private val KEY_IS_PARTNER_ACTIVE = booleanPreferencesKey("is_partner_active")
     }
 
     // ---- Language ----
@@ -122,6 +123,14 @@ class UserPreferences @Inject constructor(
         dataStore.edit { prefs -> prefs[KEY_IS_PROFILE_COMPLETE] = complete }
     }
 
+    val isPartnerActive: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[KEY_IS_PARTNER_ACTIVE] ?: false
+    }
+
+    suspend fun setPartnerActive(active: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_IS_PARTNER_ACTIVE] = active }
+    }
+
     val userName: Flow<String?> = dataStore.data.map { prefs ->
         prefs[KEY_USER_NAME]
     }
@@ -146,6 +155,7 @@ class UserPreferences @Inject constructor(
             prefs.remove(KEY_USER_MOBILE)
             prefs[KEY_IS_LOGGED_IN] = false
             prefs[KEY_IS_PROFILE_COMPLETE] = false
+            prefs[KEY_IS_PARTNER_ACTIVE] = false
         }
     }
 }

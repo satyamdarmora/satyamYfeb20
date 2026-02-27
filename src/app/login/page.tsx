@@ -14,44 +14,13 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
 
-  // If already logged in, check registration status and route
+  // Clear any stale auth on login page so user always sees the form
   useEffect(() => {
-    if (!isAuthenticated()) return;
-    const token = localStorage.getItem('wiom_token');
-    if (!token || token === 'undefined') {
-      localStorage.removeItem('wiom_token');
-      localStorage.removeItem('wiom_user');
-      return;
-    }
-
-    // If returning from JusPay payment, go straight to onboarding
-    if (localStorage.getItem('wiom_pending_payment')) {
-      router.replace('/onboarding?status=payment');
-      return;
-    }
-
-    // Check registration status to route correctly
-    fetch('/api/backend/v1/partner/status', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((json) => {
-        const d = json?.data;
-        if (!d?.isRegistered) {
-          router.replace('/onboarding');
-        } else if (d.feePaid === false) {
-          router.replace('/onboarding?status=payment');
-        } else if (d.partnerStatus === 'ACTIVE') {
-          localStorage.setItem('wiom_profile_complete', 'true');
-          router.replace('/');
-        } else if (d.status === 'PENDING') {
-          router.replace('/onboarding?status=pending');
-        } else {
-          router.replace('/onboarding?status=' + (d.status?.toLowerCase() || 'pending'));
-        }
-      })
-      .catch(() => router.replace('/'));
-  }, [router]);
+    localStorage.removeItem('wiom_token');
+    localStorage.removeItem('wiom_user');
+    localStorage.removeItem('wiom_profile_complete');
+    localStorage.removeItem('wiom_pending_payment');
+  }, []);
 
   // Resend timer countdown
   useEffect(() => {

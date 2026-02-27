@@ -19,6 +19,11 @@ export function PartnerRegistrations({
   onReview,
   onTraining,
 }: PartnerRegistrationsProps) {
+  const needsAttention = registrations.filter((r) => {
+    const last = r.infoExchanges?.length ? r.infoExchanges[r.infoExchanges.length - 1] : null;
+    return r.status === 'INFO_REQUIRED' && last?.sender === 'PARTNER';
+  }).length;
+
   return (
     <div
       style={{
@@ -28,16 +33,38 @@ export function PartnerRegistrations({
         marginBottom: 32,
       }}
     >
-      <h2
-        style={{
-          fontSize: 16,
-          fontWeight: 600,
-          margin: '0 0 16px',
-          color: 'var(--text-primary)',
-        }}
-      >
-        Partner Registrations
-      </h2>
+      {/* Pulse animation for badge */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `}</style>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <h2
+          style={{
+            fontSize: 16,
+            fontWeight: 600,
+            margin: 0,
+            color: 'var(--text-primary)',
+          }}
+        >
+          Partner Registrations
+        </h2>
+        {needsAttention > 0 && (
+          <span style={{
+            fontSize: 12,
+            fontWeight: 700,
+            padding: '4px 12px',
+            borderRadius: 12,
+            color: '#FFF',
+            background: 'var(--positive)',
+            animation: 'pulse 2s infinite',
+          }}>
+            {needsAttention} response{needsAttention > 1 ? 's' : ''} pending review
+          </span>
+        )}
+      </div>
 
       {registrations.length === 0 ? (
         <div style={{ fontSize: 13, color: 'var(--text-muted)', padding: '20px 0', textAlign: 'center' }}>
@@ -75,22 +102,36 @@ export function PartnerRegistrations({
                 const feeLabel = reg.feeRefunded ? 'Refunded' : reg.feePaid ? 'Paid' : 'Unpaid';
                 const feeColor = reg.feeRefunded ? 'var(--brand-primary)' : reg.feePaid ? 'var(--positive)' : 'var(--text-muted)';
                 const partnerStatus = reg.partner?.status;
+                // Check if partner has responded and admin hasn't acted yet
+                const lastExchange = reg.infoExchanges?.length ? reg.infoExchanges[reg.infoExchanges.length - 1] : null;
+                const hasNewResponse = reg.status === 'INFO_REQUIRED' && lastExchange?.sender === 'PARTNER';
+                const docCount = reg.infoExchanges?.reduce((n, ex) => n + (ex.documents?.length || 0), 0) || 0;
                 return (
                   <tr key={reg.id} style={{ verticalAlign: 'top' }}>
                     <td colSpan={8} style={{ padding: 0 }}>
                       {/* Main row */}
                       <div
                         onClick={() => setExpandedRegId(isExpReg ? null : reg.id)}
-                        style={{ display: 'grid', gridTemplateColumns: 'minmax(90px,0.8fr) 1.2fr 100px 1.2fr 110px 80px 100px minmax(180px,1.5fr)', cursor: 'pointer', borderBottom: isExpReg ? 'none' : '1px solid var(--bg-card)' }}
+                        style={{ display: 'grid', gridTemplateColumns: 'minmax(90px,0.8fr) 1.2fr 100px 1.2fr 110px 80px 100px minmax(180px,1.5fr)', cursor: 'pointer', borderBottom: isExpReg ? 'none' : '1px solid var(--bg-card)', borderLeft: hasNewResponse ? '3px solid var(--positive)' : '3px solid transparent' }}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card-hover)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = hasNewResponse ? 'rgba(0,128,67,0.04)' : 'transparent'; }}
                       >
                         <div style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{reg.registrationId}</div>
                         <div style={{ padding: '10px 14px', color: 'var(--text-primary)' }}>{reg.businessName}</div>
                         <div style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 12 }}>{reg.mobile}</div>
                         <div style={{ padding: '10px 14px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{reg.area}, {reg.city}</div>
-                        <div style={{ padding: '10px 14px' }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 6, color: statusColor, background: statusBg }}>{reg.status.replace('_', ' ')}</span>
+                        <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 6, color: statusColor, background: statusBg, width: 'fit-content' }}>{reg.status.replace('_', ' ')}</span>
+                          {hasNewResponse && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, color: '#FFF', background: 'var(--positive)', width: 'fit-content', animation: 'pulse 2s infinite' }}>
+                              RESPONSE RECEIVED
+                            </span>
+                          )}
+                          {docCount > 0 && (
+                            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)' }}>
+                              {docCount} doc{docCount > 1 ? 's' : ''} uploaded
+                            </span>
+                          )}
                         </div>
                         <div style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: feeColor }}>{feeLabel}</div>
                         <div style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{formatTimestamp(reg.submittedAt)}</div>
@@ -170,18 +211,37 @@ export function PartnerRegistrations({
                                   {ex.sender === 'PARTNER' && ex.documents && ex.documents.length > 0 && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
                                       {ex.documents.map((doc) => (
-                                        <a
+                                        <button
                                           key={doc.id}
-                                          href={`/api/backend/v1/partner/documents/${doc.storedName}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--brand-primary)', textDecoration: 'none', padding: '4px 8px', borderRadius: 4, background: 'var(--bg-card)' }}
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            try {
+                                              const res = await fetch(`/api/backend/v1/partner/documents/${doc.storedName}`);
+                                              if (!res.ok) throw new Error('Download failed');
+                                              const blob = await res.blob();
+                                              const url = URL.createObjectURL(blob);
+                                              const a = document.createElement('a');
+                                              a.href = url;
+                                              a.download = doc.originalName;
+                                              document.body.appendChild(a);
+                                              a.click();
+                                              document.body.removeChild(a);
+                                              URL.revokeObjectURL(url);
+                                            } catch {
+                                              // Fallback: open direct backend URL
+                                              window.open(`/api/backend/v1/partner/documents/${doc.storedName}`, '_blank');
+                                            }
+                                          }}
+                                          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--brand-primary)', textDecoration: 'none', padding: '6px 10px', borderRadius: 4, background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', cursor: 'pointer', textAlign: 'left' }}
                                         >
-                                          <span>{doc.documentType.replace(/_/g, ' ')}</span>
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                          </svg>
+                                          <span style={{ fontWeight: 600 }}>{doc.documentType.replace(/_/g, ' ')}</span>
                                           <span style={{ color: 'var(--text-muted)' }}>-</span>
                                           <span style={{ color: 'var(--text-secondary)' }}>{doc.originalName}</span>
                                           <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>({(doc.sizeBytes / 1024).toFixed(0)} KB)</span>
-                                        </a>
+                                        </button>
                                       ))}
                                     </div>
                                   )}

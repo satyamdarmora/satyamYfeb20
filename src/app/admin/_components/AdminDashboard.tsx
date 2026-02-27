@@ -80,7 +80,7 @@ export function AdminDashboard() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: 16,
           marginBottom: 32,
         }}
@@ -149,6 +149,29 @@ export function AdminDashboard() {
           </div>
           <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--warning)' }}>
             {actions.pendingTasks}
+          </div>
+        </div>
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            borderRadius: 10,
+            padding: '16px 20px',
+            border: actions.needsAttention > 0 ? '1px solid var(--positive)' : 'none',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              color: 'var(--text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              marginBottom: 4,
+            }}
+          >
+            Partner Responses
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: actions.needsAttention > 0 ? 'var(--positive)' : 'var(--text-muted)' }}>
+            {actions.needsAttention}
           </div>
         </div>
       </div>

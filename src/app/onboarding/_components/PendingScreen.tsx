@@ -39,6 +39,58 @@ interface StatusData {
 
 const BACKEND_URL = '/api/backend';
 
+const MAX_IMAGE_DIMENSION = 1600; // max width/height in pixels
+const IMAGE_QUALITY = 0.7; // JPEG compression quality
+const MAX_FILE_SIZE_MB = 2; // target compressed size
+
+/** Compress an image file using canvas — returns a smaller File */
+async function compressImage(file: File): Promise<File> {
+  // Skip PDFs — can't compress on client
+  if (file.type === 'application/pdf') return file;
+  // Skip non-images
+  if (!file.type.startsWith('image/')) return file;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+
+      // Scale down if exceeds max dimension
+      if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+        const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) {
+            // Compression didn't help, return original
+            resolve(file);
+            return;
+          }
+          const compressed = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(compressed);
+        },
+        'image/jpeg',
+        IMAGE_QUALITY,
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 const DOC_TYPE_LABELS: Record<string, string> = {
   PAN_CARD: 'PAN Card',
   AADHAAR_CARD: 'Aadhaar Card',
@@ -58,6 +110,18 @@ export function PendingScreen({ businessName }: { businessName?: string }) {
   const [submittingResponse, setSubmittingResponse] = useState(false);
   const [unpaidRegistration, setUnpaidRegistration] = useState<RegistrationResult | null>(null);
   const [uploadFiles, setUploadFiles] = useState<Record<string, File | null>>({});
+  const [compressedSizes, setCompressedSizes] = useState<Record<string, number>>({});
+
+  const handleFileSelect = async (docType: string, file: File) => {
+    setUploadFiles((prev) => ({ ...prev, [docType]: file }));
+    // Preview compression
+    if (file.type.startsWith('image/')) {
+      const compressed = await compressImage(file);
+      setCompressedSizes((prev) => ({ ...prev, [docType]: compressed.size }));
+    } else {
+      setCompressedSizes((prev) => ({ ...prev, [docType]: file.size }));
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('wiom_token');
@@ -78,7 +142,8 @@ export function PendingScreen({ businessName }: { businessName?: string }) {
 
         if (data) {
           // If registration exists but fee not paid, show payment screen
-          if (data.isRegistered && data.feePaid === false && data.status === 'PENDING' && data.registrationId) {
+          // Skip if businessName is set — means we just came from a successful payment
+          if (!businessName && data.isRegistered && data.feePaid === false && data.status === 'PENDING' && data.registrationId) {
             setUnpaidRegistration({
               registrationId: data.registrationId,
               businessName: businessName || 'Your Business',
@@ -130,14 +195,14 @@ export function PendingScreen({ businessName }: { businessName?: string }) {
         formData.append('response', infoResponse.trim());
       }
 
-      // Append files and their document types
+      // Compress images and append files with their document types
       const docTypes: string[] = [];
-      Object.entries(uploadFiles).forEach(([docType, file]) => {
-        if (file) {
-          formData.append('documents', file);
-          docTypes.push(docType);
-        }
-      });
+      const entries = Object.entries(uploadFiles).filter(([, f]) => f !== null) as [string, File][];
+      for (const [docType, file] of entries) {
+        const compressed = await compressImage(file);
+        formData.append('documents', compressed);
+        docTypes.push(docType);
+      }
       formData.append('documentTypes', JSON.stringify(docTypes));
 
       await fetch(`${BACKEND_URL}/v1/partner/respond`, {
@@ -377,48 +442,91 @@ export function PendingScreen({ businessName }: { businessName?: string }) {
           )}
 
           {/* Document upload section */}
-          {requestedDocTypes.length > 0 && (
-            <div style={{ textAlign: 'left', marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.3 }}>
-                Upload Requested Documents
-              </label>
-              {requestedDocTypes.map((docType: string) => (
-                <div key={docType} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 14px', background: 'var(--bg-card)', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1, fontWeight: 500 }}>
-                    {DOC_TYPE_LABELS[docType] || docType.replace(/_/g, ' ')}
-                  </span>
-                  {uploadFiles[docType] ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 12, color: 'var(--positive)', fontWeight: 500, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ textAlign: 'left', marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+              {requestedDocTypes.length > 0 ? 'Upload Requested Documents' : 'Attach Documents (optional)'}
+            </label>
+            {/* Specific doc type rows when admin requested them */}
+            {requestedDocTypes.map((docType: string) => (
+              <div key={docType} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 14px', background: 'var(--bg-card)', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1, fontWeight: 500 }}>
+                  {DOC_TYPE_LABELS[docType] || docType.replace(/_/g, ' ')}
+                </span>
+                {uploadFiles[docType] ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: 12, color: 'var(--positive)', fontWeight: 500, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                         {uploadFiles[docType]!.name}
                       </span>
-                      <button
-                        onClick={() => setUploadFiles((prev) => ({ ...prev, [docType]: null }))}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--negative)', fontSize: 14, fontWeight: 700, padding: '2px 6px' }}
-                      >
-                        X
-                      </button>
+                      {compressedSizes[docType] && compressedSizes[docType] < uploadFiles[docType]!.size && (
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                          {(uploadFiles[docType]!.size / 1024).toFixed(0)}KB → {(compressedSizes[docType] / 1024).toFixed(0)}KB
+                        </span>
+                      )}
                     </div>
-                  ) : (
-                    <label style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, background: 'var(--brand-primary)', color: '#FFF', borderRadius: 6, cursor: 'pointer' }}>
-                      Choose File
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setUploadFiles((prev) => ({ ...prev, [docType]: file }));
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                    <button
+                      onClick={() => { setUploadFiles((prev) => ({ ...prev, [docType]: null })); setCompressedSizes((prev) => { const n = { ...prev }; delete n[docType]; return n; }); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--negative)', fontSize: 14, fontWeight: 700, padding: '2px 6px' }}
+                    >
+                      X
+                    </button>
+                  </div>
+                ) : (
+                  <label style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, background: 'var(--brand-primary)', color: '#FFF', borderRadius: 6, cursor: 'pointer' }}>
+                    Choose File
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileSelect(docType, file);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            ))}
+            {/* General file upload — always visible */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4, padding: '10px 14px', background: 'var(--bg-card)', borderRadius: 10, border: '1px dashed var(--border-subtle)' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>
+                {requestedDocTypes.length > 0 ? 'Other / Additional Documents' : 'Upload any supporting documents'}
+              </span>
+              {uploadFiles['OTHER'] ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, color: 'var(--positive)', fontWeight: 500, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                      {uploadFiles['OTHER']!.name}
+                    </span>
+                    {compressedSizes['OTHER'] && compressedSizes['OTHER'] < uploadFiles['OTHER']!.size && (
+                      <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                        {(uploadFiles['OTHER']!.size / 1024).toFixed(0)}KB → {(compressedSizes['OTHER'] / 1024).toFixed(0)}KB
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => { setUploadFiles((prev) => ({ ...prev, OTHER: null })); setCompressedSizes((prev) => { const n = { ...prev }; delete n['OTHER']; return n; }); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--negative)', fontSize: 14, fontWeight: 700, padding: '2px 6px' }}
+                  >
+                    X
+                  </button>
                 </div>
-              ))}
+              ) : (
+                <label style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, background: 'var(--bg-secondary)', color: 'var(--text-primary)', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--border-subtle)' }}>
+                  Choose File
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileSelect('OTHER', file);
+                    }}
+                  />
+                </label>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Text response */}
           <div style={{ textAlign: 'left', marginBottom: 20 }}>

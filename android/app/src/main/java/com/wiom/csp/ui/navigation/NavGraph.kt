@@ -12,17 +12,21 @@ import com.wiom.csp.ui.home.HomeScreen
 import com.wiom.csp.ui.home.HomeViewModel
 import com.wiom.csp.ui.onboarding.OnboardingScreen
 import com.wiom.csp.ui.onboarding.OnboardingViewModel
+import com.wiom.csp.ui.pending.PendingScreen
+import com.wiom.csp.ui.pending.PendingViewModel
 
 /**
  * Single-screen navigation architecture (matching the web SPA pattern).
  * Auth-gated: if not logged in, show LoginScreen.
  * Profile-gated: if logged in but profile incomplete, show OnboardingScreen.
+ * Pending-gated: if profile complete but not yet active, show PendingScreen.
  * Otherwise, HomeScreen manages all overlays/sections internally via state.
  */
 @Composable
 fun WiomNavGraph(userPreferences: UserPreferences) {
     val isLoggedIn by userPreferences.isLoggedIn.collectAsState(initial = false)
     val isProfileComplete by userPreferences.isProfileComplete.collectAsState(initial = false)
+    val isPartnerActive by userPreferences.isPartnerActive.collectAsState(initial = false)
 
     if (!isLoggedIn) {
         val loginViewModel: LoginViewModel = hiltViewModel()
@@ -37,6 +41,11 @@ fun WiomNavGraph(userPreferences: UserPreferences) {
                 viewModel = onboardingViewModel,
                 onRegistrationComplete = { /* State will recompose via isProfileComplete flow */ }
             )
+        }
+    } else if (!isPartnerActive) {
+        val pendingViewModel: PendingViewModel = hiltViewModel()
+        com.wiom.csp.ui.theme.WiomCspTheme {
+            PendingScreen(viewModel = pendingViewModel)
         }
     } else {
         val viewModel: HomeViewModel = hiltViewModel()
