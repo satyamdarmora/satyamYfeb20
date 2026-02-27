@@ -237,9 +237,11 @@ export function AdminDashboard() {
           reviewModal={actions.reviewModal}
           reviewReason={actions.reviewReason}
           setReviewReason={actions.setReviewReason}
+          requestedDocs={actions.requestedDocs}
+          setRequestedDocs={actions.setRequestedDocs}
           reviewLoading={actions.reviewLoading}
           onSubmit={actions.handleReviewSubmit}
-          onClose={() => { actions.setReviewModal(null); actions.setReviewReason(''); }}
+          onClose={() => { actions.setReviewModal(null); actions.setReviewReason(''); actions.setRequestedDocs([]); }}
         />
       )}
 

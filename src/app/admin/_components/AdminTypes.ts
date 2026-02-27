@@ -4,6 +4,24 @@
 
 export const BACKEND_URL = '/api/backend';
 
+export interface InfoDocumentData {
+  id: number;
+  documentType: string;
+  originalName: string;
+  storedName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
+export interface InfoExchangeData {
+  id: number;
+  sender: 'ADMIN' | 'PARTNER';
+  message: string | null;
+  requestedDocs: string[] | null;
+  createdAt: string;
+  documents: InfoDocumentData[];
+}
+
 export interface BackendRegistration {
   id: number;
   registrationId: string;
@@ -42,7 +60,18 @@ export interface BackendRegistration {
     paymentLink: string | null;
     createdAt: string;
   }>;
+  infoExchanges?: InfoExchangeData[];
 }
+
+export const DOCUMENT_TYPES = [
+  { value: 'PAN_CARD', label: 'PAN Card' },
+  { value: 'AADHAAR_CARD', label: 'Aadhaar Card' },
+  { value: 'ADDRESS_PROOF', label: 'Address Proof' },
+  { value: 'BANK_STATEMENT', label: 'Bank Statement' },
+  { value: 'BUSINESS_LICENSE', label: 'Business License' },
+  { value: 'CANCELLED_CHEQUE', label: 'Cancelled Cheque' },
+  { value: 'OTHER', label: 'Other' },
+] as const;
 
 export const AREAS = [
   'Andheri West',

@@ -1,11 +1,14 @@
 'use client';
 
 import React from 'react';
+import { DOCUMENT_TYPES } from './AdminTypes';
 
 interface ReviewModalProps {
   reviewModal: { id: number; regId: string; action: 'APPROVE' | 'REJECT' | 'INFO_REQUIRED' };
   reviewReason: string;
   setReviewReason: (r: string) => void;
+  requestedDocs: string[];
+  setRequestedDocs: (docs: string[]) => void;
   reviewLoading: boolean;
   onSubmit: () => void;
   onClose: () => void;
@@ -15,6 +18,8 @@ export function ReviewModal({
   reviewModal,
   reviewReason,
   setReviewReason,
+  requestedDocs,
+  setRequestedDocs,
   reviewLoading,
   onSubmit,
   onClose,
@@ -26,6 +31,46 @@ export function ReviewModal({
           {reviewModal.action === 'APPROVE' ? 'Approve Registration' : reviewModal.action === 'REJECT' ? 'Reject Registration' : 'Request More Info'}
         </h3>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 20px' }}>{reviewModal.regId}</p>
+
+        {/* Document type checkboxes for INFO_REQUIRED */}
+        {reviewModal.action === 'INFO_REQUIRED' && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+              Documents Required
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {DOCUMENT_TYPES.map((dt) => {
+                const selected = requestedDocs.includes(dt.value);
+                return (
+                  <button
+                    key={dt.value}
+                    type="button"
+                    onClick={() => {
+                      setRequestedDocs(
+                        selected
+                          ? requestedDocs.filter((d) => d !== dt.value)
+                          : [...requestedDocs, dt.value],
+                      );
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      borderRadius: 6,
+                      border: `1px solid ${selected ? 'var(--brand-primary)' : 'var(--border-subtle)'}`,
+                      background: selected ? 'rgba(217,0,141,0.1)' : 'transparent',
+                      color: selected ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {dt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.3 }}>
           {reviewModal.action === 'APPROVE' ? 'Reason for approval' : reviewModal.action === 'REJECT' ? 'Reason for rejection' : 'What info do you need?'}
         </label>

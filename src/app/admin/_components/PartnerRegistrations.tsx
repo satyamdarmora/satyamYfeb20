@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { formatTimestamp } from './AdminTypes';
-import type { BackendRegistration } from './AdminTypes';
+import type { BackendRegistration, InfoExchangeData } from './AdminTypes';
 
 interface PartnerRegistrationsProps {
   registrations: BackendRegistration[];
@@ -131,23 +131,84 @@ export function PartnerRegistrations({
                               <div><span style={{ color: 'var(--text-muted)' }}>Txn: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace', fontSize: 11 }}>{reg.payments[0].transactionId || 'N/A'}</span> <span style={{ fontSize: 11, fontWeight: 600, color: reg.payments[0].status === 'SUCCESS' ? 'var(--positive)' : reg.payments[0].status === 'FAILED' ? 'var(--negative)' : 'var(--warning)' }}>{reg.payments[0].status}</span></div>
                             )}
                           </div>
-                          {reg.reviewReason && (
-                            <div style={{ marginBottom: 10, padding: '10px 14px', background: 'var(--bg-card)', borderRadius: 8, fontSize: 13 }}>
-                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Review Reason</div>
-                              <div style={{ color: 'var(--text-primary)' }}>{reg.reviewReason}</div>
+                          {/* Info Exchange History */}
+                          {reg.infoExchanges && reg.infoExchanges.length > 0 ? (
+                            <div style={{ marginTop: 4 }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: 0.3 }}>
+                                Info Request History ({reg.infoExchanges.length} messages)
+                              </div>
+                              {reg.infoExchanges.map((ex: InfoExchangeData) => (
+                                <div
+                                  key={ex.id}
+                                  style={{
+                                    marginBottom: 10,
+                                    padding: '10px 14px',
+                                    borderRadius: 8,
+                                    fontSize: 13,
+                                    background: ex.sender === 'ADMIN' ? 'rgba(217,0,141,0.06)' : 'rgba(0,128,67,0.06)',
+                                    border: `1px solid ${ex.sender === 'ADMIN' ? 'rgba(217,0,141,0.15)' : 'rgba(0,128,67,0.15)'}`,
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: ex.sender === 'ADMIN' ? 'var(--brand-primary)' : 'var(--positive)' }}>
+                                      {ex.sender === 'ADMIN' ? 'Admin Request' : 'Partner Response'}
+                                    </span>
+                                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatTimestamp(ex.createdAt)}</span>
+                                  </div>
+                                  {ex.message && <div style={{ color: 'var(--text-primary)', marginBottom: 6 }}>{ex.message}</div>}
+                                  {/* Requested document types */}
+                                  {ex.sender === 'ADMIN' && ex.requestedDocs && ex.requestedDocs.length > 0 && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                                      {ex.requestedDocs.map((doc: string) => (
+                                        <span key={doc} style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(217,0,141,0.1)', color: 'var(--brand-primary)' }}>
+                                          {doc.replace(/_/g, ' ')}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {/* Uploaded documents */}
+                                  {ex.sender === 'PARTNER' && ex.documents && ex.documents.length > 0 && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+                                      {ex.documents.map((doc) => (
+                                        <a
+                                          key={doc.id}
+                                          href={`/api/backend/v1/partner/documents/${doc.storedName}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--brand-primary)', textDecoration: 'none', padding: '4px 8px', borderRadius: 4, background: 'var(--bg-card)' }}
+                                        >
+                                          <span>{doc.documentType.replace(/_/g, ' ')}</span>
+                                          <span style={{ color: 'var(--text-muted)' }}>-</span>
+                                          <span style={{ color: 'var(--text-secondary)' }}>{doc.originalName}</span>
+                                          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>({(doc.sizeBytes / 1024).toFixed(0)} KB)</span>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          )}
-                          {reg.adminNotes && (
-                            <div style={{ marginBottom: 10, padding: '10px 14px', background: 'rgba(217,0,141,0.06)', border: '1px solid rgba(217,0,141,0.15)', borderRadius: 8, fontSize: 13 }}>
-                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--brand-primary)', textTransform: 'uppercase', marginBottom: 4 }}>Admin Notes (Info Requested)</div>
-                              <div style={{ color: 'var(--text-primary)' }}>{reg.adminNotes}</div>
-                            </div>
-                          )}
-                          {reg.partnerResponse && (
-                            <div style={{ padding: '10px 14px', background: 'rgba(0,128,67,0.06)', border: '1px solid rgba(0,128,67,0.15)', borderRadius: 8, fontSize: 13 }}>
-                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive)', textTransform: 'uppercase', marginBottom: 4 }}>Partner Response</div>
-                              <div style={{ color: 'var(--text-primary)' }}>{reg.partnerResponse}</div>
-                            </div>
+                          ) : (
+                            <>
+                              {reg.reviewReason && (
+                                <div style={{ marginBottom: 10, padding: '10px 14px', background: 'var(--bg-card)', borderRadius: 8, fontSize: 13 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Review Reason</div>
+                                  <div style={{ color: 'var(--text-primary)' }}>{reg.reviewReason}</div>
+                                </div>
+                              )}
+                              {reg.adminNotes && (
+                                <div style={{ marginBottom: 10, padding: '10px 14px', background: 'rgba(217,0,141,0.06)', border: '1px solid rgba(217,0,141,0.15)', borderRadius: 8, fontSize: 13 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--brand-primary)', textTransform: 'uppercase', marginBottom: 4 }}>Admin Notes (Info Requested)</div>
+                                  <div style={{ color: 'var(--text-primary)' }}>{reg.adminNotes}</div>
+                                </div>
+                              )}
+                              {reg.partnerResponse && (
+                                <div style={{ padding: '10px 14px', background: 'rgba(0,128,67,0.06)', border: '1px solid rgba(0,128,67,0.15)', borderRadius: 8, fontSize: 13 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive)', textTransform: 'uppercase', marginBottom: 4 }}>Partner Response</div>
+                                  <div style={{ color: 'var(--text-primary)' }}>{reg.partnerResponse}</div>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       )}

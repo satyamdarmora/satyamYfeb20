@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 
 interface SecondaryMenuProps {
@@ -27,6 +28,7 @@ const MENU_ITEMS: MenuItem[] = [
 
 export default function SecondaryMenu({ isOpen, onClose, onNavigate }: SecondaryMenuProps) {
   const { t } = useI18n();
+  const router = useRouter();
 
   // Lock body scroll when open
   useEffect(() => {
@@ -207,6 +209,47 @@ export default function SecondaryMenu({ isOpen, onClose, onNavigate }: Secondary
                   </div>
                 </button>
               ))}
+            </div>
+
+            {/* Logout button at bottom */}
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-subtle)' }}>
+              <button
+                onClick={() => {
+                  onClose();
+                  router.push('/logout');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  width: '100%',
+                  padding: '14px 20px',
+                  background: 'rgba(224, 30, 0, 0.08)',
+                  border: '1px solid rgba(224, 30, 0, 0.15)',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 10,
+                    background: 'rgba(224, 30, 0, 0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 18,
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="var(--negative)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--negative)' }}>Logout</div>
+              </button>
             </div>
           </div>
         </div>

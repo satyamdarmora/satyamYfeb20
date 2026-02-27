@@ -42,6 +42,8 @@ export interface AdminActions {
   setReviewModal: (m: { id: number; regId: string; action: 'APPROVE' | 'REJECT' | 'INFO_REQUIRED' } | null) => void;
   reviewReason: string;
   setReviewReason: (r: string) => void;
+  requestedDocs: string[];
+  setRequestedDocs: (docs: string[]) => void;
   reviewLoading: boolean;
   handleReviewSubmit: () => Promise<void>;
 
@@ -110,6 +112,7 @@ export function useAdminActions(): AdminActions {
   const [expandedRegId, setExpandedRegId] = useState<number | null>(null);
   const [reviewModal, setReviewModal] = useState<{ id: number; regId: string; action: 'APPROVE' | 'REJECT' | 'INFO_REQUIRED' } | null>(null);
   const [reviewReason, setReviewReason] = useState('');
+  const [requestedDocs, setRequestedDocs] = useState<string[]>([]);
   const [reviewLoading, setReviewLoading] = useState(false);
 
   const fetchTasks = useCallback(async () => {
@@ -165,10 +168,17 @@ export function useAdminActions(): AdminActions {
     if (!reviewModal || !reviewReason.trim()) return;
     setReviewLoading(true);
     try {
+      const body: Record<string, unknown> = {
+        action: reviewModal.action,
+        reviewReason: reviewReason.trim(),
+      };
+      if (reviewModal.action === 'INFO_REQUIRED' && requestedDocs.length > 0) {
+        body.requestedDocs = requestedDocs;
+      }
       await fetch(`${BACKEND_URL}/v1/partner/registrations/${reviewModal.id}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: reviewModal.action, reviewReason: reviewReason.trim() }),
+        body: JSON.stringify(body),
       });
       refresh();
       const actionLabel = reviewModal.action === 'APPROVE' ? 'approved' : reviewModal.action === 'REJECT' ? 'rejected' : 'info requested';
@@ -179,8 +189,9 @@ export function useAdminActions(): AdminActions {
       setReviewLoading(false);
       setReviewModal(null);
       setReviewReason('');
+      setRequestedDocs([]);
     }
-  }, [reviewModal, reviewReason, refresh, showNotification]);
+  }, [reviewModal, reviewReason, requestedDocs, refresh, showNotification]);
 
   const handleTrainingAction = useCallback(async (regId: number, registrationId: string, action: 'COMPLETE' | 'FAIL') => {
     try {
@@ -621,6 +632,8 @@ export function useAdminActions(): AdminActions {
     setReviewModal,
     reviewReason,
     setReviewReason,
+    requestedDocs,
+    setRequestedDocs,
     reviewLoading,
     handleReviewSubmit,
     handleTrainingAction,
