@@ -111,4 +111,7 @@ dependencies {
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // Chrome Custom Tabs (in-app browser)
+    implementation("androidx.browser:browser:1.8.0")
 }

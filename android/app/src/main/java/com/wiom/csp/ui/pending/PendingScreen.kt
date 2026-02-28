@@ -1,7 +1,11 @@
 package com.wiom.csp.ui.pending
 
-import android.content.Intent
+import android.annotation.SuppressLint
 import android.net.Uri
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -28,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import com.wiom.csp.data.remote.dto.InfoExchangeDto
 import com.wiom.csp.data.remote.dto.StatusData
 import com.wiom.csp.ui.theme.WiomCspTheme
@@ -185,17 +190,13 @@ private fun PaymentScreen(
     onRetry: () -> Unit,
     colors: com.wiom.csp.ui.theme.WiomColors
 ) {
-    val context = LocalContext.current
     val fee = data.registrationFee?.toInt() ?: 2000
     val regLabel = data.registrationId?.let { "REG-${it.toString().padStart(6, '0')}" } ?: "CSP Registration"
 
-    // Auto-open browser when payment link becomes available
-    LaunchedEffect(paymentState, paymentLink) {
-        if (paymentState == PaymentUiState.VERIFYING && paymentLink != null) {
-            try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentLink)))
-            } catch (_: Exception) { }
-        }
+    // Show in-app WebView when verifying
+    if (paymentState == PaymentUiState.VERIFYING && paymentLink != null) {
+        PaymentWebView(url = paymentLink, colors = colors)
+        return
     }
 
     when (paymentState) {
@@ -262,9 +263,7 @@ private fun PaymentScreen(
             if (paymentLink != null) {
                 Spacer(Modifier.height(20.dp))
                 OutlinedButton(
-                    onClick = {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentLink)))
-                    },
+                    onClick = { /* WebView handles payment now */ },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.brandPrimary),
@@ -425,17 +424,13 @@ private fun SecurityDepositScreen(
     onRetry: () -> Unit,
     colors: com.wiom.csp.ui.theme.WiomColors
 ) {
-    val context = LocalContext.current
     val amount = data.securityDepositAmount
     val batchSize = data.deviceBatchSize
 
-    // Auto-open browser when verifying
-    LaunchedEffect(paymentState, paymentLink) {
-        if (paymentState == PaymentUiState.VERIFYING && paymentLink != null) {
-            try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentLink)))
-            } catch (_: Exception) { }
-        }
+    // Show in-app WebView when verifying
+    if (paymentState == PaymentUiState.VERIFYING && paymentLink != null) {
+        PaymentWebView(url = paymentLink, colors = colors)
+        return
     }
 
     StatusHeader(
@@ -699,7 +694,7 @@ private fun InfoRequiredState(
 
     // Find latest admin message with requestedDocs
     val latestAdminExchange = data.infoExchanges
-        .lastOrNull { it.sender == "admin" && it.requestedDocs.isNotEmpty() }
+        .lastOrNull { it.sender.equals("ADMIN", ignoreCase = true) && it.requestedDocs.isNotEmpty() }
 
     val requestedDocs = latestAdminExchange?.requestedDocs ?: emptyList()
 
@@ -1042,7 +1037,7 @@ private fun InfoCard(label: String, value: String, colors: com.wiom.csp.ui.theme
 
 @Composable
 private fun ConversationBubble(exchange: InfoExchangeDto, colors: com.wiom.csp.ui.theme.WiomColors) {
-    val isAdmin = exchange.sender == "admin"
+    val isAdmin = exchange.sender.equals("ADMIN", ignoreCase = true)
     val bgColor = if (isAdmin) colors.brandSubtle else colors.bgCard
     val borderColor = if (isAdmin) colors.brandPrimary.copy(alpha = 0.3f) else colors.borderSubtle
 
@@ -1193,6 +1188,57 @@ private fun DocumentUploadRow(
                 colors = ButtonDefaults.buttonColors(containerColor = colors.brandPrimary)
             ) {
                 Text("Choose", fontSize = 13.sp)
+            }
+        }
+    }
+}
+
+// ─── PAYMENT WEBVIEW ───
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun PaymentWebView(url: String, colors: com.wiom.csp.ui.theme.WiomColors) {
+    var loading by remember { mutableStateOf(true) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.loadWithOverviewMode = true
+                    settings.useWideViewPort = true
+
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                            return false
+                        }
+
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            loading = false
+                        }
+                    }
+
+                    webChromeClient = WebChromeClient()
+
+                    loadUrl(url)
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        if (loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colors.bgPrimary.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = colors.brandPrimary)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Loading payment page...", color = colors.textSecondary, fontSize = 14.sp)
+                }
             }
         }
     }

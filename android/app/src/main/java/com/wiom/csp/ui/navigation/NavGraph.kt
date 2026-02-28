@@ -1,9 +1,16 @@
 package com.wiom.csp.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.wiom.csp.data.preferences.UserPreferences
 import com.wiom.csp.ui.auth.LoginScreen
@@ -21,20 +28,36 @@ import com.wiom.csp.ui.pending.PendingViewModel
  * Profile-gated: if logged in but profile incomplete, show OnboardingScreen.
  * Pending-gated: if profile complete but not yet active, show PendingScreen.
  * Otherwise, HomeScreen manages all overlays/sections internally via state.
+ *
+ * Uses null initial values to distinguish "not yet loaded from DataStore"
+ * from "actually false", preventing a login screen flash on activity recreation.
  */
 @Composable
 fun WiomNavGraph(userPreferences: UserPreferences) {
-    val isLoggedIn by userPreferences.isLoggedIn.collectAsState(initial = false)
-    val isProfileComplete by userPreferences.isProfileComplete.collectAsState(initial = false)
-    val isPartnerActive by userPreferences.isPartnerActive.collectAsState(initial = false)
+    val isLoggedIn by userPreferences.isLoggedIn.collectAsState(initial = null)
+    val isProfileComplete by userPreferences.isProfileComplete.collectAsState(initial = null)
+    val isPartnerActive by userPreferences.isPartnerActive.collectAsState(initial = null)
 
-    if (!isLoggedIn) {
+    // Show loading while DataStore hasn't emitted yet
+    if (isLoggedIn == null || isProfileComplete == null || isPartnerActive == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (isLoggedIn != true) {
         val loginViewModel: LoginViewModel = hiltViewModel()
         LoginScreen(
             viewModel = loginViewModel,
             onLoginSuccess = { /* State will recompose via isLoggedIn flow */ }
         )
-    } else if (!isProfileComplete) {
+    } else if (isProfileComplete != true) {
         val onboardingViewModel: OnboardingViewModel = hiltViewModel()
         com.wiom.csp.ui.theme.WiomCspTheme {
             OnboardingScreen(
@@ -42,7 +65,7 @@ fun WiomNavGraph(userPreferences: UserPreferences) {
                 onRegistrationComplete = { /* State will recompose via isProfileComplete flow */ }
             )
         }
-    } else if (!isPartnerActive) {
+    } else if (isPartnerActive != true) {
         val pendingViewModel: PendingViewModel = hiltViewModel()
         com.wiom.csp.ui.theme.WiomCspTheme {
             PendingScreen(viewModel = pendingViewModel)
