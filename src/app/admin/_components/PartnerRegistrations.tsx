@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { formatTimestamp } from './AdminTypes';
+import React, { useState } from 'react';
+import { formatTimestamp, BACKEND_URL } from './AdminTypes';
 import type { BackendRegistration, InfoExchangeData } from './AdminTypes';
 
 interface PartnerRegistrationsProps {
@@ -161,6 +161,15 @@ export function PartnerRegistrations({
                             <div><span style={{ color: 'var(--text-muted)' }}>Entity Type: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{reg.entityType}</span></div>
                             <div><span style={{ color: 'var(--text-muted)' }}>State: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{reg.state}</span></div>
                             <div><span style={{ color: 'var(--text-muted)' }}>Pincode: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{reg.pincode}</span></div>
+                            {reg.address && <div style={{ gridColumn: 'span 2' }}><span style={{ color: 'var(--text-muted)' }}>Address: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{reg.address}</span></div>}
+                            {reg.latitude != null && reg.longitude != null && (
+                              <div>
+                                <span style={{ color: 'var(--text-muted)' }}>GPS: </span>
+                                <a href={`https://maps.google.com/?q=${reg.latitude},${reg.longitude}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-primary)', fontWeight: 500, fontFamily: 'monospace', fontSize: 11, textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}>
+                                  {reg.latitude.toFixed(6)}, {reg.longitude.toFixed(6)} ↗
+                                </a>
+                              </div>
+                            )}
                             <div><span style={{ color: 'var(--text-muted)' }}>PAN: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace' }}>{reg.panNumber}</span></div>
                             <div><span style={{ color: 'var(--text-muted)' }}>Aadhaar: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace' }}>{reg.aadhaarNumber}</span></div>
                             <div><span style={{ color: 'var(--text-muted)' }}>Bank: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{reg.bankName}</span></div>
@@ -172,6 +181,10 @@ export function PartnerRegistrations({
                               <div><span style={{ color: 'var(--text-muted)' }}>Txn: </span><span style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace', fontSize: 11 }}>{reg.payments[0].transactionId || 'N/A'}</span> <span style={{ fontSize: 11, fontWeight: 600, color: reg.payments[0].status === 'SUCCESS' ? 'var(--positive)' : reg.payments[0].status === 'FAILED' ? 'var(--negative)' : 'var(--warning)' }}>{reg.payments[0].status}</span></div>
                             )}
                           </div>
+                          {/* Security Deposit & Device Batch Config */}
+                          {reg.status === 'APPROVED' && reg.partner && (
+                            <BatchSizeConfig regId={reg.id} partner={reg.partner} />
+                          )}
                           {/* Info Exchange History */}
                           {reg.infoExchanges && reg.infoExchanges.length > 0 ? (
                             <div style={{ marginTop: 4 }}>
@@ -280,6 +293,56 @@ export function PartnerRegistrations({
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+function BatchSizeConfig({ regId, partner }: { regId: number; partner: NonNullable<BackendRegistration['partner']> }) {
+  const [batchSize, setBatchSize] = useState(5);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch(`${BACKEND_URL}/v1/partner/registrations/${regId}/batch-size`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchSize }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch { /* ignore */ }
+    setSaving(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginTop: 12, padding: '12px 14px', background: 'var(--bg-card)', borderRadius: 8, fontSize: 13 }}>
+      <div>
+        <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>Security Deposit: </span>
+        <span style={{ fontWeight: 600, color: partner.status === 'ACTIVE' ? 'var(--positive)' : 'var(--warning)' }}>
+          {'\u20B9'}20,000 — Pending
+        </span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>First Batch Devices: </span>
+        <select
+          value={batchSize}
+          onChange={(e) => setBatchSize(Number(e.target.value))}
+          style={{ padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}
+        >
+          {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+        <button
+          onClick={(e) => { e.stopPropagation(); handleSave(); }}
+          disabled={saving}
+          style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, background: saved ? 'var(--positive)' : 'var(--brand-primary)', color: '#FFF', border: 'none', borderRadius: 5, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}
+        >
+          {saved ? 'Saved!' : saving ? '...' : 'Set'}
+        </button>
+      </div>
     </div>
   );
 }

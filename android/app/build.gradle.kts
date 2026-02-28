@@ -39,8 +39,8 @@ android {
         }
         create("production") {
             dimension = "target"
-            buildConfigField("String", "API_BASE_URL", "\"http://satyam.wiom.in/csp\"")
-            buildConfigField("String", "BACKEND_BASE_URL", "\"http://satyam.wiom.in\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://satyam.wiom.in/csp\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"https://satyam.wiom.in\"")
         }
     }
 
@@ -108,4 +108,7 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+
+    // Location
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 }

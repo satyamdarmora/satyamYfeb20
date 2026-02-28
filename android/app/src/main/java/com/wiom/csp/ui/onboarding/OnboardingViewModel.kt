@@ -27,6 +27,9 @@ data class OnboardingForm(
     val city: String = "",
     val area: String = "",
     val pincode: String = "",
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val address: String = "",
     val aadhaarNumber: String = "",
     val panNumber: String = "",
     val bankAccountName: String = "",
@@ -58,6 +61,28 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    fun fillTestData() {
+        _form.value = OnboardingForm(
+            businessName = "Sharma Telecom Services",
+            entityType = "FIRM",
+            state = "Maharashtra",
+            city = "Mumbai",
+            area = "Andheri West",
+            pincode = "400058",
+            latitude = 19.1364,
+            longitude = 72.8296,
+            address = "Shop 12, Andheri West, Mumbai 400058",
+            aadhaarNumber = "234567890123",
+            panNumber = "ABCDE1234F",
+            bankAccountName = "Rajesh Sharma",
+            bankAccountNumber = "1234567890123",
+            bankIfsc = "SBIN0001234",
+            bankName = "State Bank of India",
+            termsAccepted = true
+        )
+        _state.value = OnboardingState.Idle
+    }
+
     fun submitRegistration() {
         val f = _form.value
 
@@ -83,6 +108,9 @@ class OnboardingViewModel @Inject constructor(
                 city = f.city.trim(),
                 area = f.area.trim(),
                 pincode = f.pincode.trim(),
+                latitude = f.latitude,
+                longitude = f.longitude,
+                address = f.address.trim().takeIf { it.isNotBlank() },
                 aadhaarNumber = f.aadhaarNumber.trim(),
                 panNumber = f.panNumber.trim().uppercase(),
                 bankAccountName = f.bankAccountName.trim(),

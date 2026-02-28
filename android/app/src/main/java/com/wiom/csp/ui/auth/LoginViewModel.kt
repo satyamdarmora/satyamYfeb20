@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
@@ -57,8 +58,11 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.verifyOtp(otp, mobile, tmpToken)
                 .onSuccess { result ->
-                    // Extract name and profile status from user data
-                    val name = result.userData["name"]?.jsonPrimitive?.content ?: "CSP Partner"
+                    // Extract name from nested user object: data.user.name
+                    val userObj = try { result.userData["user"]?.jsonObject } catch (_: Exception) { null }
+                    val name = userObj?.get("name")?.jsonPrimitive?.content
+                        ?: result.userData["name"]?.jsonPrimitive?.content
+                        ?: "CSP Partner"
                     val profileComplete = try {
                         result.userData["isProfileComplete"]?.jsonPrimitive?.boolean ?: false
                     } catch (_: Exception) { false }

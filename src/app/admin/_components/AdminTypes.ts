@@ -32,6 +32,9 @@ export interface BackendRegistration {
   city: string;
   area: string;
   pincode: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
   panNumber: string;
   aadhaarNumber: string;
   bankAccountName: string;

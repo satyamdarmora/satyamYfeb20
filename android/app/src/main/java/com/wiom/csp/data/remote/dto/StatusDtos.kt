@@ -22,7 +22,19 @@ data class StatusData(
     val registrationId: Int? = null,
     val registrationFee: Double? = null,
     val isRegistered: Boolean = false,
-    val infoExchanges: List<InfoExchangeDto> = emptyList()
+    val infoExchanges: List<InfoExchangeDto> = emptyList(),
+    val paymentInfo: PaymentInfoDto? = null,
+    val securityDepositAmount: Int = 20000,
+    val securityDepositPaid: Boolean = false,
+    val deviceBatchSize: Int = 5,
+    val securityDepositInfo: PaymentInfoDto? = null
+)
+
+@Serializable
+data class PaymentInfoDto(
+    val transactionId: String? = null,
+    val status: String? = null,
+    val paymentLink: String? = null
 )
 
 @Serializable
@@ -49,4 +61,42 @@ data class InfoDocumentDto(
 data class RespondResponse(
     val status: Int,
     val msg: String? = null
+)
+
+@Serializable
+data class InitiatePaymentRequest(
+    val registrationId: Int
+)
+
+@Serializable
+data class InitiatePaymentResponse(
+    val status: Int = 0,
+    val msg: String? = null,
+    val data: PaymentInitData? = null
+)
+
+@Serializable
+data class PaymentInitData(
+    val transactionId: String? = null,
+    val orderId: String? = null,
+    val amount: Int? = null,
+    val paymentLink: String? = null,
+    val status: String? = null
+)
+
+@Serializable
+data class PaymentStatusCheckResponse(
+    val status: Int = 0,
+    val msg: String? = null,
+    val data: PaymentStatusData? = null
+)
+
+@Serializable
+data class PaymentStatusData(
+    val transactionId: String? = null,
+    val status: String? = null,
+    val amount: Int? = null,
+    val paymentLink: String? = null,
+    val feePaid: Boolean = false,
+    val securityDepositPaid: Boolean = false
 )

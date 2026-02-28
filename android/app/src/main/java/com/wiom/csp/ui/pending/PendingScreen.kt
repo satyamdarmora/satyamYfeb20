@@ -1,5 +1,6 @@
 package com.wiom.csp.ui.pending
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.wiom.csp.data.remote.dto.InfoExchangeDto
 import com.wiom.csp.data.remote.dto.StatusData
 import com.wiom.csp.ui.theme.WiomCspTheme
@@ -39,6 +41,10 @@ fun PendingScreen(viewModel: PendingViewModel) {
     val submitSuccess by viewModel.submitSuccess.collectAsState()
     val selectedFiles by viewModel.selectedFiles.collectAsState()
     val responseText by viewModel.responseText.collectAsState()
+    val paymentState by viewModel.paymentState.collectAsState()
+    val paymentLink by viewModel.paymentLink.collectAsState()
+    val paymentError by viewModel.paymentError.collectAsState()
+    val isSecurityDeposit by viewModel.isSecurityDeposit.collectAsState()
     val colors = WiomCspTheme.colors
     val scrollState = rememberScrollState()
 
@@ -76,10 +82,22 @@ fun PendingScreen(viewModel: PendingViewModel) {
                 val data = statusData!!
                 val partnerStatus = data.partnerStatus ?: data.status ?: "PENDING"
 
-                when (partnerStatus) {
-                    "PENDING" -> PendingState(colors)
-                    "PAYMENT_PENDING" -> PaymentPendingState(data, colors)
-                    "INFO_REQUIRED" -> InfoRequiredState(
+                when {
+                    // Show payment screen if fee not paid (regardless of status)
+                    !data.feePaid && (partnerStatus == "PENDING" || partnerStatus == "PAYMENT_PENDING") -> {
+                        PaymentScreen(
+                            data = data,
+                            paymentState = paymentState,
+                            paymentLink = paymentLink,
+                            paymentError = paymentError,
+                            onInitiatePayment = viewModel::initiatePayment,
+                            onRetry = viewModel::retryPayment,
+                            colors = colors
+                        )
+                    }
+                    partnerStatus == "PENDING" -> PendingState(colors)
+                    partnerStatus == "PAYMENT_PENDING" -> PaymentPendingState(data, colors)
+                    partnerStatus == "INFO_REQUIRED" -> InfoRequiredState(
                         data = data,
                         colors = colors,
                         selectedFiles = selectedFiles,
@@ -93,17 +111,28 @@ fun PendingScreen(viewModel: PendingViewModel) {
                         onSubmit = viewModel::submitResponse,
                         onClearError = viewModel::clearError
                     )
-                    "UNDER_REVIEW" -> UnderReviewState(colors)
-                    "APPROVED", "TRAINING" -> TrainingState(data, colors)
-                    "TRAINING_FAILED" -> TrainingFailedState(colors)
-                    "REJECTED" -> RejectedState(data, colors)
-                    "ACTIVE" -> ActiveState(colors)
-                    else -> PendingState(colors) // fallback
+                    partnerStatus == "UNDER_REVIEW" -> UnderReviewState(colors)
+                    partnerStatus == "APPROVED" || partnerStatus == "TRAINING" -> TrainingState(data, colors)
+                    partnerStatus == "TRAINING_FAILED" -> TrainingFailedState(colors)
+                    partnerStatus == "REJECTED" -> RejectedState(data, colors)
+                    partnerStatus == "ACTIVE" && !data.securityDepositPaid -> {
+                        SecurityDepositScreen(
+                            data = data,
+                            paymentState = paymentState,
+                            paymentLink = paymentLink,
+                            paymentError = paymentError,
+                            onInitiatePayment = viewModel::initiateSecurityDeposit,
+                            onRetry = viewModel::retryPayment,
+                            colors = colors
+                        )
+                    }
+                    partnerStatus == "ACTIVE" -> ActiveState(colors)
+                    else -> PendingState(colors)
                 }
 
                 Spacer(Modifier.height(32.dp))
                 Text(
-                    "Wiom CSP Partner Portal",
+                    "Wiom CSP Portal",
                     fontSize = 12.sp,
                     color = colors.textMuted,
                     textAlign = TextAlign.Center,
@@ -142,6 +171,439 @@ fun PendingScreen(viewModel: PendingViewModel) {
                 }
             }
         }
+    }
+}
+
+// ─── PAYMENT SCREEN ───
+@Composable
+private fun PaymentScreen(
+    data: StatusData,
+    paymentState: PaymentUiState,
+    paymentLink: String?,
+    paymentError: String?,
+    onInitiatePayment: () -> Unit,
+    onRetry: () -> Unit,
+    colors: com.wiom.csp.ui.theme.WiomColors
+) {
+    val context = LocalContext.current
+    val fee = data.registrationFee?.toInt() ?: 2000
+    val regLabel = data.registrationId?.let { "REG-${it.toString().padStart(6, '0')}" } ?: "CSP Registration"
+
+    // Auto-open browser when payment link becomes available
+    LaunchedEffect(paymentState, paymentLink) {
+        if (paymentState == PaymentUiState.VERIFYING && paymentLink != null) {
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentLink)))
+            } catch (_: Exception) { }
+        }
+    }
+
+    when (paymentState) {
+        PaymentUiState.SUCCESS -> {
+            StatusHeader(
+                icon = Icons.Outlined.CheckCircle,
+                iconBg = colors.positiveBg,
+                iconTint = colors.positive,
+                title = "Payment Successful",
+                subtitle = "Your registration fee has been received. Moving to the review stage now...",
+                colors = colors
+            )
+            Spacer(Modifier.height(16.dp))
+            Text("Refreshing...", fontSize = 13.sp, color = colors.textMuted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        }
+
+        PaymentUiState.VERIFYING -> {
+            StatusHeader(
+                icon = Icons.Outlined.Sync,
+                iconBg = colors.brandPrimary.copy(alpha = 0.08f),
+                iconTint = colors.brandPrimary,
+                title = "Verifying Your Payment",
+                subtitle = "Checking your payment status. This usually takes a few seconds.",
+                colors = colors
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // Amount card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(colors.bgCard)
+                    .padding(20.dp)
+            ) {
+                Column {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Amount", fontSize = 13.sp, color = colors.textMuted, fontWeight = FontWeight.Medium)
+                        Text("\u20B9${"%,d".format(fee)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("For", fontSize = 13.sp, color = colors.textMuted, fontWeight = FontWeight.Medium)
+                        Text(regLabel, fontSize = 13.sp, color = colors.textSecondary, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Warning
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(colors.warning.copy(alpha = 0.06f))
+                    .border(1.dp, colors.warning.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
+                    .padding(12.dp, 14.dp)
+            ) {
+                Text("Don\u2019t close the app. We\u2019re checking every few seconds.", fontSize = 13.sp, color = colors.textSecondary, lineHeight = 20.sp)
+            }
+
+            if (paymentLink != null) {
+                Spacer(Modifier.height(20.dp))
+                OutlinedButton(
+                    onClick = {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentLink)))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.brandPrimary),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.borderSubtle)
+                ) {
+                    Text("Retry Payment", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        PaymentUiState.FAILED -> {
+            StatusHeader(
+                icon = Icons.Outlined.ErrorOutline,
+                iconBg = colors.negativeBg,
+                iconTint = colors.negative,
+                title = "Payment Issue",
+                subtitle = paymentError ?: "Payment verification timed out.",
+                colors = colors
+            )
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = onRetry,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.brandPrimary)
+            ) {
+                Text("Try Again", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        else -> {
+            // IDLE / PROCESSING — main payment screen
+            StatusHeader(
+                icon = Icons.Outlined.CreditCard,
+                iconBg = colors.brandPrimary.copy(alpha = 0.08f),
+                iconTint = colors.brandPrimary,
+                title = "Registration Fee",
+                subtitle = "One-time fee to activate your CSP partnership with Wiom. This covers your onboarding and training.",
+                colors = colors
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // Fee breakdown card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(colors.bgCard)
+                    .padding(20.dp, 24.dp)
+            ) {
+                Column {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Text("CSP Registration Fee", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                            Spacer(Modifier.height(2.dp))
+                            Text(regLabel, fontSize = 13.sp, color = colors.textMuted)
+                        }
+                        Text("\u20B9${"%,d".format(fee)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider(color = colors.borderSubtle, thickness = 1.dp)
+                    Spacer(Modifier.height(14.dp))
+
+                    listOf("Onboarding & Training" to "Included", "CSP Dashboard Access" to "Included", "Business Support" to "Included").forEach { (label, value) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(label, fontSize = 13.sp, color = colors.textMuted)
+                            Text(value, fontSize = 13.sp, color = colors.textMuted)
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Trust signals
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colors.positive.copy(alpha = 0.06f))
+                    .border(1.dp, colors.positive.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                    .padding(14.dp, 18.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
+                        Icon(Icons.Outlined.Shield, contentDescription = null, tint = colors.positive, modifier = Modifier.size(16.dp))
+                        Text("Secure payment via JusPay. Your card details are never stored with us.", fontSize = 13.sp, color = colors.textSecondary, lineHeight = 18.sp)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
+                        Icon(Icons.Outlined.Schedule, contentDescription = null, tint = colors.positive, modifier = Modifier.size(16.dp))
+                        Text("Full refund if your registration is not approved.", fontSize = 13.sp, color = colors.textSecondary, lineHeight = 18.sp)
+                    }
+                }
+            }
+
+            // Error
+            if (paymentError != null) {
+                Spacer(Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(colors.negative.copy(alpha = 0.08f))
+                        .border(1.dp, colors.negative.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                        .padding(12.dp, 16.dp)
+                ) {
+                    Text(paymentError, fontSize = 13.sp, color = colors.negative, lineHeight = 18.sp)
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Pay button
+            Button(
+                onClick = {
+                    onInitiatePayment()
+                },
+                enabled = paymentState != PaymentUiState.PROCESSING,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colors.brandPrimary,
+                    disabledContainerColor = colors.brandPrimary.copy(alpha = 0.7f)
+                )
+            ) {
+                if (paymentState == PaymentUiState.PROCESSING) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Setting up payment...", fontSize = 16.sp)
+                } else {
+                    Text("Pay \u20B9${"%,d".format(fee)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "You\u2019ll be redirected to a secure payment page. Come back here after paying.",
+                fontSize = 12.sp,
+                color = colors.textMuted,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+// ─── SECURITY DEPOSIT ───
+@Composable
+private fun SecurityDepositScreen(
+    data: StatusData,
+    paymentState: PaymentUiState,
+    paymentLink: String?,
+    paymentError: String?,
+    onInitiatePayment: () -> Unit,
+    onRetry: () -> Unit,
+    colors: com.wiom.csp.ui.theme.WiomColors
+) {
+    val context = LocalContext.current
+    val amount = data.securityDepositAmount
+    val batchSize = data.deviceBatchSize
+
+    // Auto-open browser when verifying
+    LaunchedEffect(paymentState, paymentLink) {
+        if (paymentState == PaymentUiState.VERIFYING && paymentLink != null) {
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentLink)))
+            } catch (_: Exception) { }
+        }
+    }
+
+    StatusHeader(
+        icon = Icons.Outlined.Verified,
+        iconBg = Color(0xFF1A3A2A),
+        iconTint = colors.positive,
+        title = "Registration Approved!",
+        subtitle = "Complete security deposit to start operations",
+        colors = colors
+    )
+
+    Spacer(Modifier.height(24.dp))
+
+    // Success state
+    if (paymentState == PaymentUiState.SUCCESS) {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Filled.CheckCircle, null, tint = colors.positive, modifier = Modifier.size(64.dp))
+                Spacer(Modifier.height(16.dp))
+                Text("Security Deposit Paid!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Spacer(Modifier.height(8.dp))
+                Text("$batchSize devices will be allocated to you shortly.", fontSize = 14.sp, color = colors.textSecondary, textAlign = TextAlign.Center)
+            }
+        }
+        return
+    }
+
+    // Deposit card
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.bgCard)
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Text("NetBox Security Deposit", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+            Spacer(Modifier.height(16.dp))
+
+            // Info rows
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Security deposit", fontSize = 14.sp, color = colors.textSecondary)
+                Text("\u20B9${"%,d".format(amount)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Devices covered", fontSize = 14.sp, color = colors.textSecondary)
+                Text("Up to 20 NetBoxes", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("First batch", fontSize = 14.sp, color = colors.textSecondary)
+                Text("$batchSize devices", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.brandPrimary)
+            }
+
+            Spacer(Modifier.height(20.dp))
+            Divider(color = colors.borderSubtle)
+            Spacer(Modifier.height(16.dp))
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Total payable", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text("\u20B9${"%,d".format(amount)}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.positive)
+            }
+        }
+    }
+
+    Spacer(Modifier.height(16.dp))
+
+    // Trust signals
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.bgCard.copy(alpha = 0.5f))
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Shield, null, tint = colors.positive, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Refundable deposit \u2014 returned when devices are surrendered", fontSize = 12.sp, color = colors.textSecondary)
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Inventory2, null, tint = colors.brandPrimary, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("First batch of $batchSize devices shipped after payment", fontSize = 12.sp, color = colors.textSecondary)
+            }
+        }
+    }
+
+    Spacer(Modifier.height(24.dp))
+
+    // Error
+    if (paymentError != null) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.negativeBg)
+        ) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Warning, null, tint = colors.negative, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(12.dp))
+                Text(paymentError, fontSize = 13.sp, color = colors.negative)
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+    }
+
+    // Button
+    when (paymentState) {
+        PaymentUiState.IDLE -> {
+            Button(
+                onClick = onInitiatePayment,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.positive)
+            ) {
+                Icon(Icons.Outlined.Payment, null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Pay \u20B9${"%,d".format(amount)} Security Deposit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        PaymentUiState.PROCESSING -> {
+            Button(
+                onClick = {},
+                enabled = false,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.positive.copy(alpha = 0.7f))
+            ) {
+                CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(12.dp))
+                Text("Initiating payment...", fontSize = 14.sp)
+            }
+        }
+        PaymentUiState.VERIFYING -> {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.brandPrimary.copy(alpha = 0.08f))
+            ) {
+                Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = colors.brandPrimary, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Text("Checking payment status...", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                    Text("Don't close the app", fontSize = 12.sp, color = colors.textMuted)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = onRetry,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("Retry Payment", color = colors.textSecondary) }
+        }
+        PaymentUiState.FAILED -> {
+            Button(
+                onClick = onRetry,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.brandPrimary)
+            ) {
+                Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Try Again", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        PaymentUiState.SUCCESS -> { /* handled above */ }
     }
 }
 
