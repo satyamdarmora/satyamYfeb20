@@ -183,7 +183,7 @@ export function PartnerRegistrations({
                           </div>
                           {/* Security Deposit & Device Batch Config */}
                           {reg.status === 'APPROVED' && reg.partner && (
-                            <BatchSizeConfig regId={reg.id} partner={reg.partner} />
+                            <BatchSizeConfig regId={reg.id} partner={reg.partner} securityDepositPaid={reg.securityDepositPaid} deviceBatchSize={reg.deviceBatchSize} />
                           )}
                           {/* Info Exchange History */}
                           {reg.infoExchanges && reg.infoExchanges.length > 0 ? (
@@ -297,10 +297,18 @@ export function PartnerRegistrations({
   );
 }
 
-function BatchSizeConfig({ regId, partner }: { regId: number; partner: NonNullable<BackendRegistration['partner']> }) {
-  const [batchSize, setBatchSize] = useState(5);
+function BatchSizeConfig({ regId, partner, securityDepositPaid, deviceBatchSize: initialBatchSize }: {
+  regId: number;
+  partner: NonNullable<BackendRegistration['partner']>;
+  securityDepositPaid?: boolean;
+  deviceBatchSize?: number;
+}) {
+  const [batchSize, setBatchSize] = useState(initialBatchSize || 5);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [released, setReleased] = useState(false);
+  const depositPaid = securityDepositPaid === true;
 
   const handleSave = async () => {
     setSaving(true);
@@ -316,32 +324,84 @@ function BatchSizeConfig({ regId, partner }: { regId: number; partner: NonNullab
     setSaving(false);
   };
 
+  const handleRelease = async () => {
+    setReleasing(true);
+    // For now, just mark as released (can hook into a real endpoint later)
+    setTimeout(() => {
+      setReleased(true);
+      setReleasing(false);
+    }, 1000);
+  };
+
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', marginTop: 12, padding: '12px 14px', background: 'var(--bg-card)', borderRadius: 8, fontSize: 13 }}>
-      <div>
+    <div style={{ marginTop: 12, padding: '14px 16px', background: 'var(--bg-card)', borderRadius: 8, fontSize: 13 }}>
+      {/* Security Deposit Status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>Security Deposit: </span>
-        <span style={{ fontWeight: 600, color: partner.status === 'ACTIVE' ? 'var(--positive)' : 'var(--warning)' }}>
-          {'\u20B9'}20,000 — Pending
+        <span style={{
+          fontWeight: 700,
+          fontSize: 13,
+          padding: '4px 12px',
+          borderRadius: 6,
+          color: depositPaid ? '#FFF' : 'var(--warning)',
+          background: depositPaid ? 'var(--positive)' : 'rgba(255,128,0,0.1)',
+        }}>
+          {'\u20B9'}20,000 — {depositPaid ? 'PAID' : 'PENDING'}
         </span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>First Batch Devices: </span>
-        <select
-          value={batchSize}
-          onChange={(e) => setBatchSize(Number(e.target.value))}
-          style={{ padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}
-        >
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
-        <button
-          onClick={(e) => { e.stopPropagation(); handleSave(); }}
-          disabled={saving}
-          style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, background: saved ? 'var(--positive)' : 'var(--brand-primary)', color: '#FFF', border: 'none', borderRadius: 5, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}
-        >
-          {saved ? 'Saved!' : saving ? '...' : 'Set'}
-        </button>
+
+      {/* Batch Size Config + Release */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>First Batch Devices: </span>
+          <select
+            value={batchSize}
+            onChange={(e) => setBatchSize(Number(e.target.value))}
+            style={{ padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}
+          >
+            {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleSave(); }}
+            disabled={saving}
+            style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, background: saved ? 'var(--positive)' : 'var(--brand-primary)', color: '#FFF', border: 'none', borderRadius: 5, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}
+          >
+            {saved ? 'Saved!' : saving ? '...' : 'Set'}
+          </button>
+        </div>
+
+        {/* Release NetBoxes button — only enabled when deposit is paid */}
+        {depositPaid && !released && (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleRelease(); }}
+            disabled={releasing}
+            style={{
+              padding: '6px 16px',
+              fontSize: 12,
+              fontWeight: 700,
+              background: 'var(--positive)',
+              color: '#FFF',
+              border: 'none',
+              borderRadius: 6,
+              cursor: 'pointer',
+              opacity: releasing ? 0.5 : 1,
+            }}
+          >
+            {releasing ? 'Releasing...' : `Release ${batchSize} NetBoxes`}
+          </button>
+        )}
+        {released && (
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--positive)', padding: '6px 12px', background: 'rgba(0,128,67,0.1)', borderRadius: 6 }}>
+            {batchSize} NetBoxes Released
+          </span>
+        )}
+        {!depositPaid && (
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            Awaiting security deposit before NetBox release
+          </span>
+        )}
       </div>
     </div>
   );

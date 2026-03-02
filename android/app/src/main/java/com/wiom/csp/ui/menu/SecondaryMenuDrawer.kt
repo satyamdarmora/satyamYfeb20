@@ -42,7 +42,8 @@ private val menuItems = listOf(
 fun SecondaryMenuDrawer(
     isOpen: Boolean,
     onClose: () -> Unit,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    onLogout: (() -> Unit)? = null
 ) {
     val colors = WiomCspTheme.colors
 
@@ -150,6 +151,41 @@ fun SecondaryMenuDrawer(
                                 color = colors.textMuted
                             )
                         }
+                    }
+
+                    // Logout button
+                    if (onLogout != null) {
+                        Spacer(Modifier.weight(1f))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onLogout() }
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(colors.negative.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Logout,
+                                    contentDescription = "Logout",
+                                    tint = colors.negative,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Text(
+                                "Logout",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.negative
+                            )
+                        }
+                        Spacer(Modifier.height(20.dp))
                     }
                 }
             }

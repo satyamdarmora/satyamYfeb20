@@ -477,7 +477,7 @@ private fun LocationPicker(
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        FieldLabel("OFFICE / SERVICE LOCATION", colors)
+        FieldLabel("OFFICE / SERVICE LOCATION *", colors)
 
         // Get Location button
         Button(

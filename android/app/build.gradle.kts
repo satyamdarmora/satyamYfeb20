@@ -29,8 +29,8 @@ android {
     productFlavors {
         create("device") {
             dimension = "target"
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.173:3457\"")
-            buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.0.173:4000\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://localhost:3456\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"http://localhost:3456\"")
         }
         create("emulator") {
             dimension = "target"

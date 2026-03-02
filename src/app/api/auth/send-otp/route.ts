@@ -12,8 +12,13 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    const json = await res.json();
-    return NextResponse.json(json, { status: res.ok ? 200 : res.status });
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      return NextResponse.json(json, { status: res.ok ? 200 : res.status });
+    } catch {
+      return NextResponse.json({ status: 1, msg: 'Auth service returned invalid response' }, { status: 502 });
+    }
   } catch {
     return NextResponse.json({ status: 1, msg: 'Failed to reach auth service' }, { status: 502 });
   }

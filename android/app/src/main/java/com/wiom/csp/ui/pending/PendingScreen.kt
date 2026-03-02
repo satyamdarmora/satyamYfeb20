@@ -1,11 +1,6 @@
 package com.wiom.csp.ui.pending
 
-import android.annotation.SuppressLint
 import android.net.Uri
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -32,13 +27,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
 import com.wiom.csp.data.remote.dto.InfoExchangeDto
 import com.wiom.csp.data.remote.dto.StatusData
 import com.wiom.csp.ui.theme.WiomCspTheme
 
 @Composable
-fun PendingScreen(viewModel: PendingViewModel) {
+fun PendingScreen(viewModel: PendingViewModel, onLogout: (() -> Unit)? = null) {
     val statusData by viewModel.statusData.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val submitting by viewModel.submitting.collectAsState()
@@ -50,7 +44,25 @@ fun PendingScreen(viewModel: PendingViewModel) {
     val paymentLink by viewModel.paymentLink.collectAsState()
     val paymentError by viewModel.paymentError.collectAsState()
     val isSecurityDeposit by viewModel.isSecurityDeposit.collectAsState()
+    val shouldLaunchBrowser by viewModel.shouldLaunchBrowser.collectAsState()
+    val browserContext = LocalContext.current
     val colors = WiomCspTheme.colors
+
+    // Auto-open browser only when user explicitly clicked Pay
+    LaunchedEffect(shouldLaunchBrowser, paymentLink) {
+        if (shouldLaunchBrowser && paymentLink != null) {
+            viewModel.clearBrowserLaunch()
+            try {
+                val customTabsIntent = androidx.browser.customtabs.CustomTabsIntent.Builder()
+                    .setShowTitle(true)
+                    .build()
+                customTabsIntent.launchUrl(browserContext, Uri.parse(paymentLink))
+            } catch (_: Exception) {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(paymentLink))
+                browserContext.startActivity(intent)
+            }
+        }
+    }
     val scrollState = rememberScrollState()
 
     // Clear success message after showing
@@ -131,11 +143,44 @@ fun PendingScreen(viewModel: PendingViewModel) {
                             colors = colors
                         )
                     }
-                    partnerStatus == "ACTIVE" -> ActiveState(colors)
+                    partnerStatus == "ACTIVE" -> ActiveState(
+                        colors = colors,
+                        onContinue = viewModel::goToDashboard,
+                        onLogout = onLogout
+                    )
                     else -> PendingState(colors)
                 }
 
-                Spacer(Modifier.height(32.dp))
+                // Logout button (hide for ActiveState since it has its own)
+                val isActiveWithDeposit = partnerStatus == "ACTIVE" && data.securityDepositPaid
+                if (onLogout != null && !isActiveWithDeposit) {
+                    Spacer(Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { onLogout() }
+                            .padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Logout,
+                            contentDescription = "Logout",
+                            tint = colors.negative,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Logout",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.negative
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
                 Text(
                     "Wiom CSP Portal",
                     fontSize = 12.sp,
@@ -193,10 +238,18 @@ private fun PaymentScreen(
     val fee = data.registrationFee?.toInt() ?: 2000
     val regLabel = data.registrationId?.let { "REG-${it.toString().padStart(6, '0')}" } ?: "CSP Registration"
 
-    // Show in-app WebView when verifying
-    if (paymentState == PaymentUiState.VERIFYING && paymentLink != null) {
-        PaymentWebView(url = paymentLink, colors = colors)
-        return
+    val context = LocalContext.current
+
+    fun openPaymentInBrowser(url: String) {
+        try {
+            val customTabsIntent = androidx.browser.customtabs.CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .build()
+            customTabsIntent.launchUrl(context, Uri.parse(url))
+        } catch (_: Exception) {
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(url))
+            context.startActivity(intent)
+        }
     }
 
     when (paymentState) {
@@ -219,7 +272,7 @@ private fun PaymentScreen(
                 iconBg = colors.brandPrimary.copy(alpha = 0.08f),
                 iconTint = colors.brandPrimary,
                 title = "Verifying Your Payment",
-                subtitle = "Checking your payment status. This usually takes a few seconds.",
+                subtitle = "Complete the payment in the browser. We\u2019re checking status automatically.",
                 colors = colors
             )
 
@@ -248,28 +301,29 @@ private fun PaymentScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Warning
+            // Info
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
-                    .background(colors.warning.copy(alpha = 0.06f))
-                    .border(1.dp, colors.warning.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
+                    .background(colors.brandPrimary.copy(alpha = 0.06f))
+                    .border(1.dp, colors.brandPrimary.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
                     .padding(12.dp, 14.dp)
             ) {
-                Text("Don\u2019t close the app. We\u2019re checking every few seconds.", fontSize = 13.sp, color = colors.textSecondary, lineHeight = 20.sp)
+                Text("Payment opened in browser. Come back here after completing \u2014 we\u2019ll detect it automatically.", fontSize = 13.sp, color = colors.textSecondary, lineHeight = 20.sp)
             }
 
             if (paymentLink != null) {
                 Spacer(Modifier.height(20.dp))
-                OutlinedButton(
-                    onClick = { /* WebView handles payment now */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.brandPrimary),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.borderSubtle)
+                Button(
+                    onClick = { openPaymentInBrowser(paymentLink) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.brandPrimary)
                 ) {
-                    Text("Retry Payment", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Open Payment Page", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -426,12 +480,6 @@ private fun SecurityDepositScreen(
 ) {
     val amount = data.securityDepositAmount
     val batchSize = data.deviceBatchSize
-
-    // Show in-app WebView when verifying
-    if (paymentState == PaymentUiState.VERIFYING && paymentLink != null) {
-        PaymentWebView(url = paymentLink, colors = colors)
-        return
-    }
 
     StatusHeader(
         icon = Icons.Outlined.Verified,
@@ -893,18 +941,46 @@ private fun RejectedState(data: StatusData, colors: com.wiom.csp.ui.theme.WiomCo
 
 // ─── ACTIVE ───
 @Composable
-private fun ActiveState(colors: com.wiom.csp.ui.theme.WiomColors) {
+private fun ActiveState(
+    colors: com.wiom.csp.ui.theme.WiomColors,
+    onContinue: () -> Unit,
+    onLogout: (() -> Unit)?
+) {
     StatusHeader(
         icon = Icons.Outlined.CheckCircle,
         iconBg = colors.positiveBg,
         iconTint = colors.positive,
-        title = "Account Active!",
-        subtitle = "Your partner account is now active. Redirecting to dashboard...",
+        title = "You're All Set!",
+        subtitle = "Your partner account is active and ready to go. You can now manage your business from the dashboard.",
         colors = colors
     )
-    Spacer(Modifier.height(24.dp))
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = colors.brandPrimary, modifier = Modifier.size(24.dp))
+    Spacer(Modifier.height(32.dp))
+    Button(
+        onClick = onContinue,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = colors.brandPrimary)
+    ) {
+        Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text("Continue to Dashboard", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+    }
+    if (onLogout != null) {
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onLogout,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.negative)
+        ) {
+            Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Logout", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 
@@ -1193,56 +1269,6 @@ private fun DocumentUploadRow(
     }
 }
 
-// ─── PAYMENT WEBVIEW ───
-
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-private fun PaymentWebView(url: String, colors: com.wiom.csp.ui.theme.WiomColors) {
-    var loading by remember { mutableStateOf(true) }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { context ->
-                WebView(context).apply {
-                    settings.javaScriptEnabled = true
-                    settings.domStorageEnabled = true
-                    settings.loadWithOverviewMode = true
-                    settings.useWideViewPort = true
-
-                    webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                            return false
-                        }
-
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            loading = false
-                        }
-                    }
-
-                    webChromeClient = WebChromeClient()
-
-                    loadUrl(url)
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        if (loading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colors.bgPrimary.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = colors.brandPrimary)
-                    Spacer(Modifier.height(16.dp))
-                    Text("Loading payment page...", color = colors.textSecondary, fontSize = 14.sp)
-                }
-            }
-        }
-    }
-}
 
 // ─── UTILS ───
 

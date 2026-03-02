@@ -139,6 +139,7 @@ class OnboardingViewModel @Inject constructor(
         if (f.city.isBlank()) return "City is required."
         if (f.area.isBlank()) return "Area is required."
         if (!isValidPincode(f.pincode)) return "Please enter a valid 6-digit pincode."
+        if (f.latitude == null || f.longitude == null) return "Please capture your service location using GPS."
         if (!isValidAadhaar(f.aadhaarNumber)) return "Please enter a valid 12-digit Aadhaar number."
         if (!isValidPan(f.panNumber)) return "Please enter a valid PAN number (e.g. ABCDE1234F)."
         if (f.bankAccountName.isBlank()) return "Account holder name is required."

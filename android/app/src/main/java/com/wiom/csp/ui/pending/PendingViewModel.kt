@@ -67,6 +67,14 @@ class PendingViewModel @Inject constructor(
     private var paymentPollJob: Job? = null
     private var currentTransactionId: String? = null
 
+    // Set to true when user explicitly clicks Pay, so UI knows to auto-open browser
+    private val _shouldLaunchBrowser = MutableStateFlow(false)
+    val shouldLaunchBrowser: StateFlow<Boolean> = _shouldLaunchBrowser.asStateFlow()
+
+    fun clearBrowserLaunch() {
+        _shouldLaunchBrowser.value = false
+    }
+
     init {
         startPolling()
     }
@@ -94,25 +102,39 @@ class PendingViewModel @Inject constructor(
                 _loading.value = false
                 _error.value = null
 
-                // If partner is ACTIVE and security deposit paid, go to home
+                // If partner is ACTIVE and security deposit paid, stop polling
+                // but DON'T auto-navigate — let user tap "Continue" on the "All Set" screen
                 if (data.partnerStatus == "ACTIVE" && data.securityDepositPaid) {
-                    userPreferences.setPartnerActive(true)
                     stopPolling()
                 }
 
-                // If there's an existing pending registration fee payment, auto-resume
+                // Reset payment state when transitioning to security deposit phase
+                // (prevents registration fee SUCCESS from showing as security deposit SUCCESS)
+                if (data.partnerStatus == "ACTIVE" && !data.securityDepositPaid
+                    && !_isSecurityDeposit.value
+                    && _paymentState.value != PaymentUiState.IDLE
+                ) {
+                    _paymentState.value = PaymentUiState.IDLE
+                    _paymentLink.value = null
+                    _paymentError.value = null
+                    currentTransactionId = null
+                    paymentPollJob?.cancel()
+                }
+
+                // If there's an existing pending registration fee payment, keep link ready
+                // but stay on IDLE so user sees the payment screen first
                 if (!data.feePaid && data.paymentInfo?.transactionId != null
                     && data.paymentInfo.status != "SUCCESS"
                     && _paymentState.value == PaymentUiState.IDLE
                 ) {
                     currentTransactionId = data.paymentInfo.transactionId
                     _paymentLink.value = data.paymentInfo.paymentLink
-                    _paymentState.value = PaymentUiState.VERIFYING
                     _isSecurityDeposit.value = false
+                    // Poll in background to catch if previous payment completes
                     startPaymentPolling()
                 }
 
-                // If registration fee paid but security deposit pending, auto-resume
+                // If registration fee paid but security deposit pending, same approach
                 if (data.feePaid && !data.securityDepositPaid
                     && data.securityDepositInfo?.transactionId != null
                     && data.securityDepositInfo.status != "SUCCESS"
@@ -120,7 +142,6 @@ class PendingViewModel @Inject constructor(
                 ) {
                     currentTransactionId = data.securityDepositInfo.transactionId
                     _paymentLink.value = data.securityDepositInfo.paymentLink
-                    _paymentState.value = PaymentUiState.VERIFYING
                     _isSecurityDeposit.value = true
                     startPaymentPolling()
                 }
@@ -156,6 +177,7 @@ class PendingViewModel @Inject constructor(
                     currentTransactionId = data.transactionId
                     _paymentLink.value = data.paymentLink
                     _paymentState.value = PaymentUiState.VERIFYING
+                    _shouldLaunchBrowser.value = true
                     startPaymentPolling()
                 } else {
                     _paymentError.value = response.msg ?: "No payment link received"
@@ -191,6 +213,7 @@ class PendingViewModel @Inject constructor(
                     currentTransactionId = data.transactionId
                     _paymentLink.value = data.paymentLink
                     _paymentState.value = PaymentUiState.VERIFYING
+                    _shouldLaunchBrowser.value = true
                     startPaymentPolling()
                 } else {
                     _paymentError.value = response.msg ?: "No payment link received"
@@ -228,10 +251,10 @@ class PendingViewModel @Inject constructor(
                     val data = response.data
                     if (data?.feePaid == true || data?.securityDepositPaid == true || data?.status == "SUCCESS") {
                         _paymentState.value = PaymentUiState.SUCCESS
-                        // Refresh main status after short delay
-                        delay(2000)
+                        // Give time for user to return from Chrome tab
+                        delay(3000)
                         fetchStatus()
-                        _paymentState.value = PaymentUiState.IDLE
+                        // Don't reset to IDLE — let fetchStatus handle the navigation
                         return@launch
                     }
                 } catch (_: Exception) {
@@ -249,6 +272,12 @@ class PendingViewModel @Inject constructor(
     fun retryPayment() {
         _paymentState.value = PaymentUiState.IDLE
         _paymentError.value = null
+    }
+
+    fun goToDashboard() {
+        viewModelScope.launch {
+            userPreferences.setPartnerActive(true)
+        }
     }
 
     fun selectFile(docType: String, uri: Uri) {

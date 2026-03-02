@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type {
   Task,
   TaskType,
@@ -625,6 +625,40 @@ export function useAdminActions(): AdminActions {
     const last = r.infoExchanges?.length ? r.infoExchanges[r.infoExchanges.length - 1] : null;
     return r.status === 'INFO_REQUIRED' && last?.sender === 'PARTNER';
   }).length;
+
+  // Browser notification when new partner response detected
+  const prevNeedsAttention = useRef(needsAttention);
+  useEffect(() => {
+    if (needsAttention > prevNeedsAttention.current) {
+      // Play notification sound
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbsGczHjqMvNbVizskMYS52d26aCA0fLfZ3b1iGzh2t9/cv10UQHe34d+4UhNIeLfi3LRIDlF8ueHVq0ILWoC74dSgOA5mhbrcy5QyFXSLuNPBhjMhfI+zzcG+eishfpGvxr25eC4lgpWsv7ixejcoh5enubCwd0Mri5Shs6uwdU8skpKdq6ywc1gslo+Yp6yxcmU0m4yTpK20cW8+oYiOoK63cHhGp4SJnLC6b4BLrYCFmLO+bolPsnyBk7bDb5FUtnl+j7nIcJdYuXZ7i7zMcJ1cunt4h8DQcqJfvXd1hMPUc6djv3RyhcfYdalox3FwgsvadrBsyW5tftDeer5vzWtrevXhg8Nu0WlodPnlicdy1WZlcf3rj9J12mdib/3ul+F83mRccv/wnO+A5GlYa/7zn/GH62tTZv34oPSP8HBNYPz7o/eV9XZHW/r/pviZ+3xDS/kBqvme/4FBSP8ErvujAINCPvkIsfylAoY9N/sMtPynA4g5Mv0Pt/upBIkzLgEStfmrBYotKgUVsvWuBooqJwkYr/GyBokn');
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+      } catch {}
+      // Browser notification
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification('Wiom CSP Portal', {
+            body: `${needsAttention} partner response${needsAttention > 1 ? 's' : ''} pending review`,
+            icon: '/favicon.ico',
+          });
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission();
+        }
+      }
+      // Also show in-app notification
+      showNotification(`New partner response received! ${needsAttention} pending review.`);
+    }
+    prevNeedsAttention.current = needsAttention;
+  }, [needsAttention, showNotification]);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   return {
     tasks,

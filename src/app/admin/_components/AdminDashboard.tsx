@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAdminActions } from './useAdminActions';
 import { PartnerRegistrations } from './PartnerRegistrations';
 import { ReviewModal } from './ReviewModal';
@@ -10,6 +10,13 @@ import { TaskTable } from './TaskTable';
 
 export function AdminDashboard() {
   const actions = useAdminActions();
+
+  // Update page title with pending response count
+  useEffect(() => {
+    document.title = actions.needsAttention > 0
+      ? `(${actions.needsAttention}) Wiom Operations Portal`
+      : 'Wiom Operations Portal';
+  }, [actions.needsAttention]);
 
   return (
     <div

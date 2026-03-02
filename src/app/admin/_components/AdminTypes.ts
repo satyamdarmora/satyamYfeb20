@@ -51,6 +51,8 @@ export interface BackendRegistration {
   registrationFee: number;
   feePaid: boolean;
   feeRefunded: boolean;
+  securityDepositPaid?: boolean;
+  deviceBatchSize?: number;
   partner?: {
     id: number;
     status: 'TRAINING' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'TRAINING_FAILED';

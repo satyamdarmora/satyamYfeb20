@@ -33,7 +33,8 @@ import com.wiom.csp.ui.technician.TechnicianAppScreen
 
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    onLogout: (() -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsState()
     val colors = WiomCspTheme.colors
@@ -231,7 +232,8 @@ fun HomeScreen(
             onNavigate = { section ->
                 viewModel.closeMenu()
                 viewModel.navigate(section)
-            }
+            },
+            onLogout = onLogout
         )
 
         // Event Modal

@@ -21,6 +21,9 @@ import com.wiom.csp.ui.onboarding.OnboardingScreen
 import com.wiom.csp.ui.onboarding.OnboardingViewModel
 import com.wiom.csp.ui.pending.PendingScreen
 import com.wiom.csp.ui.pending.PendingViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Single-screen navigation architecture (matching the web SPA pattern).
@@ -68,7 +71,14 @@ fun WiomNavGraph(userPreferences: UserPreferences) {
     } else if (isPartnerActive != true) {
         val pendingViewModel: PendingViewModel = hiltViewModel()
         com.wiom.csp.ui.theme.WiomCspTheme {
-            PendingScreen(viewModel = pendingViewModel)
+            PendingScreen(
+                viewModel = pendingViewModel,
+                onLogout = {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        userPreferences.clearAuth()
+                    }
+                }
+            )
         }
     } else {
         val viewModel: HomeViewModel = hiltViewModel()
@@ -87,7 +97,14 @@ fun WiomNavGraph(userPreferences: UserPreferences) {
 
         // Theme wraps everything, responds to server-synced theme changes
         com.wiom.csp.ui.theme.WiomCspTheme(appTheme = state.currentTheme) {
-            HomeScreen(viewModel = viewModel)
+            HomeScreen(
+                viewModel = viewModel,
+                onLogout = {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        userPreferences.clearAuth()
+                    }
+                }
+            )
         }
     }
 }
