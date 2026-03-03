@@ -333,10 +333,16 @@
 
 ## 7. How to Test End-to-End
 
-### Prerequisites
+### Quick Start (No Build Required)
+- **APK Download:** https://satyam.wiom.in/wiom-csp.apk (install on any Android phone, enable "Install from unknown sources")
+- **Admin Portal:** https://satyam.wiom.in/csp/admin
+- **Test phone number:** `9711870456` (only this number works — it's registered on the QA auth server)
+- Other numbers will get HTTP 500 from the QA auth server (`services.qa.i2e1.in`) — this is a QA server bug, not our code
+
+### Prerequisites (for building from source)
 - Android phone connected via USB (or use emulator)
-- Backend running at `satyam.wiom.in` (check: `curl http://satyam.wiom.in/v1/health`)
-- Admin portal at `http://satyam.wiom.in/csp/admin`
+- Backend running at `satyam.wiom.in`
+- Admin portal at `https://satyam.wiom.in/csp/admin`
 
 ### Clean Test Data
 ```bash
@@ -361,8 +367,8 @@ adb install -r app/build/outputs/apk/production/debug/app-production-debug.apk
 ```
 
 ### Test Sequence
-1. Open app → Login with test phone number → Get OTP → Verify
-2. Fill registration form → Submit → See payment screen
+1. Open app → Login with `9711870456` → Get OTP → Verify
+2. Fill registration form (tap "Get Current Location" for GPS) → Submit → See payment screen
 3. Pay ₹2,000 (sandbox: click "Pay" on sandbox payment page) → See "Under Review"
 4. Open admin portal → Find registration → Approve → Complete Training
 5. App auto-updates to SecurityDepositScreen → Pay ₹20,000
@@ -381,3 +387,28 @@ The backend is in sandbox mode. When payment is initiated:
 5. App polling detects the success and updates UI
 
 No real money is involved. Production will use actual Juspay API.
+
+---
+
+## 9. Admin Portal Verification Checklist
+- [ ] Registration appears with all details (business info, GPS location with Google Maps link, bank details)
+- [ ] Approve / Reject / Request Info buttons work (Approve & Info disabled until fee is paid)
+- [ ] "Request Info" → CSP app shows the request → CSP responds with text + documents → Admin sees response
+- [ ] Browser notification + sound alert when CSP responds (grant notification permission when prompted)
+- [ ] Page title shows unread count: `(2) Wiom Operations Portal`
+- [ ] After "Complete Training" → security deposit status shows PAID/PENDING in BatchSizeConfig
+- [ ] "Release NetBoxes" button enabled only after deposit is paid
+- [ ] Batch size can be changed and reflects in the app on next poll
+
+---
+
+## 10. Audit Trail
+Two separate `paymentType` values in `payment_transactions` table:
+- `REGISTRATION_FEE` — ₹2,000 registration fee
+- `SECURITY_DEPOSIT` — ₹20,000 security deposit
+
+This separation enables:
+- Independent payment tracking and reconciliation
+- Separate refund workflows (registration fee refundable on rejection)
+- Financial reporting by payment type
+- Audit compliance with clear payment categorization
