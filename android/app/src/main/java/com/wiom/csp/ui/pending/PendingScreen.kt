@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.wiom.csp.R
 import com.wiom.csp.data.remote.dto.InfoExchangeDto
 import com.wiom.csp.data.remote.dto.StatusData
 import com.wiom.csp.ui.theme.WiomCspTheme
@@ -79,6 +81,7 @@ fun PendingScreen(viewModel: PendingViewModel, onLogout: (() -> Unit)? = null) {
             .background(colors.bgPrimary)
             .statusBarsPadding()
             .navigationBarsPadding()
+            .imePadding()
     ) {
         if (loading && statusData == null) {
             // Loading state
@@ -86,7 +89,7 @@ fun PendingScreen(viewModel: PendingViewModel, onLogout: (() -> Unit)? = null) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = colors.brandPrimary)
                     Spacer(Modifier.height(16.dp))
-                    Text("Checking registration status...", color = colors.textMuted, fontSize = 14.sp)
+                    Text(stringResource(R.string.pending_checking), color = colors.textMuted, fontSize = 14.sp)
                 }
             }
         } else if (statusData != null) {
@@ -172,7 +175,7 @@ fun PendingScreen(viewModel: PendingViewModel, onLogout: (() -> Unit)? = null) {
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Logout",
+                            stringResource(R.string.pending_logout),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = colors.negative
@@ -182,7 +185,7 @@ fun PendingScreen(viewModel: PendingViewModel, onLogout: (() -> Unit)? = null) {
 
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "Wiom CSP Portal",
+                    stringResource(R.string.pending_footer),
                     fontSize = 12.sp,
                     color = colors.textMuted,
                     textAlign = TextAlign.Center,
@@ -205,7 +208,7 @@ fun PendingScreen(viewModel: PendingViewModel, onLogout: (() -> Unit)? = null) {
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        error ?: "Failed to load status",
+                        error ?: stringResource(R.string.pending_failed_load),
                         color = colors.textSecondary,
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center
@@ -216,7 +219,7 @@ fun PendingScreen(viewModel: PendingViewModel, onLogout: (() -> Unit)? = null) {
                         colors = ButtonDefaults.buttonColors(containerColor = colors.brandPrimary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Retry")
+                        Text(stringResource(R.string.pending_retry))
                     }
                 }
             }
@@ -258,12 +261,12 @@ private fun PaymentScreen(
                 icon = Icons.Outlined.CheckCircle,
                 iconBg = colors.positiveBg,
                 iconTint = colors.positive,
-                title = "Payment Successful",
-                subtitle = "Your registration fee has been received. Moving to the review stage now...",
+                title = stringResource(R.string.pending_payment_success_title),
+                subtitle = stringResource(R.string.pending_payment_success_desc),
                 colors = colors
             )
             Spacer(Modifier.height(16.dp))
-            Text("Refreshing...", fontSize = 13.sp, color = colors.textMuted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text(stringResource(R.string.pending_refreshing), fontSize = 13.sp, color = colors.textMuted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
 
         PaymentUiState.VERIFYING -> {
@@ -271,8 +274,8 @@ private fun PaymentScreen(
                 icon = Icons.Outlined.Sync,
                 iconBg = colors.brandPrimary.copy(alpha = 0.08f),
                 iconTint = colors.brandPrimary,
-                title = "Verifying Your Payment",
-                subtitle = "Complete the payment in the browser. We\u2019re checking status automatically.",
+                title = stringResource(R.string.pending_verifying_title),
+                subtitle = stringResource(R.string.pending_verifying_desc),
                 colors = colors
             )
 
@@ -288,12 +291,12 @@ private fun PaymentScreen(
             ) {
                 Column {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Amount", fontSize = 13.sp, color = colors.textMuted, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.pending_amount), fontSize = 13.sp, color = colors.textMuted, fontWeight = FontWeight.Medium)
                         Text("\u20B9${"%,d".format(fee)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                     }
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("For", fontSize = 13.sp, color = colors.textMuted, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.pending_for), fontSize = 13.sp, color = colors.textMuted, fontWeight = FontWeight.Medium)
                         Text(regLabel, fontSize = 13.sp, color = colors.textSecondary, fontWeight = FontWeight.Medium)
                     }
                 }
@@ -310,7 +313,7 @@ private fun PaymentScreen(
                     .border(1.dp, colors.brandPrimary.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
                     .padding(12.dp, 14.dp)
             ) {
-                Text("Payment opened in browser. Come back here after completing \u2014 we\u2019ll detect it automatically.", fontSize = 13.sp, color = colors.textSecondary, lineHeight = 20.sp)
+                Text(stringResource(R.string.pending_browser_info), fontSize = 13.sp, color = colors.textSecondary, lineHeight = 20.sp)
             }
 
             if (paymentLink != null) {
@@ -323,7 +326,7 @@ private fun PaymentScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = colors.brandPrimary)
                 ) {
-                    Text("Open Payment Page", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.pending_open_payment_page), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -333,8 +336,8 @@ private fun PaymentScreen(
                 icon = Icons.Outlined.ErrorOutline,
                 iconBg = colors.negativeBg,
                 iconTint = colors.negative,
-                title = "Payment Issue",
-                subtitle = paymentError ?: "Payment verification timed out.",
+                title = stringResource(R.string.pending_payment_issue),
+                subtitle = paymentError ?: stringResource(R.string.pending_payment_timeout),
                 colors = colors
             )
             Spacer(Modifier.height(24.dp))
@@ -344,7 +347,7 @@ private fun PaymentScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colors.brandPrimary)
             ) {
-                Text("Try Again", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.pending_try_again), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -354,8 +357,8 @@ private fun PaymentScreen(
                 icon = Icons.Outlined.CreditCard,
                 iconBg = colors.brandPrimary.copy(alpha = 0.08f),
                 iconTint = colors.brandPrimary,
-                title = "Registration Fee",
-                subtitle = "One-time fee to activate your CSP partnership with Wiom. This covers your onboarding and training.",
+                title = stringResource(R.string.pending_registration_fee),
+                subtitle = stringResource(R.string.pending_registration_fee_desc),
                 colors = colors
             )
 
@@ -372,7 +375,7 @@ private fun PaymentScreen(
                 Column {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column {
-                            Text("CSP Registration Fee", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                            Text(stringResource(R.string.pending_csp_reg_fee), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
                             Spacer(Modifier.height(2.dp))
                             Text(regLabel, fontSize = 13.sp, color = colors.textMuted)
                         }
@@ -383,7 +386,7 @@ private fun PaymentScreen(
                     HorizontalDivider(color = colors.borderSubtle, thickness = 1.dp)
                     Spacer(Modifier.height(14.dp))
 
-                    listOf("Onboarding & Training" to "Included", "CSP Dashboard Access" to "Included", "Business Support" to "Included").forEach { (label, value) ->
+                    listOf(stringResource(R.string.pending_onboarding_training) to stringResource(R.string.pending_included), stringResource(R.string.pending_dashboard_access) to stringResource(R.string.pending_included), stringResource(R.string.pending_business_support) to stringResource(R.string.pending_included)).forEach { (label, value) ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(label, fontSize = 13.sp, color = colors.textMuted)
                             Text(value, fontSize = 13.sp, color = colors.textMuted)
@@ -406,11 +409,11 @@ private fun PaymentScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
                         Icon(Icons.Outlined.Shield, contentDescription = null, tint = colors.positive, modifier = Modifier.size(16.dp))
-                        Text("Secure payment via JusPay. Your card details are never stored with us.", fontSize = 13.sp, color = colors.textSecondary, lineHeight = 18.sp)
+                        Text(stringResource(R.string.pending_secure_juspay), fontSize = 13.sp, color = colors.textSecondary, lineHeight = 18.sp)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
                         Icon(Icons.Outlined.Schedule, contentDescription = null, tint = colors.positive, modifier = Modifier.size(16.dp))
-                        Text("Full refund if your registration is not approved.", fontSize = 13.sp, color = colors.textSecondary, lineHeight = 18.sp)
+                        Text(stringResource(R.string.pending_full_refund), fontSize = 13.sp, color = colors.textSecondary, lineHeight = 18.sp)
                     }
                 }
             }
@@ -448,15 +451,15 @@ private fun PaymentScreen(
                 if (paymentState == PaymentUiState.PROCESSING) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                     Spacer(Modifier.width(8.dp))
-                    Text("Setting up payment...", fontSize = 16.sp)
+                    Text(stringResource(R.string.pending_setting_up), fontSize = 16.sp)
                 } else {
-                    Text("Pay \u20B9${"%,d".format(fee)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.pending_pay_amount, "%,d".format(fee)), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
 
             Spacer(Modifier.height(12.dp))
             Text(
-                "You\u2019ll be redirected to a secure payment page. Come back here after paying.",
+                stringResource(R.string.pending_redirect_note),
                 fontSize = 12.sp,
                 color = colors.textMuted,
                 textAlign = TextAlign.Center,
@@ -485,8 +488,8 @@ private fun SecurityDepositScreen(
         icon = Icons.Outlined.Verified,
         iconBg = Color(0xFF1A3A2A),
         iconTint = colors.positive,
-        title = "Registration Approved!",
-        subtitle = "Complete security deposit to start operations",
+        title = stringResource(R.string.pending_reg_approved),
+        subtitle = stringResource(R.string.pending_complete_deposit),
         colors = colors
     )
 
@@ -501,9 +504,9 @@ private fun SecurityDepositScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Filled.CheckCircle, null, tint = colors.positive, modifier = Modifier.size(64.dp))
                 Spacer(Modifier.height(16.dp))
-                Text("Security Deposit Paid!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text(stringResource(R.string.pending_deposit_paid), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                 Spacer(Modifier.height(8.dp))
-                Text("$batchSize devices will be allocated to you shortly.", fontSize = 14.sp, color = colors.textSecondary, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.pending_devices_allocated, batchSize.toString()), fontSize = 14.sp, color = colors.textSecondary, textAlign = TextAlign.Center)
             }
         }
         return
@@ -516,23 +519,23 @@ private fun SecurityDepositScreen(
         colors = CardDefaults.cardColors(containerColor = colors.bgCard)
     ) {
         Column(Modifier.padding(20.dp)) {
-            Text("NetBox Security Deposit", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+            Text(stringResource(R.string.pending_netbox_deposit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
             Spacer(Modifier.height(16.dp))
 
             // Info rows
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Security deposit", fontSize = 14.sp, color = colors.textSecondary)
+                Text(stringResource(R.string.pending_security_deposit), fontSize = 14.sp, color = colors.textSecondary)
                 Text("\u20B9${"%,d".format(amount)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
             }
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Devices covered", fontSize = 14.sp, color = colors.textSecondary)
-                Text("Up to 20 NetBoxes", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                Text(stringResource(R.string.pending_devices_covered), fontSize = 14.sp, color = colors.textSecondary)
+                Text(stringResource(R.string.pending_up_to_netboxes), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
             }
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("First batch", fontSize = 14.sp, color = colors.textSecondary)
-                Text("$batchSize devices", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.brandPrimary)
+                Text(stringResource(R.string.pending_first_batch), fontSize = 14.sp, color = colors.textSecondary)
+                Text(stringResource(R.string.pending_n_devices, batchSize.toString()), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.brandPrimary)
             }
 
             Spacer(Modifier.height(20.dp))
@@ -540,7 +543,7 @@ private fun SecurityDepositScreen(
             Spacer(Modifier.height(16.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Total payable", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text(stringResource(R.string.pending_total_payable), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                 Text("\u20B9${"%,d".format(amount)}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.positive)
             }
         }
@@ -558,13 +561,13 @@ private fun SecurityDepositScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Shield, null, tint = colors.positive, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Refundable deposit \u2014 returned when devices are surrendered", fontSize = 12.sp, color = colors.textSecondary)
+                Text(stringResource(R.string.pending_refundable_note), fontSize = 12.sp, color = colors.textSecondary)
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Inventory2, null, tint = colors.brandPrimary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("First batch of $batchSize devices shipped after payment", fontSize = 12.sp, color = colors.textSecondary)
+                Text(stringResource(R.string.pending_batch_shipped, batchSize.toString()), fontSize = 12.sp, color = colors.textSecondary)
             }
         }
     }
@@ -598,7 +601,7 @@ private fun SecurityDepositScreen(
             ) {
                 Icon(Icons.Outlined.Payment, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Pay \u20B9${"%,d".format(amount)} Security Deposit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.pending_pay_deposit, "%,d".format(amount)), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
         PaymentUiState.PROCESSING -> {
@@ -611,7 +614,7 @@ private fun SecurityDepositScreen(
             ) {
                 CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(12.dp))
-                Text("Initiating payment...", fontSize = 14.sp)
+                Text(stringResource(R.string.pending_initiating), fontSize = 14.sp)
             }
         }
         PaymentUiState.VERIFYING -> {
@@ -623,8 +626,8 @@ private fun SecurityDepositScreen(
                 Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = colors.brandPrimary, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.height(12.dp))
-                    Text("Checking payment status...", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
-                    Text("Don't close the app", fontSize = 12.sp, color = colors.textMuted)
+                    Text(stringResource(R.string.pending_checking_status), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                    Text(stringResource(R.string.pending_dont_close), fontSize = 12.sp, color = colors.textMuted)
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -632,7 +635,7 @@ private fun SecurityDepositScreen(
                 onClick = onRetry,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
-            ) { Text("Retry Payment", color = colors.textSecondary) }
+            ) { Text(stringResource(R.string.pending_retry_payment), color = colors.textSecondary) }
         }
         PaymentUiState.FAILED -> {
             Button(
@@ -643,7 +646,7 @@ private fun SecurityDepositScreen(
             ) {
                 Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Try Again", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.pending_try_again), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
         PaymentUiState.SUCCESS -> { /* handled above */ }
@@ -657,19 +660,19 @@ private fun PendingState(colors: com.wiom.csp.ui.theme.WiomColors) {
         icon = Icons.Outlined.HourglassTop,
         iconBg = colors.warningBg,
         iconTint = colors.warning,
-        title = "Registration Under Review",
-        subtitle = "Your application has been submitted and is being reviewed by our team.",
+        title = stringResource(R.string.pending_under_review_title),
+        subtitle = stringResource(R.string.pending_under_review_desc),
         colors = colors
     )
 
     Spacer(Modifier.height(24.dp))
     ProgressSteps(
         steps = listOf(
-            StepItem("Registration Submitted", true),
-            StepItem("Document Verification", false),
-            StepItem("Admin Approval", false),
-            StepItem("Training", false),
-            StepItem("Account Active", false)
+            StepItem(stringResource(R.string.pending_step_submitted), true),
+            StepItem(stringResource(R.string.pending_step_doc_verify), false),
+            StepItem(stringResource(R.string.pending_step_admin_approval), false),
+            StepItem(stringResource(R.string.pending_step_training), false),
+            StepItem(stringResource(R.string.pending_step_active), false)
         ),
         colors = colors
     )
@@ -682,15 +685,15 @@ private fun PaymentPendingState(data: StatusData, colors: com.wiom.csp.ui.theme.
         icon = Icons.Outlined.Payment,
         iconBg = colors.warningBg,
         iconTint = colors.warning,
-        title = "Payment Pending",
-        subtitle = "Please complete the registration fee payment to proceed.",
+        title = stringResource(R.string.pending_payment_pending_title),
+        subtitle = stringResource(R.string.pending_payment_pending_desc),
         colors = colors
     )
 
     if (data.registrationFee != null) {
         Spacer(Modifier.height(16.dp))
         InfoCard(
-            label = "Registration Fee",
+            label = stringResource(R.string.pending_payment_pending_fee),
             value = "₹${data.registrationFee.toInt()}",
             colors = colors
         )
@@ -717,8 +720,8 @@ private fun InfoRequiredState(
         icon = Icons.Outlined.Info,
         iconBg = colors.warningBg,
         iconTint = colors.warning,
-        title = "Additional Information Required",
-        subtitle = "The admin has requested more information. Please review and respond below.",
+        title = stringResource(R.string.pending_info_required_title),
+        subtitle = stringResource(R.string.pending_info_required_desc),
         colors = colors
     )
 
@@ -726,7 +729,7 @@ private fun InfoRequiredState(
     if (data.infoExchanges.isNotEmpty()) {
         Spacer(Modifier.height(24.dp))
         Text(
-            "CONVERSATION",
+            stringResource(R.string.pending_conversation),
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             color = colors.textMuted,
@@ -749,7 +752,7 @@ private fun InfoRequiredState(
     if (requestedDocs.isNotEmpty()) {
         Spacer(Modifier.height(24.dp))
         Text(
-            "UPLOAD DOCUMENTS",
+            stringResource(R.string.pending_upload_docs),
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             color = colors.textMuted,
@@ -772,7 +775,7 @@ private fun InfoRequiredState(
     // Text response
     Spacer(Modifier.height(16.dp))
     Text(
-        "YOUR RESPONSE",
+        stringResource(R.string.pending_your_response),
         fontSize = 11.sp,
         fontWeight = FontWeight.SemiBold,
         color = colors.textMuted,
@@ -785,7 +788,7 @@ private fun InfoRequiredState(
             onResponseTextChange(it)
             onClearError()
         },
-        placeholder = { Text("Type your response here...", color = colors.textMuted, fontSize = 14.sp) },
+        placeholder = { Text(stringResource(R.string.pending_response_hint), color = colors.textMuted, fontSize = 14.sp) },
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 100.dp),
@@ -826,7 +829,7 @@ private fun InfoRequiredState(
                 .background(colors.positive.copy(alpha = 0.1f))
                 .padding(12.dp)
         ) {
-            Text("Response submitted successfully!", fontSize = 13.sp, color = colors.positive, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text(stringResource(R.string.pending_response_success), fontSize = 13.sp, color = colors.positive, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
     }
 
@@ -850,7 +853,7 @@ private fun InfoRequiredState(
             @Suppress("DEPRECATION")
             Icon(Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Submit Response", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.pending_submit_response), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -862,18 +865,18 @@ private fun UnderReviewState(colors: com.wiom.csp.ui.theme.WiomColors) {
         icon = Icons.Outlined.Search,
         iconBg = colors.brandSubtle,
         iconTint = colors.brandPrimary,
-        title = "Under Review",
-        subtitle = "Your response has been received. The admin team is reviewing your information.",
+        title = stringResource(R.string.pending_review2_title),
+        subtitle = stringResource(R.string.pending_review2_desc),
         colors = colors
     )
     Spacer(Modifier.height(24.dp))
     ProgressSteps(
         steps = listOf(
-            StepItem("Registration Submitted", true),
-            StepItem("Document Verification", true),
-            StepItem("Admin Review", false),
-            StepItem("Training", false),
-            StepItem("Account Active", false)
+            StepItem(stringResource(R.string.pending_step_submitted), true),
+            StepItem(stringResource(R.string.pending_step_doc_verify), true),
+            StepItem(stringResource(R.string.pending_step_admin_review), false),
+            StepItem(stringResource(R.string.pending_step_training), false),
+            StepItem(stringResource(R.string.pending_step_active), false)
         ),
         colors = colors
     )
@@ -886,18 +889,18 @@ private fun TrainingState(data: StatusData, colors: com.wiom.csp.ui.theme.WiomCo
         icon = Icons.Outlined.School,
         iconBg = colors.positiveBg,
         iconTint = colors.positive,
-        title = "Training In Progress",
-        subtitle = "Your registration has been approved! Complete the training to activate your account.",
+        title = stringResource(R.string.pending_training_progress),
+        subtitle = stringResource(R.string.pending_training_progress_desc),
         colors = colors
     )
     Spacer(Modifier.height(24.dp))
     ProgressSteps(
         steps = listOf(
-            StepItem("Registration Submitted", true),
-            StepItem("Document Verification", true),
-            StepItem("Admin Approval", true),
-            StepItem("Training", false),
-            StepItem("Account Active", false)
+            StepItem(stringResource(R.string.pending_step_submitted), true),
+            StepItem(stringResource(R.string.pending_step_doc_verify), true),
+            StepItem(stringResource(R.string.pending_step_admin_approval), true),
+            StepItem(stringResource(R.string.pending_step_training), false),
+            StepItem(stringResource(R.string.pending_step_active), false)
         ),
         colors = colors
     )
@@ -910,8 +913,8 @@ private fun TrainingFailedState(colors: com.wiom.csp.ui.theme.WiomColors) {
         icon = Icons.Outlined.Cancel,
         iconBg = colors.negativeBg,
         iconTint = colors.negative,
-        title = "Training Failed",
-        subtitle = "Unfortunately, the training could not be completed. Please contact support for assistance.",
+        title = stringResource(R.string.pending_training_failed_title),
+        subtitle = stringResource(R.string.pending_training_failed_desc),
         colors = colors
     )
 }
@@ -923,19 +926,19 @@ private fun RejectedState(data: StatusData, colors: com.wiom.csp.ui.theme.WiomCo
         icon = Icons.Outlined.Block,
         iconBg = colors.negativeBg,
         iconTint = colors.negative,
-        title = "Registration Rejected",
-        subtitle = "Your registration application has been rejected.",
+        title = stringResource(R.string.pending_rejected_title),
+        subtitle = stringResource(R.string.pending_rejected_desc),
         colors = colors
     )
 
     if (data.rejectionReason != null) {
         Spacer(Modifier.height(16.dp))
-        InfoCard(label = "Reason", value = data.rejectionReason, colors = colors)
+        InfoCard(label = stringResource(R.string.pending_reason), value = data.rejectionReason, colors = colors)
     }
 
     if (data.feeRefunded) {
         Spacer(Modifier.height(12.dp))
-        InfoCard(label = "Fee Status", value = "Registration fee has been refunded", colors = colors)
+        InfoCard(label = stringResource(R.string.pending_fee_status), value = stringResource(R.string.pending_fee_refunded), colors = colors)
     }
 }
 
@@ -950,8 +953,8 @@ private fun ActiveState(
         icon = Icons.Outlined.CheckCircle,
         iconBg = colors.positiveBg,
         iconTint = colors.positive,
-        title = "You're All Set!",
-        subtitle = "Your partner account is active and ready to go. You can now manage your business from the dashboard.",
+        title = stringResource(R.string.pending_active_title),
+        subtitle = stringResource(R.string.pending_active_desc),
         colors = colors
     )
     Spacer(Modifier.height(32.dp))
@@ -965,7 +968,7 @@ private fun ActiveState(
     ) {
         Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
-        Text("Continue to Dashboard", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.pending_go_dashboard), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
     }
     if (onLogout != null) {
         Spacer(Modifier.height(12.dp))
@@ -979,7 +982,7 @@ private fun ActiveState(
         ) {
             Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Logout", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.pending_logout), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

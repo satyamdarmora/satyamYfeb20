@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -40,6 +41,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.wiom.csp.R
 import com.wiom.csp.ui.theme.WiomCspTheme
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -90,14 +92,14 @@ fun OnboardingScreen(
         ) {
             // Header
             Text(
-                "CSP Registration",
+                stringResource(R.string.onboarding_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.textPrimary
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                "Complete your registration to become a Connection Service Provider.",
+                stringResource(R.string.onboarding_subtitle),
                 fontSize = 13.sp,
                 color = colors.textMuted
             )
@@ -111,7 +113,7 @@ fun OnboardingScreen(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.warning),
                 border = androidx.compose.foundation.BorderStroke(1.dp, colors.warning.copy(alpha = 0.5f))
             ) {
-                Text("Fill Sample Data", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.onboarding_fill_sample), fontSize = 13.sp, fontWeight = FontWeight.Medium)
             }
 
             Spacer(Modifier.height(16.dp))
@@ -138,23 +140,28 @@ fun OnboardingScreen(
             }
 
             // Section 1: Business Information
-            SectionHeader("Business Information", colors)
+            SectionHeader(stringResource(R.string.onboarding_section_business), colors)
             FormField(
-                label = "BUSINESS / ENTITY NAME",
+                label = stringResource(R.string.onboarding_business_name),
                 value = form.businessName,
                 onValueChange = { viewModel.updateForm { copy(businessName = it) }; viewModel.clearError() },
-                placeholder = "Registered business name",
+                placeholder = stringResource(R.string.onboarding_business_name_hint),
                 colors = colors,
                 imeAction = ImeAction.Next,
                 onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
             )
             Spacer(Modifier.height(12.dp))
-            FieldLabel("ENTITY TYPE", colors)
+            FieldLabel(stringResource(R.string.onboarding_entity_type), colors)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("INDIVIDUAL", "FIRM", "COMPANY").forEach { type ->
+                val entityTypes = listOf(
+                    "INDIVIDUAL" to stringResource(R.string.onboarding_individual),
+                    "FIRM" to stringResource(R.string.onboarding_firm),
+                    "COMPANY" to stringResource(R.string.onboarding_company)
+                )
+                entityTypes.forEach { (type, label) ->
                     val selected = form.entityType == type
                     Box(
                         modifier = Modifier
@@ -174,7 +181,7 @@ fun OnboardingScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            type.lowercase().replaceFirstChar { it.uppercase() },
+                            label,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (selected) Color.White else colors.textSecondary
@@ -185,7 +192,7 @@ fun OnboardingScreen(
             Spacer(Modifier.height(24.dp))
 
             // Section 2: Service Location
-            SectionHeader("Service Location", colors)
+            SectionHeader(stringResource(R.string.onboarding_section_location), colors)
 
             // State dropdown
             StateDropdown(
@@ -196,10 +203,10 @@ fun OnboardingScreen(
             Spacer(Modifier.height(4.dp))
 
             FormField(
-                label = "CITY",
+                label = stringResource(R.string.onboarding_city),
                 value = form.city,
                 onValueChange = { viewModel.updateForm { copy(city = it) }; viewModel.clearError() },
-                placeholder = "City",
+                placeholder = stringResource(R.string.onboarding_city_hint),
                 colors = colors,
                 imeAction = ImeAction.Next,
                 onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
@@ -211,10 +218,10 @@ fun OnboardingScreen(
             ) {
                 Box(Modifier.weight(1f)) {
                     FormField(
-                        label = "AREA / ZONE",
+                        label = stringResource(R.string.onboarding_area),
                         value = form.area,
                         onValueChange = { viewModel.updateForm { copy(area = it) }; viewModel.clearError() },
-                        placeholder = "Area or service zone",
+                        placeholder = stringResource(R.string.onboarding_area_hint),
                         colors = colors,
                         imeAction = ImeAction.Next,
                         onImeAction = { focusManager.moveFocus(FocusDirection.Next) }
@@ -222,14 +229,14 @@ fun OnboardingScreen(
                 }
                 Box(Modifier.weight(1f)) {
                     FormField(
-                        label = "PINCODE",
+                        label = stringResource(R.string.onboarding_pincode),
                         value = form.pincode,
                         onValueChange = {
                             val filtered = it.filter { c -> c.isDigit() }.take(6)
                             viewModel.updateForm { copy(pincode = filtered) }
                             viewModel.clearError()
                         },
-                        placeholder = "6-digit pincode",
+                        placeholder = stringResource(R.string.onboarding_pincode_hint),
                         colors = colors,
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Next,
@@ -255,16 +262,16 @@ fun OnboardingScreen(
             Spacer(Modifier.height(24.dp))
 
             // Section 3: Identity Verification
-            SectionHeader("Identity Verification", colors)
+            SectionHeader(stringResource(R.string.onboarding_section_identity), colors)
             FormField(
-                label = "AADHAAR NUMBER",
+                label = stringResource(R.string.onboarding_aadhaar),
                 value = form.aadhaarNumber,
                 onValueChange = {
                     val filtered = it.filter { c -> c.isDigit() }.take(12)
                     viewModel.updateForm { copy(aadhaarNumber = filtered) }
                     viewModel.clearError()
                 },
-                placeholder = "12-digit Aadhaar number",
+                placeholder = stringResource(R.string.onboarding_aadhaar_hint),
                 colors = colors,
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Next,
@@ -272,14 +279,14 @@ fun OnboardingScreen(
             )
             Spacer(Modifier.height(4.dp))
             FormField(
-                label = "PAN NUMBER",
+                label = stringResource(R.string.onboarding_pan),
                 value = form.panNumber,
                 onValueChange = {
                     val filtered = it.filter { c -> c.isLetterOrDigit() }.take(10)
                     viewModel.updateForm { copy(panNumber = filtered) }
                     viewModel.clearError()
                 },
-                placeholder = "ABCDE1234F",
+                placeholder = stringResource(R.string.onboarding_pan_hint),
                 colors = colors,
                 capitalization = KeyboardCapitalization.Characters,
                 imeAction = ImeAction.Next,
@@ -288,26 +295,26 @@ fun OnboardingScreen(
             Spacer(Modifier.height(24.dp))
 
             // Section 4: Bank Details
-            SectionHeader("Bank Details", colors)
+            SectionHeader(stringResource(R.string.onboarding_section_bank), colors)
             FormField(
-                label = "ACCOUNT HOLDER NAME",
+                label = stringResource(R.string.onboarding_account_name),
                 value = form.bankAccountName,
                 onValueChange = { viewModel.updateForm { copy(bankAccountName = it) }; viewModel.clearError() },
-                placeholder = "Name as on bank account",
+                placeholder = stringResource(R.string.onboarding_account_name_hint),
                 colors = colors,
                 imeAction = ImeAction.Next,
                 onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
             )
             Spacer(Modifier.height(4.dp))
             FormField(
-                label = "ACCOUNT NUMBER",
+                label = stringResource(R.string.onboarding_account_number),
                 value = form.bankAccountNumber,
                 onValueChange = {
                     val filtered = it.filter { c -> c.isDigit() }.take(18)
                     viewModel.updateForm { copy(bankAccountNumber = filtered) }
                     viewModel.clearError()
                 },
-                placeholder = "Bank account number",
+                placeholder = stringResource(R.string.onboarding_account_number_hint),
                 colors = colors,
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Next,
@@ -320,14 +327,14 @@ fun OnboardingScreen(
             ) {
                 Box(Modifier.weight(1f)) {
                     FormField(
-                        label = "IFSC CODE",
+                        label = stringResource(R.string.onboarding_ifsc),
                         value = form.bankIfsc,
                         onValueChange = {
                             val filtered = it.filter { c -> c.isLetterOrDigit() }.take(11)
                             viewModel.updateForm { copy(bankIfsc = filtered) }
                             viewModel.clearError()
                         },
-                        placeholder = "SBIN0001234",
+                        placeholder = stringResource(R.string.onboarding_ifsc_hint),
                         colors = colors,
                         capitalization = KeyboardCapitalization.Characters,
                         imeAction = ImeAction.Next,
@@ -336,10 +343,10 @@ fun OnboardingScreen(
                 }
                 Box(Modifier.weight(1f)) {
                     FormField(
-                        label = "BANK NAME",
+                        label = stringResource(R.string.onboarding_bank_name),
                         value = form.bankName,
                         onValueChange = { viewModel.updateForm { copy(bankName = it) }; viewModel.clearError() },
-                        placeholder = "Bank name",
+                        placeholder = stringResource(R.string.onboarding_bank_name_hint),
                         colors = colors,
                         imeAction = ImeAction.Done,
                         onImeAction = { focusManager.clearFocus() }
@@ -377,7 +384,7 @@ fun OnboardingScreen(
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    "I accept the terms of service",
+                    stringResource(R.string.onboarding_terms),
                     fontSize = 14.sp,
                     color = colors.textPrimary,
                     lineHeight = 20.sp
@@ -407,7 +414,7 @@ fun OnboardingScreen(
                     )
                 } else {
                     Text(
-                        "Submit Registration",
+                        stringResource(R.string.onboarding_submit),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -417,7 +424,7 @@ fun OnboardingScreen(
             Spacer(Modifier.height(24.dp))
 
             Text(
-                "Wiom CSP Portal",
+                stringResource(R.string.onboarding_footer),
                 fontSize = 12.sp,
                 color = colors.textMuted,
                 textAlign = TextAlign.Center,
@@ -461,7 +468,7 @@ private fun LocationPicker(
                         gpsFetched = true
                         val addr = try {
                             @Suppress("DEPRECATION")
-                            val geocoder = Geocoder(context, Locale.getDefault())
+                            val geocoder = Geocoder(context, Locale("en"))
                             val results = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
                             results?.firstOrNull()?.getAddressLine(0) ?: ""
                         } catch (_: Exception) { "" }
@@ -477,7 +484,7 @@ private fun LocationPicker(
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        FieldLabel("OFFICE / SERVICE LOCATION *", colors)
+        FieldLabel(stringResource(R.string.onboarding_location_label), colors)
 
         // Get Location button
         Button(
@@ -495,7 +502,7 @@ private fun LocationPicker(
                                 gpsFetched = true
                                 val addr = try {
                                     @Suppress("DEPRECATION")
-                                    val geocoder = Geocoder(context, Locale.getDefault())
+                                    val geocoder = Geocoder(context, Locale("en"))
                                     val results = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
                                     results?.firstOrNull()?.getAddressLine(0) ?: ""
                                 } catch (_: Exception) { "" }
@@ -523,15 +530,15 @@ private fun LocationPicker(
             if (fetching) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
-                Text("Getting location...", fontSize = 14.sp)
+                Text(stringResource(R.string.onboarding_getting_location), fontSize = 14.sp)
             } else if (gpsFetched) {
                 Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Location captured", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.onboarding_location_captured), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             } else {
                 Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Get Current Location", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.onboarding_get_location), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -547,7 +554,7 @@ private fun LocationPicker(
         if (permissionDenied) {
             Spacer(Modifier.height(6.dp))
             Text(
-                "Location permission denied. Please enable it in Settings.",
+                stringResource(R.string.onboarding_location_denied),
                 fontSize = 12.sp,
                 color = colors.negative
             )
@@ -556,11 +563,11 @@ private fun LocationPicker(
         Spacer(Modifier.height(12.dp))
 
         // Address field
-        FieldLabel("ADDRESS", colors)
+        FieldLabel(stringResource(R.string.onboarding_address), colors)
         OutlinedTextField(
             value = address,
             onValueChange = onAddressChange,
-            placeholder = { Text("Full address of service location", color = colors.textMuted, fontSize = 15.sp) },
+            placeholder = { Text(stringResource(R.string.onboarding_address_hint), color = colors.textMuted, fontSize = 15.sp) },
             minLines = 2,
             maxLines = 3,
             colors = OutlinedTextFieldDefaults.colors(
@@ -596,7 +603,7 @@ private fun StateDropdown(
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        FieldLabel("STATE", colors)
+        FieldLabel(stringResource(R.string.onboarding_state), colors)
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = it }
@@ -606,7 +613,7 @@ private fun StateDropdown(
                 onValueChange = { searchText = it },
                 placeholder = {
                     Text(
-                        if (selectedState.isNotBlank()) selectedState else "Select state",
+                        if (selectedState.isNotBlank()) selectedState else stringResource(R.string.onboarding_select_state),
                         color = colors.textMuted,
                         fontSize = 15.sp
                     )
@@ -667,7 +674,7 @@ private fun StateDropdown(
                 }
                 if (filteredStates.isEmpty()) {
                     DropdownMenuItem(
-                        text = { Text("No matching state", fontSize = 14.sp, color = colors.textMuted) },
+                        text = { Text(stringResource(R.string.onboarding_no_matching), fontSize = 14.sp, color = colors.textMuted) },
                         onClick = {},
                         enabled = false,
                         contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding

@@ -34,7 +34,7 @@ class UserPreferences @Inject constructor(
 
     // ---- Language ----
     val language: Flow<String> = dataStore.data.map { prefs ->
-        prefs[KEY_LANGUAGE] ?: "en"
+        prefs[KEY_LANGUAGE] ?: ""
     }
 
     suspend fun setLanguage(lang: String) {
@@ -156,6 +156,7 @@ class UserPreferences @Inject constructor(
             prefs[KEY_IS_LOGGED_IN] = false
             prefs[KEY_IS_PROFILE_COMPLETE] = false
             prefs[KEY_IS_PARTNER_ACTIVE] = false
+            prefs[KEY_LANGUAGE] = ""
         }
     }
 }

@@ -160,4 +160,173 @@
     <!-- Menu: Technician -->
     <string name="menu_technician">Technician App</string>
     <string name="menu_technician_desc">Switch to tech view</string>
+
+    <!-- Language Selection Screen -->
+    <string name="lang_welcome">Welcome to Wiom CSP</string>
+    <string name="lang_choose">Choose your preferred language</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिन्दी</string>
+    <string name="lang_continue">Continue</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">Wiom CSP</string>
+    <string name="login_subtitle">Enter your mobile number to login</string>
+    <string name="login_otp_sent">OTP sent to +91 %1$s</string>
+    <string name="login_mobile_label">MOBILE NUMBER</string>
+    <string name="login_send_otp">Send OTP</string>
+    <string name="login_enter_otp">ENTER OTP</string>
+    <string name="login_verify_otp">Verify OTP</string>
+    <string name="login_change_number">\u2190 Change Number</string>
+    <string name="login_resend_in">Resend in %1$ds</string>
+    <string name="login_resend_otp">Resend OTP</string>
+    <string name="login_footer">Wiom CSP Partner Portal</string>
+
+    <!-- Onboarding Screen -->
+    <string name="onboarding_title">CSP Registration</string>
+    <string name="onboarding_subtitle">Complete your registration to become a Connection Service Provider.</string>
+    <string name="onboarding_fill_sample">Fill Sample Data</string>
+    <string name="onboarding_section_business">Business Information</string>
+    <string name="onboarding_business_name">BUSINESS / ENTITY NAME</string>
+    <string name="onboarding_business_name_hint">Registered business name</string>
+    <string name="onboarding_entity_type">ENTITY TYPE</string>
+    <string name="onboarding_individual">Individual</string>
+    <string name="onboarding_firm">Firm</string>
+    <string name="onboarding_company">Company</string>
+    <string name="onboarding_section_location">Service Location</string>
+    <string name="onboarding_state">STATE</string>
+    <string name="onboarding_select_state">Select state</string>
+    <string name="onboarding_city">CITY</string>
+    <string name="onboarding_city_hint">City</string>
+    <string name="onboarding_area">AREA / ZONE</string>
+    <string name="onboarding_area_hint">Area or service zone</string>
+    <string name="onboarding_pincode">PINCODE</string>
+    <string name="onboarding_pincode_hint">6-digit pincode</string>
+    <string name="onboarding_location_label">OFFICE / SERVICE LOCATION *</string>
+    <string name="onboarding_getting_location">Getting location…</string>
+    <string name="onboarding_location_captured">Location captured</string>
+    <string name="onboarding_get_location">Get Current Location</string>
+    <string name="onboarding_location_denied">Location permission denied. Please enable it in Settings.</string>
+    <string name="onboarding_address">ADDRESS</string>
+    <string name="onboarding_address_hint">Full address of service location</string>
+    <string name="onboarding_section_identity">Identity Verification</string>
+    <string name="onboarding_aadhaar">AADHAAR NUMBER</string>
+    <string name="onboarding_aadhaar_hint">12-digit Aadhaar number</string>
+    <string name="onboarding_pan">PAN NUMBER</string>
+    <string name="onboarding_pan_hint">ABCDE1234F</string>
+    <string name="onboarding_section_bank">Bank Details</string>
+    <string name="onboarding_account_name">ACCOUNT HOLDER NAME</string>
+    <string name="onboarding_account_name_hint">Name as on bank account</string>
+    <string name="onboarding_account_number">ACCOUNT NUMBER</string>
+    <string name="onboarding_account_number_hint">Bank account number</string>
+    <string name="onboarding_ifsc">IFSC CODE</string>
+    <string name="onboarding_ifsc_hint">SBIN0001234</string>
+    <string name="onboarding_bank_name">BANK NAME</string>
+    <string name="onboarding_bank_name_hint">Bank name</string>
+    <string name="onboarding_terms">I accept the terms of service</string>
+    <string name="onboarding_submit">Submit Registration</string>
+    <string name="onboarding_footer">Wiom CSP Portal</string>
+    <string name="onboarding_no_matching">No matching state</string>
+
+    <!-- Pending Screen -->
+    <string name="pending_checking">Checking registration status…</string>
+    <string name="pending_logout">Logout</string>
+    <string name="pending_footer">Wiom CSP Portal</string>
+    <string name="pending_failed_load">Failed to load status</string>
+    <string name="pending_retry">Retry</string>
+    <string name="pending_refreshing">Refreshing…</string>
+    <string name="pending_payment_success_title">Payment Successful</string>
+    <string name="pending_payment_success_desc">Your registration fee has been received. Moving to the review stage now…</string>
+    <string name="pending_verifying_title">Verifying Your Payment</string>
+    <string name="pending_verifying_desc">Complete the payment in the browser. We\u2019re checking status automatically.</string>
+    <string name="pending_amount">Amount</string>
+    <string name="pending_for">For</string>
+    <string name="pending_status">Status</string>
+    <string name="pending_checking_payment">Checking payment…</string>
+    <string name="pending_pay_now">Pay Now</string>
+    <string name="pending_open_payment_page">Open Payment Page</string>
+    <string name="pending_try_again">Try Again</string>
+    <string name="pending_review_title">Application Under Review</string>
+    <string name="pending_review_desc">Your registration has been submitted. Our team will review it shortly.</string>
+    <string name="pending_pending_title">Registration Submitted</string>
+    <string name="pending_pending_desc">Your application is being processed. You\u2019ll be notified once it moves forward.</string>
+    <string name="pending_registration_fee">Registration Fee</string>
+    <string name="pending_registration_fee_desc">A one-time fee is required to complete your partner registration.</string>
+    <string name="pending_secure_payment">Secure payment via Juspay</string>
+    <string name="pending_security_deposit_title">Security Deposit Required</string>
+    <string name="pending_security_deposit_desc">A refundable security deposit is required before you can access the dashboard.</string>
+    <string name="pending_security_deposit_note">This deposit is fully refundable when you leave the program.</string>
+    <string name="pending_active_title">You\u2019re All Set!</string>
+    <string name="pending_active_desc">Your account is active. You can now access the full CSP dashboard.</string>
+    <string name="pending_go_dashboard">Go to Dashboard</string>
+    <string name="pending_info_required_title">Additional Information Required</string>
+    <string name="pending_info_required_desc">The operations team has requested more information about your registration.</string>
+    <string name="pending_response">Your Response</string>
+    <string name="pending_response_hint">Type your response here…</string>
+    <string name="pending_attach_files">Attach Files</string>
+    <string name="pending_submit_response">Submit Response</string>
+    <string name="pending_training_title">Training Required</string>
+    <string name="pending_training_desc">Complete the partner training module to activate your account.</string>
+    <string name="pending_training_failed_title">Training Not Passed</string>
+    <string name="pending_training_failed_desc">You did not pass the training assessment. Please contact your zone manager.</string>
+    <string name="pending_rejected_title">Registration Rejected</string>
+    <string name="pending_rejected_desc">Unfortunately your registration was not approved.</string>
+    <string name="pending_payment_pending_title">Payment Pending</string>
+    <string name="pending_payment_pending_desc">Your payment is being processed. We\u2019ll update you once confirmed.</string>
+
+    <!-- Pending: Payment screen (IDLE) -->
+    <string name="pending_csp_reg_fee">CSP Registration Fee</string>
+    <string name="pending_onboarding_training">Onboarding &amp; Training</string>
+    <string name="pending_included">Included</string>
+    <string name="pending_dashboard_access">CSP Dashboard Access</string>
+    <string name="pending_business_support">Business Support</string>
+    <string name="pending_secure_juspay">Secure payment via JusPay. Your card details are never stored with us.</string>
+    <string name="pending_full_refund">Full refund if your registration is not approved.</string>
+    <string name="pending_setting_up">Setting up payment\u2026</string>
+    <string name="pending_pay_amount">Pay \u20B9%1$s</string>
+    <string name="pending_redirect_note">You\u2019ll be redirected to a secure payment page. Come back here after paying.</string>
+    <string name="pending_browser_info">Payment opened in browser. Come back here after completing \u2014 we\u2019ll detect it automatically.</string>
+    <string name="pending_payment_issue">Payment Issue</string>
+    <string name="pending_payment_timeout">Payment verification timed out.</string>
+
+    <!-- Pending: Security Deposit -->
+    <string name="pending_reg_approved">Registration Approved!</string>
+    <string name="pending_complete_deposit">Complete security deposit to start operations</string>
+    <string name="pending_deposit_paid">Security Deposit Paid!</string>
+    <string name="pending_devices_allocated">%1$s devices will be allocated to you shortly.</string>
+    <string name="pending_netbox_deposit">NetBox Security Deposit</string>
+    <string name="pending_security_deposit">Security deposit</string>
+    <string name="pending_devices_covered">Devices covered</string>
+    <string name="pending_up_to_netboxes">Up to 20 NetBoxes</string>
+    <string name="pending_first_batch">First batch</string>
+    <string name="pending_n_devices">%1$s devices</string>
+    <string name="pending_total_payable">Total payable</string>
+    <string name="pending_refundable_note">Refundable deposit \u2014 returned when devices are surrendered</string>
+    <string name="pending_batch_shipped">First batch of %1$s devices shipped after payment</string>
+    <string name="pending_pay_deposit">Pay \u20B9%1$s Security Deposit</string>
+    <string name="pending_initiating">Initiating payment\u2026</string>
+    <string name="pending_checking_status">Checking payment status\u2026</string>
+    <string name="pending_dont_close">Don\u2019t close the app</string>
+    <string name="pending_retry_payment">Retry Payment</string>
+
+    <!-- Pending: Status states -->
+    <string name="pending_under_review_title">Registration Under Review</string>
+    <string name="pending_under_review_desc">Your application has been submitted and is being reviewed by our team.</string>
+    <string name="pending_step_submitted">Registration Submitted</string>
+    <string name="pending_step_doc_verify">Document Verification</string>
+    <string name="pending_step_admin_approval">Admin Approval</string>
+    <string name="pending_step_admin_review">Admin Review</string>
+    <string name="pending_step_training">Training</string>
+    <string name="pending_step_active">Account Active</string>
+    <string name="pending_payment_pending_fee">Registration Fee</string>
+    <string name="pending_conversation">CONVERSATION</string>
+    <string name="pending_upload_docs">UPLOAD DOCUMENTS</string>
+    <string name="pending_your_response">YOUR RESPONSE</string>
+    <string name="pending_response_success">Response submitted successfully!</string>
+    <string name="pending_review2_title">Under Review</string>
+    <string name="pending_review2_desc">Your response has been received. The admin team is reviewing your information.</string>
+    <string name="pending_training_progress">Training In Progress</string>
+    <string name="pending_training_progress_desc">Your registration has been approved! Complete the training to activate your account.</string>
+    <string name="pending_reason">Reason</string>
+    <string name="pending_fee_status">Fee Status</string>
+    <string name="pending_fee_refunded">Registration fee has been refunded</string>
 </resources>

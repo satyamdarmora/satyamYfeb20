@@ -160,4 +160,173 @@
     <!-- Menu: Technician -->
     <string name="menu_technician">टेक्नीशियन ऐप</string>
     <string name="menu_technician_desc">टेक व्यू पर जाएं</string>
+
+    <!-- Language Selection Screen -->
+    <string name="lang_welcome">Wiom CSP में आपका स्वागत है</string>
+    <string name="lang_choose">अपनी पसंदीदा भाषा चुनें</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिन्दी</string>
+    <string name="lang_continue">आगे बढ़ें</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">Wiom CSP</string>
+    <string name="login_subtitle">लॉगिन करने के लिए अपना मोबाइल नंबर दर्ज करें</string>
+    <string name="login_otp_sent">OTP भेजा गया +91 %1$s पर</string>
+    <string name="login_mobile_label">मोबाइल नंबर</string>
+    <string name="login_send_otp">OTP भेजें</string>
+    <string name="login_enter_otp">OTP दर्ज करें</string>
+    <string name="login_verify_otp">OTP सत्यापित करें</string>
+    <string name="login_change_number">\u2190 नंबर बदलें</string>
+    <string name="login_resend_in">%1$d सेकंड में पुनः भेजें</string>
+    <string name="login_resend_otp">OTP पुनः भेजें</string>
+    <string name="login_footer">Wiom CSP पार्टनर पोर्टल</string>
+
+    <!-- Onboarding Screen -->
+    <string name="onboarding_title">CSP पंजीकरण</string>
+    <string name="onboarding_subtitle">कनेक्शन सर्विस प्रोवाइडर बनने के लिए अपना पंजीकरण पूरा करें।</string>
+    <string name="onboarding_fill_sample">सैंपल डेटा भरें</string>
+    <string name="onboarding_section_business">व्यापार जानकारी</string>
+    <string name="onboarding_business_name">व्यापार / संस्था का नाम</string>
+    <string name="onboarding_business_name_hint">पंजीकृत व्यापार का नाम</string>
+    <string name="onboarding_entity_type">संस्था का प्रकार</string>
+    <string name="onboarding_individual">व्यक्तिगत</string>
+    <string name="onboarding_firm">फर्म</string>
+    <string name="onboarding_company">कंपनी</string>
+    <string name="onboarding_section_location">सेवा स्थान</string>
+    <string name="onboarding_state">राज्य</string>
+    <string name="onboarding_select_state">राज्य चुनें</string>
+    <string name="onboarding_city">शहर</string>
+    <string name="onboarding_city_hint">शहर</string>
+    <string name="onboarding_area">क्षेत्र / ज़ोन</string>
+    <string name="onboarding_area_hint">क्षेत्र या सेवा ज़ोन</string>
+    <string name="onboarding_pincode">पिनकोड</string>
+    <string name="onboarding_pincode_hint">6-अंकीय पिनकोड</string>
+    <string name="onboarding_location_label">कार्यालय / सेवा स्थान *</string>
+    <string name="onboarding_getting_location">स्थान प्राप्त हो रहा है…</string>
+    <string name="onboarding_location_captured">स्थान प्राप्त हुआ</string>
+    <string name="onboarding_get_location">वर्तमान स्थान प्राप्त करें</string>
+    <string name="onboarding_location_denied">स्थान अनुमति अस्वीकृत। कृपया सेटिंग्स में सक्षम करें।</string>
+    <string name="onboarding_address">पता</string>
+    <string name="onboarding_address_hint">सेवा स्थान का पूरा पता</string>
+    <string name="onboarding_section_identity">पहचान सत्यापन</string>
+    <string name="onboarding_aadhaar">आधार नंबर</string>
+    <string name="onboarding_aadhaar_hint">12-अंकीय आधार नंबर</string>
+    <string name="onboarding_pan">PAN नंबर</string>
+    <string name="onboarding_pan_hint">ABCDE1234F</string>
+    <string name="onboarding_section_bank">बैंक विवरण</string>
+    <string name="onboarding_account_name">खाताधारक का नाम</string>
+    <string name="onboarding_account_name_hint">बैंक खाते पर नाम</string>
+    <string name="onboarding_account_number">खाता नंबर</string>
+    <string name="onboarding_account_number_hint">बैंक खाता नंबर</string>
+    <string name="onboarding_ifsc">IFSC कोड</string>
+    <string name="onboarding_ifsc_hint">SBIN0001234</string>
+    <string name="onboarding_bank_name">बैंक का नाम</string>
+    <string name="onboarding_bank_name_hint">बैंक का नाम</string>
+    <string name="onboarding_terms">मैं सेवा की शर्तें स्वीकार करता/करती हूँ</string>
+    <string name="onboarding_submit">पंजीकरण सबमिट करें</string>
+    <string name="onboarding_footer">Wiom CSP पोर्टल</string>
+    <string name="onboarding_no_matching">कोई मिलता राज्य नहीं</string>
+
+    <!-- Pending Screen -->
+    <string name="pending_checking">पंजीकरण स्थिति जाँच रहे हैं…</string>
+    <string name="pending_logout">लॉगआउट</string>
+    <string name="pending_footer">Wiom CSP पोर्टल</string>
+    <string name="pending_failed_load">स्थिति लोड करने में विफल</string>
+    <string name="pending_retry">पुनः प्रयास</string>
+    <string name="pending_refreshing">रीफ्रेश हो रहा है…</string>
+    <string name="pending_payment_success_title">भुगतान सफल</string>
+    <string name="pending_payment_success_desc">आपका पंजीकरण शुल्क प्राप्त हो गया है। अब समीक्षा चरण में जा रहे हैं…</string>
+    <string name="pending_verifying_title">आपका भुगतान सत्यापित हो रहा है</string>
+    <string name="pending_verifying_desc">ब्राउज़र में भुगतान पूरा करें। हम स्वचालित रूप से स्थिति जाँच रहे हैं।</string>
+    <string name="pending_amount">राशि</string>
+    <string name="pending_for">के लिए</string>
+    <string name="pending_status">स्थिति</string>
+    <string name="pending_checking_payment">भुगतान जाँच रहे हैं…</string>
+    <string name="pending_pay_now">अभी भुगतान करें</string>
+    <string name="pending_open_payment_page">भुगतान पेज खोलें</string>
+    <string name="pending_try_again">पुनः प्रयास करें</string>
+    <string name="pending_review_title">आवेदन समीक्षाधीन</string>
+    <string name="pending_review_desc">आपका पंजीकरण सबमिट हो गया है। हमारी टीम जल्द ही इसकी समीक्षा करेगी।</string>
+    <string name="pending_pending_title">पंजीकरण सबमिट हो गया</string>
+    <string name="pending_pending_desc">आपका आवेदन प्रोसेस हो रहा है। आगे बढ़ने पर आपको सूचित किया जाएगा।</string>
+    <string name="pending_registration_fee">पंजीकरण शुल्क</string>
+    <string name="pending_registration_fee_desc">पार्टनर पंजीकरण पूरा करने के लिए एकमुश्त शुल्क आवश्यक है।</string>
+    <string name="pending_secure_payment">Juspay द्वारा सुरक्षित भुगतान</string>
+    <string name="pending_security_deposit_title">सुरक्षा जमा आवश्यक</string>
+    <string name="pending_security_deposit_desc">डैशबोर्ड तक पहुँचने से पहले एक वापसी योग्य सुरक्षा जमा आवश्यक है।</string>
+    <string name="pending_security_deposit_note">यह जमा राशि प्रोग्राम छोड़ने पर पूरी तरह वापस की जाती है।</string>
+    <string name="pending_active_title">आप तैयार हैं!</string>
+    <string name="pending_active_desc">आपका खाता सक्रिय है। अब आप पूरा CSP डैशबोर्ड एक्सेस कर सकते हैं।</string>
+    <string name="pending_go_dashboard">डैशबोर्ड पर जाएं</string>
+    <string name="pending_info_required_title">अतिरिक्त जानकारी आवश्यक</string>
+    <string name="pending_info_required_desc">ऑपरेशन टीम ने आपके पंजीकरण के बारे में अधिक जानकारी का अनुरोध किया है।</string>
+    <string name="pending_response">आपका जवाब</string>
+    <string name="pending_response_hint">अपना जवाब यहाँ लिखें…</string>
+    <string name="pending_attach_files">फ़ाइलें संलग्न करें</string>
+    <string name="pending_submit_response">जवाब सबमिट करें</string>
+    <string name="pending_training_title">प्रशिक्षण आवश्यक</string>
+    <string name="pending_training_desc">अपना खाता सक्रिय करने के लिए पार्टनर प्रशिक्षण मॉड्यूल पूरा करें।</string>
+    <string name="pending_training_failed_title">प्रशिक्षण पास नहीं हुआ</string>
+    <string name="pending_training_failed_desc">आपने प्रशिक्षण मूल्यांकन पास नहीं किया। कृपया अपने ज़ोन मैनेजर से संपर्क करें।</string>
+    <string name="pending_rejected_title">पंजीकरण अस्वीकृत</string>
+    <string name="pending_rejected_desc">दुर्भाग्य से आपका पंजीकरण स्वीकृत नहीं हुआ।</string>
+    <string name="pending_payment_pending_title">भुगतान लंबित</string>
+    <string name="pending_payment_pending_desc">आपका भुगतान प्रोसेस हो रहा है। पुष्टि होने पर हम आपको अपडेट करेंगे।</string>
+
+    <!-- Pending: Payment screen (IDLE) -->
+    <string name="pending_csp_reg_fee">CSP पंजीकरण शुल्क</string>
+    <string name="pending_onboarding_training">ऑनबोर्डिंग और प्रशिक्षण</string>
+    <string name="pending_included">शामिल</string>
+    <string name="pending_dashboard_access">CSP डैशबोर्ड एक्सेस</string>
+    <string name="pending_business_support">बिज़नेस सपोर्ट</string>
+    <string name="pending_secure_juspay">JusPay द्वारा सुरक्षित भुगतान। आपके कार्ड विवरण हमारे पास कभी स्टोर नहीं होते।</string>
+    <string name="pending_full_refund">यदि आपका पंजीकरण स्वीकृत नहीं होता तो पूरा रिफंड।</string>
+    <string name="pending_setting_up">भुगतान सेट हो रहा है\u2026</string>
+    <string name="pending_pay_amount">\u20B9%1$s भुगतान करें</string>
+    <string name="pending_redirect_note">आपको सुरक्षित भुगतान पेज पर रीडायरेक्ट किया जाएगा। भुगतान के बाद यहाँ वापस आएं।</string>
+    <string name="pending_browser_info">ब्राउज़र में भुगतान खुला है। पूरा करने के बाद यहाँ वापस आएं \u2014 हम स्वचालित रूप से पता लगाएंगे।</string>
+    <string name="pending_payment_issue">भुगतान समस्या</string>
+    <string name="pending_payment_timeout">भुगतान सत्यापन का समय समाप्त।</string>
+
+    <!-- Pending: Security Deposit -->
+    <string name="pending_reg_approved">पंजीकरण स्वीकृत!</string>
+    <string name="pending_complete_deposit">ऑपरेशन शुरू करने के लिए सुरक्षा जमा पूरा करें</string>
+    <string name="pending_deposit_paid">सुरक्षा जमा भुगतान हो गया!</string>
+    <string name="pending_devices_allocated">%1$s डिवाइस जल्द ही आपको आवंटित किए जाएंगे।</string>
+    <string name="pending_netbox_deposit">नेटबॉक्स सुरक्षा जमा</string>
+    <string name="pending_security_deposit">सुरक्षा जमा</string>
+    <string name="pending_devices_covered">कवर किए गए डिवाइस</string>
+    <string name="pending_up_to_netboxes">20 नेटबॉक्स तक</string>
+    <string name="pending_first_batch">पहला बैच</string>
+    <string name="pending_n_devices">%1$s डिवाइस</string>
+    <string name="pending_total_payable">कुल देय</string>
+    <string name="pending_refundable_note">वापसी योग्य जमा \u2014 डिवाइस वापस करने पर लौटाई जाती है</string>
+    <string name="pending_batch_shipped">भुगतान के बाद %1$s डिवाइस का पहला बैच भेजा जाएगा</string>
+    <string name="pending_pay_deposit">\u20B9%1$s सुरक्षा जमा भुगतान करें</string>
+    <string name="pending_initiating">भुगतान शुरू हो रहा है\u2026</string>
+    <string name="pending_checking_status">भुगतान स्थिति जाँच रहे हैं\u2026</string>
+    <string name="pending_dont_close">ऐप बंद न करें</string>
+    <string name="pending_retry_payment">भुगतान पुनः प्रयास</string>
+
+    <!-- Pending: Status states -->
+    <string name="pending_under_review_title">पंजीकरण समीक्षाधीन</string>
+    <string name="pending_under_review_desc">आपका आवेदन सबमिट हो गया है और हमारी टीम द्वारा समीक्षा की जा रही है।</string>
+    <string name="pending_step_submitted">पंजीकरण सबमिट हो गया</string>
+    <string name="pending_step_doc_verify">दस्तावेज़ सत्यापन</string>
+    <string name="pending_step_admin_approval">एडमिन अनुमोदन</string>
+    <string name="pending_step_admin_review">एडमिन समीक्षा</string>
+    <string name="pending_step_training">प्रशिक्षण</string>
+    <string name="pending_step_active">खाता सक्रिय</string>
+    <string name="pending_payment_pending_fee">पंजीकरण शुल्क</string>
+    <string name="pending_conversation">वार्तालाप</string>
+    <string name="pending_upload_docs">दस्तावेज़ अपलोड करें</string>
+    <string name="pending_your_response">आपका जवाब</string>
+    <string name="pending_response_success">जवाब सफलतापूर्वक सबमिट हो गया!</string>
+    <string name="pending_review2_title">समीक्षाधीन</string>
+    <string name="pending_review2_desc">आपका जवाब प्राप्त हो गया है। एडमिन टीम आपकी जानकारी की समीक्षा कर रही है।</string>
+    <string name="pending_training_progress">प्रशिक्षण जारी है</string>
+    <string name="pending_training_progress_desc">आपका पंजीकरण स्वीकृत हो गया है! अपना खाता सक्रिय करने के लिए प्रशिक्षण पूरा करें।</string>
+    <string name="pending_reason">कारण</string>
+    <string name="pending_fee_status">शुल्क स्थिति</string>
+    <string name="pending_fee_refunded">पंजीकरण शुल्क वापस कर दिया गया है</string>
 </resources>
