@@ -57,6 +57,7 @@
 - [ ] Multi-step form collects:
   - Business Name, Entity Type
   - State, City, Area, Pincode
+  - GPS Location (latitude, longitude, address via device GPS)
   - PAN Number, Aadhaar Number
   - Bank Account Name, Account Number, IFSC, Bank Name
 - [ ] "Submit" calls `POST /v1/partner/register` with Bearer token
@@ -65,6 +66,10 @@
 
 **Edge cases:**
 - [ ] All fields required → validation before submit
+- [ ] GPS location required → user must tap "Get Current Location" before submit
+- [ ] Location permission denied → shows message to enable in Settings
+- [ ] GPS timeout or unavailable → user cannot proceed without location
+- [ ] Address auto-filled from reverse geocoding but editable
 - [ ] PAN format validation (ABCDE1234F)
 - [ ] Aadhaar format validation (12 digits)
 - [ ] IFSC format validation (e.g., SBIN0001234)
@@ -100,7 +105,7 @@
 ### PHASE 4: Admin Review
 - [ ] Admin opens `http://satyam.wiom.in/csp/admin` → sees registration in list
 - [ ] Registration shows status badge (PENDING with green "fee paid" indicator)
-- [ ] Admin can view all submitted details (business info, bank details, documents)
+- [ ] Admin can view all submitted details (business info, bank details, GPS location with Google Maps link, documents)
 - [ ] Admin has 3 actions:
   - **Approve** → status = `APPROVED`
   - **Reject** (with reason) → status = `REJECTED`
@@ -233,6 +238,7 @@
 - `id`, `registrationId` (UUID), `mobile`, `businessName`, `entityType`
 - `state`, `city`, `area`, `pincode`, `panNumber`, `aadhaarNumber`
 - `bankAccountName`, `bankAccountNumber`, `bankIfsc`, `bankName`
+- `latitude` (Float, nullable), `longitude` (Float, nullable), `address` (String, nullable)
 - `status` (PENDING | INFO_REQUIRED | APPROVED | REJECTED)
 - `feePaid` (Boolean), `feeRefunded` (Boolean)
 - `securityDepositPaid` (Boolean) — **added in this build**
