@@ -33,6 +33,8 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
   // --- Resolved task animation tracking ---
   // Track task IDs that just entered terminal state so we can show a brief "resolved" card
   const prevTaskMapRef = useRef<Map<string, string>>(new Map());
+  // Remember the sorted order index of each task so fading cards stay in-place
+  const prevOrderRef = useRef<Map<string, number>>(new Map());
   const [fadingTasks, setFadingTasks] = useState<Map<string, Task>>(new Map());
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
         return merged;
       });
 
-      // Remove after animation (1.5s)
+      // Remove after animation completes (2s)
       const ids = [...newFading.keys()];
       setTimeout(() => {
         setFadingTasks((prev) => {
@@ -69,9 +71,26 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
           ids.forEach((id) => next.delete(id));
           return next;
         });
-      }, 1500);
+      }, 2000);
     }
   }, [tasks]);
+
+  // Sort ALL tasks first (including those about to become terminal) to capture positions
+  const allSorted = useMemo(() => sortTasksByQueue(tasks), [tasks]);
+
+  // Update order map BEFORE filtering out terminal tasks — this captures each task's
+  // position while it's still active, so fading cards appear in-place
+  const prevZoneAOrder = useMemo(() => {
+    const nonOffered = allSorted.filter((t) => t.state !== 'OFFERED');
+    const orderMap = new Map<string, number>();
+    nonOffered.forEach((t, i) => orderMap.set(t.task_id, i));
+    // Only update ref if there are non-terminal tasks (avoid overwriting with empty on resolve)
+    const hasActive = nonOffered.some((t) => !TERMINAL_STATES.has(t.state));
+    if (hasActive || prevOrderRef.current.size === 0) {
+      prevOrderRef.current = orderMap;
+    }
+    return prevOrderRef.current;
+  }, [allSorted]);
 
   // Filter out terminal-state tasks before anything else
   const activeTasks = useMemo(
@@ -217,75 +236,93 @@ export default function TaskFeed({ tasks, onAction, onCardClick }: TaskFeedProps
         </div>
       )}
 
-      {/* Fading "resolved" cards */}
-      {fadingZoneA.map((task) => (
-        <div
-          key={`fading-${task.task_id}`}
-          style={{
-            position: 'relative',
-            marginBottom: 10,
-            animation: 'fadeSlideOut 1.5s ease forwards',
-          }}
-        >
-          <div
-            style={{
-              background: 'var(--bg-card)',
-              borderRadius: 10,
-              borderLeft: '4px solid var(--positive)',
-              padding: '14px 16px',
-              opacity: 0.7,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive)' }}>
-                {task.task_type}
-              </span>
-              <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
-                {task.connection_id || task.netbox_id || task.task_id}
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-              {task.customer_area || '--'}
-            </div>
-          </div>
-          {/* Resolved overlay */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 10,
-              background: 'var(--positive-subtle)',
-            }}
-          >
+      {/* Merge active cards with fading resolved cards in their original position */}
+      {(() => {
+        const fadingIds = new Set(fadingZoneA.map((t) => t.task_id));
+        const combined: { task: Task; isFading: boolean }[] = [];
+        for (const task of zoneATasks) {
+          if (!fadingIds.has(task.task_id)) {
+            combined.push({ task, isFading: false });
+          }
+        }
+        // Insert fading tasks at their remembered position (or at end)
+        for (const task of fadingZoneA) {
+          const prevIdx = prevZoneAOrder.get(task.task_id) ?? combined.length;
+          const insertAt = Math.min(prevIdx, combined.length);
+          combined.splice(insertAt, 0, { task, isFading: true });
+        }
+        return combined.map(({ task, isFading }) =>
+          isFading ? (
             <div
+              key={`fading-${task.task_id}`}
               style={{
-                background: 'var(--positive)',
-                color: '#FFFFFF',
-                padding: '6px 20px',
-                borderRadius: 20,
-                fontSize: 14,
-                fontWeight: 700,
-                letterSpacing: 0.5,
+                position: 'relative',
+                marginBottom: 10,
+                animation: 'resolvedPop 1.8s ease forwards',
               }}
             >
-              {'\u2713'} {t('feed.resolved')}
+              <div
+                style={{
+                  background: 'var(--bg-card)',
+                  borderRadius: 10,
+                  borderLeft: '4px solid var(--positive)',
+                  padding: '14px 16px',
+                  opacity: 0.7,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--positive)' }}>
+                    {task.task_type}
+                  </span>
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {task.connection_id || task.netbox_id || task.task_id}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  {task.customer_area || '--'}
+                </div>
+              </div>
+              {/* Resolved overlay with scale-in effect */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 10,
+                  background: 'rgba(0, 128, 67, 0.15)',
+                  animation: 'overlayFadeIn 0.3s ease forwards',
+                }}
+              >
+                <div
+                  style={{
+                    background: 'var(--positive)',
+                    color: '#FFFFFF',
+                    padding: '8px 24px',
+                    borderRadius: 24,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    animation: 'badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                    boxShadow: '0 4px 16px rgba(0, 128, 67, 0.4)',
+                  }}
+                >
+                  {'\u2713'} {t('feed.resolved')}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      ))}
-
-      {zoneATasks.map((task) => (
-        <TaskCard
-          key={task.task_id}
-          task={task}
-          bucket={getBucket(task)}
-          onAction={onAction}
-          onCardClick={onCardClick}
-        />
-      ))}
+          ) : (
+            <TaskCard
+              key={task.task_id}
+              task={task}
+              bucket={getBucket(task)}
+              onAction={onAction}
+              onCardClick={onCardClick}
+            />
+          )
+        );
+      })()}
 
       {/* Zone B: Available */}
       <div

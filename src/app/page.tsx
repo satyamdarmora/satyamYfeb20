@@ -75,6 +75,22 @@ export default function HomePage() {
   const [assignPickerOpen, setAssignPickerOpen] = useState(false);
   const [assignTaskId, setAssignTaskId] = useState<string | null>(null);
 
+  // Post-action banner: shows "what happened + what's next" after assign/claim/decline/resolve
+  const [actionBanner, setActionBanner] = useState<{
+    taskId: string;
+    taskType: string;
+    area: string;
+    assignee: string;
+    nextStep: string;
+    variant: 'success' | 'declined' | 'resolved';
+  } | null>(null);
+  const actionBannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showActionBanner = useCallback((info: typeof actionBanner) => {
+    if (actionBannerTimer.current) clearTimeout(actionBannerTimer.current);
+    setActionBanner(info);
+    actionBannerTimer.current = setTimeout(() => setActionBanner(null), 5000);
+  }, []);
+
   useEffect(() => {
     setTasks(getAllTasks());
     setAssurance(getAssuranceState());
@@ -240,12 +256,28 @@ export default function HomePage() {
         ],
       });
 
-      showConfirmation(`${taskId} assigned to ${tech.name}.`);
+      // Show contextual banner with what happened + next step
+      const nextStepMsg =
+        task.task_type === 'INSTALL'
+          ? `${tech.name} will complete the installation. Track progress in the task card below.`
+          : task.task_type === 'RESTORE'
+          ? `${tech.name} is on it. You'll be notified once connectivity is restored.`
+          : `${tech.name} will handle pickup. Track return status in the task card.`;
+
+      showActionBanner({
+        taskId,
+        taskType: task.task_type,
+        area: task.customer_area || '',
+        assignee: tech.name,
+        nextStep: nextStepMsg,
+        variant: 'success',
+      });
+
       // Go back to home after assigning
       setSelectedTaskId(null);
       refreshTasks();
     },
-    [refreshTasks, showConfirmation]
+    [refreshTasks, showActionBanner]
   );
 
   const handleAction = useCallback(
@@ -319,9 +351,17 @@ export default function HomePage() {
               newEvent('DECLINED', `CSP declined this offer. Reason: ${reason}`),
             ],
           });
-          showConfirmation(`${taskId} declined.`);
           setSelectedTaskId(null);
-          break;
+          refreshTasks();
+          showActionBanner({
+            taskId,
+            taskType: task.task_type,
+            area: task.customer_area || '',
+            assignee: '',
+            nextStep: `Reason: ${reason}. This task will be offered to another CSP in your area.`,
+            variant: 'declined',
+          });
+          return;
         }
 
         case 'ACCEPT': {
@@ -369,8 +409,19 @@ export default function HomePage() {
               newEvent('RESOLVED', 'Task marked as resolved by CSP.'),
             ],
           });
-          showConfirmation(`${taskId} marked as resolved.`);
-          break;
+          setSelectedTaskId(null);
+          refreshTasks();
+          showActionBanner({
+            taskId,
+            taskType: task.task_type,
+            area: task.customer_area || '',
+            assignee: '',
+            nextStep: task.task_type === 'RESTORE'
+              ? 'Connectivity restored. This will reflect in your SLA compliance.'
+              : 'Task completed successfully.',
+            variant: 'resolved',
+          });
+          return;
         }
 
         case 'RESOLVE_BLOCKED': {
@@ -631,6 +682,72 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* Post-action banner — fixed position so always visible */}
+      {actionBanner && (() => {
+        const isDeclined = actionBanner.variant === 'declined';
+        const isResolved = actionBanner.variant === 'resolved';
+        const accentColor = isDeclined ? 'var(--warning)' : 'var(--positive)';
+        const bgColor = isDeclined ? 'rgba(255, 128, 0, 0.08)' : 'rgba(0, 128, 67, 0.08)';
+        const borderColor = isDeclined ? 'rgba(255, 128, 0, 0.25)' : 'rgba(0, 128, 67, 0.25)';
+        const icon = isDeclined ? '\u2715' : '\u2713';
+        const title = isDeclined
+          ? 'Request Declined'
+          : isResolved
+          ? 'Task Resolved'
+          : actionBanner.taskType === 'INSTALL'
+          ? 'Connection Accepted'
+          : actionBanner.taskType === 'RESTORE'
+          ? 'Restore Assigned'
+          : 'Task Assigned';
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 20,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 1500,
+              width: 'calc(100% - 32px)',
+              maxWidth: 468,
+              padding: '16px',
+              background: bgColor,
+              backdropFilter: 'blur(12px)',
+              border: `1px solid ${borderColor}`,
+              borderRadius: 14,
+              animation: 'sheetSlideUp 0.3s ease',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: '50%',
+                background: accentColor, display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, color: '#fff', fontWeight: 700, flexShrink: 0,
+              }}>{icon}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: accentColor }}>{title}</div>
+              </div>
+              <button
+                onClick={() => setActionBanner(null)}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontSize: 18, color: 'var(--text-muted)', padding: 4, lineHeight: 1,
+                }}
+              >{'\u2715'}</button>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 4, fontWeight: 500 }}>
+              {actionBanner.taskId} {actionBanner.area ? `\u2022 ${actionBanner.area}` : ''}
+              {actionBanner.assignee ? ` \u2192 ${actionBanner.assignee}` : ''}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {actionBanner.nextStep}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Task Feed */}
       <TaskFeed
