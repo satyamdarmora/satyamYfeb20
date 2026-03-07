@@ -60,8 +60,8 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            buildConfigField("String", "API_BASE_URL", "\"https://api.staging.wiom.in/csp/v1/\"")
-            buildConfigField("String", "BACKEND_BASE_URL", "\"https://api.staging.wiom.in/\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.3:3456\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.1.3:4000\"")
             buildConfigField("boolean", "USE_MOCK", "false")
             buildConfigField("String", "SENTRY_DSN", "\"\"")
         }

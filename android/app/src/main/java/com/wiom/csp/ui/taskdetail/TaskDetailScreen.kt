@@ -1,8 +1,11 @@
 package com.wiom.csp.ui.taskdetail
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -162,6 +165,18 @@ fun TaskDetailScreen(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) capturedPhotoUri = tempPhotoUri
+    }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) cameraLauncher.launch(tempPhotoUri)
+    }
+    val launchCamera: () -> Unit = {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            cameraLauncher.launch(tempPhotoUri)
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
     }
 
     val isOffer = task.state == "OFFERED"
@@ -424,7 +439,7 @@ fun TaskDetailScreen(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(colors.bgCard)
-                            .clickable { cameraLauncher.launch(tempPhotoUri) }
+                            .clickable { launchCamera() }
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
                         Text(

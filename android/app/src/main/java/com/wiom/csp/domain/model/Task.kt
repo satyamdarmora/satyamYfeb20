@@ -2,6 +2,7 @@ package com.wiom.csp.domain.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 @Serializable
 data class TimelineEvent(
@@ -39,7 +40,7 @@ data class Task(
     @SerialName("netbox_id") val netboxId: String? = null,
     @SerialName("customer_area") val customerArea: String? = null,
     @SerialName("blocked_reason") val blockedReason: String? = null,
-    @SerialName("proof_bundle") val proofBundle: Map<String, String> = emptyMap(),
+    @SerialName("proof_bundle") val proofBundle: JsonObject = JsonObject(emptyMap()),
     @SerialName("event_log") val eventLog: List<TimelineEvent> = emptyList()
 ) {
     companion object {

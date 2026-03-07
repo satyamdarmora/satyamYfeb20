@@ -17,6 +17,21 @@ data class TaskUpdateResponse(
     val task: com.wiom.csp.domain.model.Task? = null
 )
 
+@Serializable
+data class TaskCreateRequest(
+    val task: TaskCreateBody
+)
+
+@Serializable
+data class TaskCreateBody(
+    @SerialName("task_type") val taskType: String,
+    val priority: String = "NORMAL",
+    @SerialName("created_by") val createdBy: String = "MANUAL_EXCEPTION",
+    @SerialName("netbox_id") val netboxId: String? = null,
+    @SerialName("customer_area") val customerArea: String? = null,
+    @SerialName("connection_id") val connectionId: String? = null,
+)
+
 // ---- Assurance update request ----
 
 @Serializable

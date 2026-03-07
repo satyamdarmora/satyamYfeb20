@@ -50,7 +50,9 @@ enum class EscalationFlag {
     INSTALL_OVERDUE,
     PICKUP_OVERDUE,
     MANUAL_EXCEPTION,
-    ASSIGNMENT_UNACCEPTED
+    ASSIGNMENT_UNACCEPTED,
+    ACTIVATION_TIMEOUT,
+    SLA_BREACH
 }
 
 @Serializable
@@ -111,6 +113,16 @@ enum class NotificationType {
     CAPABILITY_RESET,
     WALLET_FROZEN,
     NETBOX_RECOVERY_DEDUCTION
+}
+
+@Serializable
+enum class NetBoxUnitStatus {
+    WITH_CUSTOMER, EXPIRED_WITH_CUSTOMER, COLLECTED_IN_TRANSIT, IN_WAREHOUSE, LOST, DAMAGED
+}
+
+@Serializable
+enum class DepositTransactionType {
+    DEPOSIT_COLLECTED, LOSS_DEDUCTION, DAMAGE_DEDUCTION, DEPOSIT_REFUND
 }
 
 typealias QueueBucket = Int // 0..6

@@ -32,15 +32,12 @@ fun WiomNavGraph(userPreferences: UserPreferences, deepLinkIntent: Intent? = nul
             viewModel = loginViewModel,
             onLoginSuccess = { /* State will recompose via isLoggedIn flow */ }
         )
-    } else if (!isProfileComplete) {
-        val onboardingViewModel: OnboardingViewModel = hiltViewModel()
-        com.wiom.csp.ui.theme.WiomCspTheme {
-            OnboardingScreen(
-                viewModel = onboardingViewModel,
-                onRegistrationComplete = { /* State will recompose via isProfileComplete flow */ }
-            )
-        }
     } else {
+        // TODO: Re-enable onboarding gate when onboarding branch is merged
+        // } else if (!isProfileComplete) {
+        //     val onboardingViewModel: OnboardingViewModel = hiltViewModel()
+        //     OnboardingScreen(viewModel = onboardingViewModel, ...)
+        // } else {
         val viewModel: HomeViewModel = hiltViewModel()
         val state by viewModel.state.collectAsState()
 

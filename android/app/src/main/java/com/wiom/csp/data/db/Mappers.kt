@@ -3,6 +3,7 @@ package com.wiom.csp.data.db
 import com.wiom.csp.domain.model.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 
 private val json = Json {
     ignoreUnknownKeys = true
@@ -66,6 +67,6 @@ fun TaskEntity.toDomain(): Task = Task(
     netboxId = netboxId,
     customerArea = customerArea,
     blockedReason = blockedReason,
-    proofBundle = try { json.decodeFromString(proofBundleJson) } catch (_: Exception) { emptyMap() },
+    proofBundle = try { json.decodeFromString(proofBundleJson) } catch (_: Exception) { JsonObject(emptyMap()) },
     eventLog = try { json.decodeFromString(eventLogJson) } catch (_: Exception) { emptyList() },
 )

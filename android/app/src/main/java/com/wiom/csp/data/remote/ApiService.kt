@@ -3,6 +3,7 @@ package com.wiom.csp.data.remote
 import com.wiom.csp.data.remote.dto.*
 import com.wiom.csp.domain.model.AppNotification
 import com.wiom.csp.domain.model.AssuranceState
+import com.wiom.csp.domain.model.DepositResponse
 import com.wiom.csp.domain.model.SupportCase
 import com.wiom.csp.domain.model.Task
 import com.wiom.csp.domain.model.Technician
@@ -18,6 +19,9 @@ interface ApiService {
 
     @POST("/api/tasks")
     suspend fun updateTask(@Body request: TaskUpdateRequest): TaskUpdateResponse
+
+    @POST("/api/tasks")
+    suspend fun createTask(@Body request: TaskCreateRequest): TaskUpdateResponse
 
     // ---- Assurance ----
     @GET("/api/assurance")
@@ -68,6 +72,9 @@ interface ApiService {
     suspend fun getSLA(): SLAOverallState
 
     // ---- Deposit ----
+    @GET("/api/deposit")
+    suspend fun getDeposit(): DepositResponse
+
     @POST("/api/deposit")
     suspend fun postDeposit(@Body request: DepositActionRequest): DepositActionResponse
 

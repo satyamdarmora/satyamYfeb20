@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wiom.csp.data.repository.NotificationRepository
 import com.wiom.csp.data.repository.SLARepository
 import com.wiom.csp.data.repository.TaskRepository
 import com.wiom.csp.data.repository.WalletRepository
@@ -59,7 +60,8 @@ private const val DEPOSIT_PER_UNIT = 1500
 class NetBoxViewModel @Inject constructor(
     private val taskRepo: TaskRepository,
     private val walletRepo: WalletRepository,
-    private val slaRepo: SLARepository
+    private val slaRepo: SLARepository,
+    private val notifRepo: NotificationRepository
 ) : ViewModel() {
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks
@@ -70,6 +72,12 @@ class NetBoxViewModel @Inject constructor(
     private val _processing = MutableStateFlow(false)
     val processing: StateFlow<Boolean> = _processing
 
+    private val _deposit = MutableStateFlow<DepositResponse?>(null)
+    val deposit: StateFlow<DepositResponse?> = _deposit
+
+    private val _depositLoading = MutableStateFlow(false)
+    val depositLoading: StateFlow<Boolean> = _depositLoading
+
     init { load() }
 
     fun load() {
@@ -78,6 +86,29 @@ class NetBoxViewModel @Inject constructor(
                 _tasks.value = all.filter { it.taskType == TaskType.NETBOX && !it.isTerminal }
             }
             walletRepo.getWallet().onSuccess { _walletBalance.value = it.balance }
+            _depositLoading.value = true
+            slaRepo.getDeposit().onSuccess { _deposit.value = it }
+            _depositLoading.value = false
+        }
+    }
+
+    private val _returnRequested = MutableStateFlow<Set<String>>(emptySet())
+    val returnRequested: StateFlow<Set<String>> = _returnRequested
+
+    fun requestReturn(netboxId: String, customerArea: String?, connectionId: String?) {
+        viewModelScope.launch {
+            // Post notification to admin/system for collection — not a CSP task
+            notifRepo.post(
+                com.wiom.csp.data.remote.dto.NotificationPostRequest(
+                    id = "RET-${System.currentTimeMillis()}",
+                    type = "NETBOX_RETURN",
+                    title = "NetBox Return Request",
+                    message = "CSP requests pickup of $netboxId${customerArea?.let { " ($it)" } ?: ""}",
+                    taskId = null,
+                    timestamp = java.time.Instant.now().toString()
+                )
+            )
+            _returnRequested.value = _returnRequested.value + netboxId
         }
     }
 
@@ -155,7 +186,11 @@ fun NetBoxHubScreen(
     val tasks by viewModel.tasks.collectAsState()
     val walletBalance by viewModel.walletBalance.collectAsState()
     val isProcessing by viewModel.processing.collectAsState()
+    val depositData by viewModel.deposit.collectAsState()
+    val depositLoading by viewModel.depositLoading.collectAsState()
+    val returnRequested by viewModel.returnRequested.collectAsState()
     var step by remember { mutableStateOf("hub") } // hub, create_order, pay_deposit, confirm_order, order_receipt, order_detail
+    var unitFilter by remember { mutableStateOf<String?>(null) } // null=hidden, "active","returned","lost","all"
     var orders by remember { mutableStateOf(MOCK_ORDERS) }
     var selectedOrder by remember { mutableStateOf<NetBoxOrder?>(null) }
     var quantity by remember { mutableStateOf("") }
@@ -222,140 +257,333 @@ fun NetBoxHubScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(16.dp)
                     ) {
-                        // Active Tasks section
-                        Text(
-                            "ACTIVE TASKS",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.textSecondary,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(Modifier.height(12.dp))
-
-                        if (tasksByState.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("No active NetBox tasks", fontSize = 13.sp, color = colors.textMuted)
+                        val dep = depositData
+                        if (dep != null) {
+                            val ledger = dep.ledger
+                            val rateCard = dep.rateCard
+                            val allUnits = dep.units
+                            val carryFeeUnits = allUnits.filter { it.carryFeeEligible }
+                            val warningUnits = allUnits.filter {
+                                it.daysPastExpiry > 0 && !it.carryFeeEligible &&
+                                it.status != NetBoxUnitStatus.IN_WAREHOUSE && it.status != NetBoxUnitStatus.LOST
                             }
-                        }
 
-                        tasksByState.forEach { (state, stateTasks) ->
-                            val stateColor = getStateColor(state, colors)
-                            // State header with dot
+                            // ── Count tiles (tappable to show unit details) ──
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.padding(bottom = 6.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(stateColor)
-                                )
-                                Text(
-                                    "${state.replace("_", " ")} (${stateTasks.size})",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = stateColor
-                                )
+                                data class Tile(val label: String, val value: String, val color: Color, val filter: String)
+                                listOf(
+                                    Tile("Active", "${ledger.totalActive}", colors.positive, "active"),
+                                    Tile("Returned", "${ledger.totalReturned}", colors.textPrimary, "returned"),
+                                    Tile("Lost", "${ledger.totalLost}", colors.negative, "lost"),
+                                    Tile("Total", "${ledger.totalIssued}", colors.textSecondary, "all"),
+                                ).forEach { tile ->
+                                    val selected = unitFilter == tile.filter
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(if (selected) colors.brandPrimary.copy(alpha = 0.12f) else colors.bgCard)
+                                            .then(if (selected) Modifier.border(1.dp, colors.brandPrimary, RoundedCornerShape(10.dp)) else Modifier)
+                                            .clickable { unitFilter = if (selected) null else tile.filter }
+                                            .padding(horizontal = 10.dp, vertical = 12.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(tile.value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = tile.color)
+                                        Text(tile.label, fontSize = 11.sp, color = colors.textMuted)
+                                    }
+                                }
                             }
 
-                            // Task cards for this state
-                            stateTasks.forEach { task ->
+                            // ── Expanded unit list when tile tapped ──
+                            if (unitFilter != null) {
+                                val filtered = when (unitFilter) {
+                                    "active" -> allUnits.filter { it.status == NetBoxUnitStatus.WITH_CUSTOMER || it.status == NetBoxUnitStatus.EXPIRED_WITH_CUSTOMER }
+                                    "returned" -> allUnits.filter { it.status == NetBoxUnitStatus.IN_WAREHOUSE }
+                                    "lost" -> allUnits.filter { it.status == NetBoxUnitStatus.LOST || it.status == NetBoxUnitStatus.DAMAGED }
+                                    else -> allUnits
+                                }
+                                Spacer(Modifier.height(8.dp))
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(bottom = 6.dp)
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(10.dp))
                                         .background(colors.bgCard)
-                                        .drawBehind {
-                                            drawLine(stateColor, Offset(0f, 0f), Offset(0f, size.height), 3.dp.toPx())
-                                        }
-                                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                                        .padding(12.dp)
                                 ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(task.taskId, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
-                                        Text(task.netboxId ?: "", fontSize = 12.sp, color = colors.textSecondary)
+                                    if (filtered.isEmpty()) {
+                                        Text("No units", fontSize = 12.sp, color = colors.textMuted, modifier = Modifier.padding(8.dp))
                                     }
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        buildString {
-                                            append(task.customerArea ?: "")
-                                            if (task.assignedTo != null) append(" -- ${task.assignedTo}")
-                                        },
-                                        fontSize = 12.sp,
-                                        color = colors.textSecondary
-                                    )
+                                    filtered.forEachIndexed { i, unit ->
+                                        val statusColor = when (unit.status) {
+                                            NetBoxUnitStatus.WITH_CUSTOMER -> colors.positive
+                                            NetBoxUnitStatus.EXPIRED_WITH_CUSTOMER -> colors.warning
+                                            NetBoxUnitStatus.COLLECTED_IN_TRANSIT -> colors.brandPrimary
+                                            NetBoxUnitStatus.IN_WAREHOUSE -> colors.textSecondary
+                                            NetBoxUnitStatus.LOST -> colors.negative
+                                            NetBoxUnitStatus.DAMAGED -> colors.negative
+                                        }
+                                        val statusLabel = when (unit.status) {
+                                            NetBoxUnitStatus.WITH_CUSTOMER -> "Active"
+                                            NetBoxUnitStatus.EXPIRED_WITH_CUSTOMER -> "Expired"
+                                            NetBoxUnitStatus.COLLECTED_IN_TRANSIT -> "In Transit"
+                                            NetBoxUnitStatus.IN_WAREHOUSE -> "Returned"
+                                            NetBoxUnitStatus.LOST -> "Lost"
+                                            NetBoxUnitStatus.DAMAGED -> "Damaged"
+                                        }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(unit.netboxId, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
+                                                Text(
+                                                    listOfNotNull(unit.connectionId, unit.customerArea).joinToString(" · "),
+                                                    fontSize = 11.sp, color = colors.textMuted
+                                                )
+                                            }
+                                            Box(
+                                                modifier = Modifier.clip(RoundedCornerShape(4.dp))
+                                                    .background(statusColor.copy(alpha = 0.12f))
+                                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                                            ) {
+                                                Text(statusLabel, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = statusColor)
+                                            }
+                                        }
+                                        if (i < filtered.size - 1) {
+                                            Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
+                                        }
+                                    }
                                 }
                             }
-                            Spacer(Modifier.height(10.dp))
+
+                            // ── Carry fee alert with return action ──
+                            if (carryFeeUnits.isNotEmpty() && rateCard != null) {
+                                Spacer(Modifier.height(10.dp))
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(colors.warningSubtle)
+                                        .border(1.dp, colors.warning.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                        .padding(14.dp)
+                                ) {
+                                    Text("Carry Fee Active", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.warning)
+                                    Text(
+                                        "${formatCurrency(rateCard.carryFeePerDay)}/day per unit · deducted from wallet",
+                                        fontSize = 11.sp, color = colors.textSecondary
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    carryFeeUnits.forEach { unit ->
+                                        val requested = unit.netboxId in returnRequested
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text("${unit.netboxId} · ${unit.customerArea ?: ""}", fontSize = 12.sp, color = colors.textPrimary)
+                                                Text("${unit.daysPastExpiry}d overdue · ${formatCurrency(unit.carryFeeAccrued)} accrued", fontSize = 11.sp, color = colors.textMuted)
+                                            }
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(if (requested) colors.positive.copy(alpha = 0.15f) else colors.brandPrimary)
+                                                    .then(if (!requested) Modifier.clickable { viewModel.requestReturn(unit.netboxId, unit.customerArea, unit.connectionId) } else Modifier)
+                                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                                            ) {
+                                                Text(
+                                                    if (requested) "Requested" else "Return",
+                                                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                                                    color = if (requested) colors.positive else Color.White
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // ── Expiry warning with return action ──
+                            if (warningUnits.isNotEmpty() && rateCard != null) {
+                                Spacer(Modifier.height(8.dp))
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(colors.bgCard)
+                                        .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
+                                        .padding(14.dp)
+                                ) {
+                                    warningUnits.forEach { unit ->
+                                        val requested = unit.netboxId in returnRequested
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text("${unit.netboxId} · ${unit.customerArea ?: ""}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                                                Text(
+                                                    "${unit.daysPastExpiry}d past expiry · fee in ${rateCard.carryFeeGraceDays - unit.daysPastExpiry}d",
+                                                    fontSize = 11.sp, color = colors.warning
+                                                )
+                                            }
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(if (requested) colors.positive.copy(alpha = 0.15f) else colors.brandPrimary)
+                                                    .then(if (!requested) Modifier.clickable { viewModel.requestReturn(unit.netboxId, unit.customerArea, unit.connectionId) } else Modifier)
+                                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                                            ) {
+                                                Text(
+                                                    if (requested) "Requested" else "Return",
+                                                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                                                    color = if (requested) colors.positive else Color.White
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(Modifier.height(20.dp))
+                        } else if (depositLoading) {
+                            Box(Modifier.fillMaxWidth().padding(vertical = 20.dp), contentAlignment = Alignment.Center) {
+                                Text("Loading...", fontSize = 13.sp, color = colors.textMuted)
+                            }
                         }
 
-                        // Orders section
-                        Spacer(Modifier.height(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(colors.borderSubtle)
-                        )
-                        Spacer(Modifier.height(16.dp))
-
-                        Text(
-                            "NETBOX ORDERS",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.textSecondary,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(Modifier.height(12.dp))
-
-                        orders.forEach { order ->
-                            val statusColor = when (order.status) {
-                                "DELIVERED" -> colors.positive
-                                "DISPATCHED" -> colors.brandPrimary
-                                else -> colors.warning
-                            }
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(colors.bgCard)
-                                    .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
-                                    .clickable {
-                                        selectedOrder = order
-                                        step = "order_detail"
+                        // ── Orders (CSP wants to track dispatched devices) ──
+                        if (orders.isNotEmpty()) {
+                            Text("ORDERS", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textSecondary, letterSpacing = 0.5.sp)
+                            Spacer(Modifier.height(8.dp))
+                            orders.forEach { order ->
+                                val statusColor = when (order.status) {
+                                    "DELIVERED" -> colors.positive
+                                    "DISPATCHED" -> colors.brandPrimary
+                                    else -> colors.warning
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 6.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(colors.bgCard)
+                                        .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
+                                        .clickable { selectedOrder = order; step = "order_detail" }
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(order.id, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
+                                        Text("Qty: ${order.quantity} · ${order.deliveryArea} · ${formatDate(order.createdAt)}", fontSize = 11.sp, color = colors.textMuted)
                                     }
-                                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                                    Box(
+                                        modifier = Modifier.clip(RoundedCornerShape(4.dp))
+                                            .background(statusColor.copy(alpha = 0.1f))
+                                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    ) {
+                                        Text(order.status, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = statusColor)
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(20.dp))
+                        }
+
+                        // ── Pending tasks ──
+                        if (tasksByState.isNotEmpty()) {
+                            Text("PENDING TASKS", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textSecondary, letterSpacing = 0.5.sp)
+                            Spacer(Modifier.height(8.dp))
+                            tasksByState.forEach { (state, stateTasks) ->
+                                val stateColor = getStateColor(state, colors)
+                                stateTasks.forEach { task ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 6.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(colors.bgCard)
+                                            .drawBehind { drawLine(stateColor, Offset(0f, 0f), Offset(0f, size.height), 3.dp.toPx()) }
+                                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(task.taskId, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
+                                            Text(listOfNotNull(task.customerArea, task.assignedTo).joinToString(" · "), fontSize = 11.sp, color = colors.textMuted)
+                                        }
+                                        Box(
+                                            modifier = Modifier.clip(RoundedCornerShape(4.dp))
+                                                .background(stateColor.copy(alpha = 0.12f))
+                                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                                        ) {
+                                            Text(state.replace("_", " "), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = stateColor)
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(20.dp))
+                        }
+
+                        // ── Deposit Balance & History (combined at bottom) ──
+                        if (dep != null) {
+                            Text("DEPOSIT", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textSecondary, letterSpacing = 0.5.sp)
+                            Spacer(Modifier.height(8.dp))
+                            Column(
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.bgCard)
+                                    .padding(horizontal = 14.dp, vertical = 14.dp)
                             ) {
+                                // Balance summary
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(order.id, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(statusColor.copy(alpha = 0.1f))
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(order.status, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = statusColor)
+                                    Column {
+                                        Text("Deposit Balance", fontSize = 12.sp, color = colors.textSecondary)
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(formatCurrency(dep.ledger.depositBalance), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("Exit Refund", fontSize = 12.sp, color = colors.textSecondary)
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(formatCurrency(dep.ledger.exitRefundEstimate), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.money)
                                     }
                                 }
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    "Qty: ${order.quantity} \u00B7 ${order.deliveryArea} \u00B7 ${formatDate(order.createdAt)}",
-                                    fontSize = 12.sp,
-                                    color = colors.textSecondary
-                                )
+
+                                // Transaction history
+                                if (dep.ledger.transactions.isNotEmpty()) {
+                                    Spacer(Modifier.height(14.dp))
+                                    Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
+                                    Spacer(Modifier.height(10.dp))
+                                    Text("TRANSACTIONS", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.textMuted, letterSpacing = 0.3.sp)
+                                    Spacer(Modifier.height(6.dp))
+                                    dep.ledger.transactions.forEachIndexed { i, txn ->
+                                        val isCredit = txn.amount > 0
+                                        val txnColor = if (isCredit) colors.positive else colors.negative
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(txn.description, fontSize = 12.sp, color = colors.textPrimary)
+                                                Text(formatDate(txn.date), fontSize = 11.sp, color = colors.textMuted)
+                                            }
+                                            Text(
+                                                "${if (isCredit) "+" else ""}${formatCurrency(kotlin.math.abs(txn.amount))}",
+                                                fontSize = 14.sp, fontWeight = FontWeight.Bold, color = txnColor
+                                            )
+                                        }
+                                        if (i < dep.ledger.transactions.size - 1) {
+                                            Box(Modifier.fillMaxWidth().height(1.dp).background(colors.borderSubtle))
+                                        }
+                                    }
+                                }
                             }
                         }
 

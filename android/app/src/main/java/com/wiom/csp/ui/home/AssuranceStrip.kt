@@ -57,7 +57,7 @@ fun AssuranceStrip(
             .fillMaxWidth()
             .background(colors.stripBg)
             .padding(horizontal = 20.dp, vertical = 16.dp)
-            .height(IntrinsicSize.Min),
+            .height(IntrinsicSize.Max),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // Column 1: Active Base card
@@ -100,7 +100,7 @@ fun AssuranceStrip(
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Text(
-                text = "CYCLE EARNINGS",
+                text = "EARNINGS",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 color = colors.textMuted,
@@ -116,21 +116,22 @@ fun AssuranceStrip(
             )
         }
 
-        // Column 3: SLA + Exposure stacked with colored dots
+        // Column 3: SLA + Exposure stacked — fixed width so columns 1 & 2 keep their space
         Column(
-            modifier = Modifier.fillMaxHeight(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.fillMaxHeight().width(110.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // SLA indicator
             Row(
                 modifier = Modifier
                     .weight(1f)
+                    .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(colors.bgCard)
                     .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
                     .clickable { if (onOpenSLA != null) onOpenSLA() else onDrillDown("sla") }
                     .semantics { contentDescription = "SLA standing: ${assuranceState.slaStanding.name}. Tap for details." }
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -146,20 +147,23 @@ fun AssuranceStrip(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textSecondary,
+                    modifier = Modifier.weight(1f),
                     letterSpacing = 0.3.sp
                 )
+                Text("\u203A", fontSize = 14.sp, color = colors.textMuted)
             }
 
             // Exposure indicator
             Row(
                 modifier = Modifier
                     .weight(1f)
+                    .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(colors.bgCard)
                     .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
                     .clickable { onDrillDown("exposure") }
                     .semantics { contentDescription = "Exposure: ${assuranceState.exposureState.name}. Tap for details." }
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -175,8 +179,10 @@ fun AssuranceStrip(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textSecondary,
+                    modifier = Modifier.weight(1f),
                     letterSpacing = 0.3.sp
                 )
+                Text("\u203A", fontSize = 14.sp, color = colors.textMuted)
             }
         }
     }

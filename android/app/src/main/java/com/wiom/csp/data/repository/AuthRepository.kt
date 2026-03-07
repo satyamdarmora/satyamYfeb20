@@ -25,17 +25,22 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun verifyOtp(otp: String, mobile: String, tmpToken: String): Result<AuthResult> = runCatching {
-        val response = authApi.verifyOtp(
+        val httpResponse = authApi.verifyOtp(
             otp = otp,
             username = mobile,
             guid = tmpToken
         )
-        if (response.status != 0 || response.token == null) {
-            error(response.msg ?: "Invalid OTP. Please check and try again.")
+        val body = httpResponse.body()
+        if (body == null || body.status != 0) {
+            error(body?.msg ?: "Invalid OTP. Please check and try again.")
         }
+        // Token comes in JWT_TOKEN response header, not in JSON body
+        val token = httpResponse.headers()["JWT_TOKEN"]
+            ?: body.token
+            ?: error("No authentication token received")
         AuthResult(
-            token = response.token,
-            userData = response.data ?: JsonObject(emptyMap())
+            token = token,
+            userData = body.data ?: JsonObject(emptyMap())
         )
     }
 }

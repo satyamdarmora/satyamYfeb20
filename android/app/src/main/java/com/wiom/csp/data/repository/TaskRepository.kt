@@ -4,6 +4,8 @@ import com.wiom.csp.data.db.TaskDao
 import com.wiom.csp.data.db.toDomain
 import com.wiom.csp.data.db.toEntity
 import com.wiom.csp.data.remote.ApiService
+import com.wiom.csp.data.remote.dto.TaskCreateBody
+import com.wiom.csp.data.remote.dto.TaskCreateRequest
 import com.wiom.csp.data.remote.dto.TaskUpdateRequest
 import com.wiom.csp.domain.model.Task
 import kotlinx.serialization.json.JsonElement
@@ -37,6 +39,14 @@ class TaskRepository @Inject constructor(
     suspend fun updateTask(taskId: String, updates: Map<String, JsonElement>): Result<Task?> = runCatching {
         val response = api.updateTask(TaskUpdateRequest(taskId, updates))
         // Cache updated task if returned
+        response.task?.let { task ->
+            runCatching { taskDao.insertAll(listOf(task.toEntity())) }
+        }
+        response.task
+    }
+
+    suspend fun createTask(body: TaskCreateBody): Result<Task?> = runCatching {
+        val response = api.createTask(TaskCreateRequest(task = body))
         response.task?.let { task ->
             runCatching { taskDao.insertAll(listOf(task.toEntity())) }
         }

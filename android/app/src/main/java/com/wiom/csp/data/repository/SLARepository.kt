@@ -2,6 +2,7 @@ package com.wiom.csp.data.repository
 
 import com.wiom.csp.data.remote.ApiService
 import com.wiom.csp.data.remote.dto.DepositActionRequest
+import com.wiom.csp.domain.model.DepositResponse
 import com.wiom.csp.domain.model.SLAOverallState
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,6 +13,10 @@ class SLARepository @Inject constructor(
 ) {
     suspend fun getSLA(): Result<SLAOverallState> = runCatching {
         api.getSLA()
+    }
+
+    suspend fun getDeposit(): Result<DepositResponse> = runCatching {
+        api.getDeposit()
     }
 
     suspend fun collectDeposit(amount: Int, description: String): Result<Unit> = runCatching {

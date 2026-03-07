@@ -3,6 +3,7 @@ package com.wiom.csp.data.remote
 import com.wiom.csp.data.remote.dto.SendOtpRequest
 import com.wiom.csp.data.remote.dto.SendOtpResponse
 import com.wiom.csp.data.remote.dto.VerifyOtpResponse
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -20,5 +21,5 @@ interface AuthApiService {
         @Query("username") username: String,
         @Query("guid") guid: String,
         @Query("fcmToken") fcmToken: String = "null"
-    ): VerifyOtpResponse
+    ): Response<VerifyOtpResponse>
 }
