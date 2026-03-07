@@ -25,7 +25,12 @@ export async function POST(req: NextRequest) {
       await backendPut('/v1/wallet/unfreeze', {}, auth);
     }
 
-    // Handle new transaction
+    // Handle balance override (admin direct set)
+    if (body.balance !== undefined && body.new_transaction === undefined) {
+      await backendPut('/v1/wallet/balance', { balance: body.balance }, auth);
+    }
+
+    // Handle new transaction (backend adjusts balance from transaction amount)
     if (body.new_transaction) {
       const t = body.new_transaction;
       await backendPost('/v1/wallet/transaction', {

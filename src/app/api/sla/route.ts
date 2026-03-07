@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { backendGet, backendPut } from '@/lib/backend';
+import { backendGet, backendPut, transformAssurance } from '@/lib/backend';
+
+const SLA_STANDING_DISPLAY: Record<string, string> = {
+  COMPLIANT: 'Compliant',
+  AT_RISK: 'At Risk',
+  NON_COMPLIANT: 'Non-Compliant',
+};
 
 export async function GET() {
   try {
@@ -9,10 +15,22 @@ export async function GET() {
     const data = await backendGet('/v1/sla', auth);
     return NextResponse.json(data);
   } catch {
+    // Backend unavailable — build fallback from assurance state if possible
+    let overallStanding = 'Compliant';
+    try {
+      const h = await headers();
+      const auth = h.get('authorization');
+      const assurance = await backendGet('/v1/assurance', auth);
+      if (assurance?.slaStanding) {
+        overallStanding = SLA_STANDING_DISPLAY[assurance.slaStanding] || assurance.slaStanding;
+      }
+    } catch {
+      // Assurance also unavailable — use default Compliant
+    }
     const now = new Date().toISOString();
     const nextEval = new Date(Date.now() + 18 * 86400000).toISOString();
     return NextResponse.json({
-      overall_standing: 'Compliant',
+      overall_standing: overallStanding,
       domains: [
         {
           id: 'installation', name: 'Installation', purpose: 'Timely completion of new installs',

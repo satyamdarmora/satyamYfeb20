@@ -8,6 +8,12 @@ const STANDING_MAP: Record<string, string> = {
   'Non-Compliant': 'NON_COMPLIANT',
 };
 
+const EXPOSURE_MAP: Record<string, string> = {
+  'ELIGIBLE': 'ELIGIBLE',
+  'LIMITED': 'LIMITED',
+  'INELIGIBLE': 'INELIGIBLE',
+};
+
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization');
   try {
@@ -23,7 +29,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   try {
-    // Handle SLA standing update
+    // Handle SLA standing update (+ capability reset)
     if (body.sla_standing !== undefined || body.capability_reset_active !== undefined) {
       const standingPayload: Record<string, any> = {};
       if (body.sla_standing) {
@@ -41,6 +47,35 @@ export async function POST(req: NextRequest) {
         standingPayload.standing = current.slaStanding || 'COMPLIANT';
       }
       await backendPut('/v1/assurance/standing', standingPayload, auth);
+
+      // Sync SLA standing to /v1/sla so drill-down matches strip
+      if (body.sla_standing) {
+        try {
+          await backendPut('/v1/sla/standing', {
+            standing: STANDING_MAP[body.sla_standing] || body.sla_standing,
+          }, auth);
+        } catch {
+          // SLA endpoint may not support standalone standing update yet — non-fatal
+        }
+      }
+    }
+
+    // Handle active base direct set
+    if (body.active_base !== undefined) {
+      await backendPut('/v1/assurance/active-base', {
+        activeBase: body.active_base,
+      }, auth);
+    }
+
+    // Handle exposure state update
+    if (body.exposure_state !== undefined) {
+      const exposurePayload: Record<string, any> = {
+        exposureState: EXPOSURE_MAP[body.exposure_state] || body.exposure_state,
+      };
+      if (body.exposure_reason !== undefined) {
+        exposurePayload.exposureReason = body.exposure_reason;
+      }
+      await backendPut('/v1/assurance/exposure', exposurePayload, auth);
     }
 
     // Handle base change events
