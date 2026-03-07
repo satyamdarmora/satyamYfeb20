@@ -18,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import com.wiom.csp.ui.theme.WiomCspTheme
 
@@ -109,6 +111,7 @@ fun SecondaryMenuDrawer(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onNavigate(item.key) }
+                                .semantics { contentDescription = "${item.label}: ${item.description}" }
                                 .padding(horizontal = 20.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)

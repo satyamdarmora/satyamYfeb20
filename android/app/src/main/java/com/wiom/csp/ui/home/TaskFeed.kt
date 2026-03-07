@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,9 +24,11 @@ import androidx.compose.ui.unit.sp
 import com.wiom.csp.domain.model.Task
 import com.wiom.csp.domain.model.TaskType
 import com.wiom.csp.ui.common.FilterChipRow
+import com.wiom.csp.ui.common.TaskCardSkeleton
 import com.wiom.csp.ui.common.parseIso
 import com.wiom.csp.ui.theme.WiomCspTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskFeed(
     tasks: List<Task>,
@@ -32,6 +36,9 @@ fun TaskFeed(
     getBucket: (Task) -> Int,
     onAction: (String, String) -> Unit,
     onCardClick: (String) -> Unit,
+    isRefreshing: Boolean = false,
+    isLoading: Boolean = false,
+    onRefresh: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val colors = WiomCspTheme.colors
@@ -83,8 +90,13 @@ fun TaskFeed(
         fadingTasks.values.filter { it.state != "OFFERED" }
     }
 
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxWidth()
+    ) {
     LazyColumn(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 80.dp)
     ) {
         // Filter chips
@@ -243,7 +255,15 @@ fun TaskFeed(
                 onClick = { onCardClick(task.taskId) }
             )
         }
+
+        // Loading skeletons when initial load
+        if (isLoading && tasks.isEmpty()) {
+            items(3) {
+                TaskCardSkeleton()
+            }
+        }
     }
+    } // PullToRefreshBox
 }
 
 /** Fading resolved card with overlay badge — matches web fadeSlideOut animation */

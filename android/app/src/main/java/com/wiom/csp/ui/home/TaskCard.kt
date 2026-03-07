@@ -22,6 +22,8 @@ import com.wiom.csp.domain.model.*
 import com.wiom.csp.ui.common.formatCountdown
 import com.wiom.csp.ui.common.isOverdue
 import com.wiom.csp.ui.theme.WiomCspTheme
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun TaskCard(
@@ -50,6 +52,14 @@ fun TaskCard(
     val area = task.customerArea ?: "--"
     val techWorking = isInTechnicianHands(task)
 
+    val cardDescription = buildString {
+        append("${task.taskType.name} task $contextId")
+        if (task.priority == TaskPriority.HIGH) append(", high priority")
+        append(", state ${task.state}")
+        if (deadline != null) append(", ${deadline.text}")
+        if (cta != null) append(", action: ${cta.label}")
+    }
+
     AnimatedVisibility(
         visible = !isFading,
         exit = fadeOut() + slideOutHorizontally { it / 2 }
@@ -70,6 +80,7 @@ fun TaskCard(
                     )
                 }
                 .clickable { onClick() }
+                .semantics { contentDescription = cardDescription }
                 .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 20.dp)
         ) {
             Column {

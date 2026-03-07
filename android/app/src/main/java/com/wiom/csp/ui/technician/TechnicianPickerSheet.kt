@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import com.wiom.csp.domain.model.Technician
 import com.wiom.csp.domain.model.TechnicianBand
 import com.wiom.csp.ui.theme.WiomCspTheme
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 // Hard-coded technicians (same as seed data) -- in production these come from API
 private val seedTechnicians = listOf(
@@ -160,6 +162,9 @@ private fun TechnicianRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled) { onClick() }
+            .semantics {
+                contentDescription = "$name, $subtitle${if (!enabled) ", unavailable" else ""}"
+            }
             .padding(horizontal = 20.dp, vertical = 12.dp)
             .then(if (!enabled) Modifier else Modifier),
         verticalAlignment = Alignment.CenterVertically,

@@ -20,33 +20,69 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Default API base URL (overridden per flavor)
-        buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.173:3457\"")
-        buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.0.173:4000\"")
+        // Defaults (overridden per flavor)
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3457\"")
+        buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:4000\"")
+        buildConfigField("boolean", "USE_MOCK", "false")
+        buildConfigField("String", "SENTRY_DSN", "\"\"")
     }
 
-    flavorDimensions += "target"
-    productFlavors {
-        create("device") {
-            dimension = "target"
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.173:3457\"")
-            buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.0.173:4000\"")
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("WIOM_KEYSTORE_PATH")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("WIOM_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("WIOM_KEY_ALIAS")
+                keyPassword = System.getenv("WIOM_KEY_PASSWORD")
+            } else {
+                // Fallback to debug keystore for local builds
+                storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
         }
-        create("emulator") {
-            dimension = "target"
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
             buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3457\"")
             buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:4000\"")
+            buildConfigField("boolean", "USE_MOCK", "true")
+            buildConfigField("String", "SENTRY_DSN", "\"\"")
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            buildConfigField("String", "API_BASE_URL", "\"https://api.staging.wiom.in/csp/v1/\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"https://api.staging.wiom.in/\"")
+            buildConfigField("boolean", "USE_MOCK", "false")
+            buildConfigField("String", "SENTRY_DSN", "\"\"")
+        }
+        create("prod") {
+            dimension = "environment"
+            buildConfigField("String", "API_BASE_URL", "\"https://api.wiom.in/csp/v1/\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"https://api.wiom.in/\"")
+            buildConfigField("boolean", "USE_MOCK", "false")
+            buildConfigField("String", "SENTRY_DSN", "\"\"")
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isDebuggable = true
@@ -103,4 +139,18 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+
+    // Splash Screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // Image Loading
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Sentry Crash Reporting
+    implementation("io.sentry:sentry-android:7.19.0")
+
+    // Room Database
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 }

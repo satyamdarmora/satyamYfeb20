@@ -1,13 +1,20 @@
 package com.wiom.csp.di
 
+import android.content.Context
+import androidx.room.Room
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.wiom.csp.BuildConfig
+import com.wiom.csp.data.db.AppDatabase
+import com.wiom.csp.data.db.CacheDao
+import com.wiom.csp.data.db.TaskDao
 import com.wiom.csp.data.remote.ApiService
 import com.wiom.csp.data.remote.AuthApiService
 import com.wiom.csp.data.remote.BackendApiService
+import com.wiom.csp.data.remote.MockInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -38,6 +45,12 @@ object NetworkModule {
             .readTimeout(10, TimeUnit.SECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
 
+        // Mock interceptor for dev builds
+        if (BuildConfig.USE_MOCK) {
+            builder.addInterceptor(MockInterceptor())
+        }
+
+        // HTTP logging: BODY for debug, NONE for release
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(
                 HttpLoggingInterceptor().apply {
@@ -98,4 +111,24 @@ object NetworkModule {
     fun provideBackendApiService(@Named("backend") retrofit: Retrofit): BackendApiService {
         return retrofit.create(BackendApiService::class.java)
     }
+
+    // ---- Room Database ----
+
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "wiom_csp.db"
+        )
+            .fallbackToDestructiveMigration()
+            .build()
+    }
+
+    @Provides
+    fun provideTaskDao(db: AppDatabase): TaskDao = db.taskDao()
+
+    @Provides
+    fun provideCacheDao(db: AppDatabase): CacheDao = db.cacheDao()
 }

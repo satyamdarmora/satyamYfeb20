@@ -1,5 +1,8 @@
 package com.wiom.csp.ui.taskdetail
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -19,9 +22,15 @@ import androidx.compose.ui.unit.sp
 import com.wiom.csp.domain.model.*
 import com.wiom.csp.ui.common.formatCountdown
 import com.wiom.csp.ui.common.formatTimeAgo
+import com.wiom.csp.ui.common.WiomAsyncImage
 import com.wiom.csp.ui.home.isSelfAssigned
 import com.wiom.csp.ui.home.isInTechnicianHands
 import com.wiom.csp.ui.theme.WiomCspTheme
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.core.content.FileProvider
+import androidx.compose.ui.platform.LocalContext
+import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -139,11 +148,26 @@ fun TaskDetailScreen(
     onAction: (String, String, Map<String, String>) -> Unit
 ) {
     val colors = WiomCspTheme.colors
+    val context = LocalContext.current
     var offerStep by remember { mutableStateOf("details") }
+    var capturedPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Camera launcher
+    val tempPhotoUri = remember {
+        val dir = File(context.cacheDir, "proof_images").apply { mkdirs() }
+        val file = File(dir, "proof_${task.taskId}_${System.currentTimeMillis()}.jpg")
+        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) capturedPhotoUri = tempPhotoUri
+    }
 
     val isOffer = task.state == "OFFERED"
     val contextId = task.connectionId ?: task.netboxId ?: "--"
     val area = task.customerArea ?: "--"
+    val canCaptureProof = !isOffer && !task.isTerminal
 
     // ---- OFFERED: Slot picker ----
     if (isOffer && offerStep == "slot_pick") {
@@ -200,6 +224,7 @@ fun TaskDetailScreen(
                     text = "\u2190 Back to tasks",
                     modifier = Modifier
                         .clickable { onBack() }
+                        .semantics { contentDescription = "Go back to task list" }
                         .padding(vertical = 4.dp),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
@@ -368,6 +393,46 @@ fun TaskDetailScreen(
                     }
                     if (task.blockedReason != null) {
                         InfoRowWithBorder("Blocked", task.blockedReason, colors.negative)
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                }
+
+                // Proof capture section (non-OFFERED, non-terminal)
+                if (canCaptureProof) {
+                    Text(
+                        text = "PROOF",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.textSecondary,
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    if (capturedPhotoUri != null) {
+                        WiomAsyncImage(
+                            model = capturedPhotoUri,
+                            contentDescription = "Captured proof photo",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(colors.bgCard)
+                            .clickable { cameraLauncher.launch(tempPhotoUri) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = if (capturedPhotoUri != null) "Retake Photo" else "Capture Photo",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.brandPrimary
+                        )
                     }
 
                     Spacer(Modifier.height(24.dp))

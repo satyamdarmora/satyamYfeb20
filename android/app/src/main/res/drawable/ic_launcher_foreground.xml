@@ -4,11 +4,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Background circle -->
-    <path
-        android:fillColor="#D9008D"
-        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
-    <!-- W letter -->
+    <!-- W letter centered in safe zone (adaptive icon safe zone is 66dp centered) -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M34,38L40,38L44,52L48,38L52,38L56,52L60,38L66,38L58,66L54,66L50,52L46,66L42,66Z" />

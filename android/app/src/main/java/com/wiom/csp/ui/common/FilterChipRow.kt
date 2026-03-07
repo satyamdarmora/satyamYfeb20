@@ -14,6 +14,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import com.wiom.csp.ui.theme.WiomCspTheme
 
@@ -41,6 +46,11 @@ fun FilterChipRow(
                         else colors.bgSecondary
                     )
                     .clickable { onSelect(option) }
+                    .semantics {
+                        role = Role.Tab
+                        this.selected = isSelected
+                        contentDescription = "$option filter${if (isSelected) ", selected" else ""}"
+                    }
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(

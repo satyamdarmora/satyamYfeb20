@@ -1,5 +1,6 @@
 package com.wiom.csp.ui.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wiom.csp.data.preferences.UserPreferences
@@ -36,6 +37,9 @@ data class HomeUiState(
     val offersEnabled: Boolean = true,
     val currentTheme: AppTheme = AppTheme.DARK,
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
+    val isOffline: Boolean = false,
+    val error: String? = null,
     val fadingTasks: Map<String, Task> = emptyMap(),
 )
 
@@ -50,12 +54,24 @@ class HomeViewModel @Inject constructor(
     val getBucket: GetBucketUseCase,
     private val prefs: UserPreferences,
     @ApplicationContext private val appContext: Context,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
     init {
+        // Restore navigation state from SavedStateHandle (process death recovery)
+        savedStateHandle.get<String>("selectedTaskId")?.let { taskId ->
+            _state.update { it.copy(selectedTaskId = taskId) }
+        }
+        savedStateHandle.get<String>("activeSection")?.let { section ->
+            _state.update { it.copy(activeSection = section) }
+        }
+        savedStateHandle.get<Boolean>("menuOpen")?.let { open ->
+            _state.update { it.copy(menuOpen = open) }
+        }
+
         loadInitialData()
         startPolling()
         observePreferences()
@@ -63,16 +79,25 @@ class HomeViewModel @Inject constructor(
 
     private fun loadInitialData() {
         viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
             val tasksResult = taskRepo.getTasks()
             val assuranceResult = assuranceRepo.getAssurance()
             val walletResult = walletRepo.getWallet()
+
+            val tasksFailed = tasksResult.isFailure
+            val assuranceFailed = assuranceResult.isFailure
+            val walletFailed = walletResult.isFailure
+            val allFailed = tasksFailed && assuranceFailed && walletFailed
 
             _state.update { s ->
                 s.copy(
                     tasks = tasksResult.getOrNull()?.let { sortTasks(it) } ?: emptyList(),
                     assurance = assuranceResult.getOrNull(),
                     wallet = walletResult.getOrNull(),
-                    isLoading = false
+                    isLoading = false,
+                    isOffline = allFailed,
+                    error = if (allFailed) "Cannot reach server. Showing cached data." else null
                 )
             }
         }
@@ -84,7 +109,7 @@ class HomeViewModel @Inject constructor(
             while (true) {
                 delay(2000)
                 assuranceRepo.getAssurance().onSuccess { data ->
-                    _state.update { it.copy(assurance = data) }
+                    _state.update { it.copy(assurance = data, isOffline = false) }
                 }
             }
         }
@@ -155,8 +180,27 @@ class HomeViewModel @Inject constructor(
     }
 
     fun retryLoad() {
-        _state.update { it.copy(isLoading = true) }
+        _state.update { it.copy(isLoading = true, error = null) }
         loadInitialData()
+    }
+
+    /** Pull-to-refresh: reload tasks + assurance + wallet */
+    fun refresh() {
+        viewModelScope.launch {
+            _state.update { it.copy(isRefreshing = true) }
+            val tasksResult = taskRepo.getTasks()
+            val assuranceResult = assuranceRepo.getAssurance()
+            val walletResult = walletRepo.getWallet()
+            _state.update { s ->
+                s.copy(
+                    tasks = tasksResult.getOrNull()?.let { sortTasks(it) } ?: s.tasks,
+                    assurance = assuranceResult.getOrNull() ?: s.assurance,
+                    wallet = walletResult.getOrNull() ?: s.wallet,
+                    isRefreshing = false,
+                    isOffline = tasksResult.isFailure && assuranceResult.isFailure && walletResult.isFailure,
+                )
+            }
+        }
     }
 
     fun refreshTasks() {
@@ -179,27 +223,33 @@ class HomeViewModel @Inject constructor(
 
     fun selectTask(taskId: String) {
         _state.update { it.copy(selectedTaskId = taskId) }
+        savedStateHandle["selectedTaskId"] = taskId
     }
 
     fun clearSelectedTask() {
         _state.update { it.copy(selectedTaskId = null) }
+        savedStateHandle["selectedTaskId"] = null
         refreshTasks()
     }
 
     fun openMenu() {
         _state.update { it.copy(menuOpen = true) }
+        savedStateHandle["menuOpen"] = true
     }
 
     fun closeMenu() {
         _state.update { it.copy(menuOpen = false) }
+        savedStateHandle["menuOpen"] = false
     }
 
     fun navigate(section: String) {
         _state.update { it.copy(activeSection = section) }
+        savedStateHandle["activeSection"] = section
     }
 
     fun backToHome() {
         _state.update { it.copy(activeSection = null) }
+        savedStateHandle["activeSection"] = null
         refreshTasks()
     }
 
@@ -233,6 +283,10 @@ class HomeViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch { prefs.clearAuth() }
+    }
+
+    fun clearError() {
+        _state.update { it.copy(error = null) }
     }
 
     // ---- Task actions (port from page.tsx handleAction) ----

@@ -14,6 +14,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.wiom.csp.ui.common.ConfirmationToast
@@ -62,7 +64,9 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.clickable { viewModel.navigate("profile") },
+                        modifier = Modifier
+                            .clickable { viewModel.navigate("profile") }
+                            .semantics { contentDescription = "Profile: CSP-MH-1001. Tap to open profile." },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -88,7 +92,8 @@ fun HomeScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable { viewModel.openMenu() },
+                            .clickable { viewModel.openMenu() }
+                            .semantics { contentDescription = "Open navigation menu" },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -189,13 +194,34 @@ fun HomeScreen(
                 }
             }
 
+            // Offline banner
+            if (state.isOffline) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colors.warningSubtle)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        "Offline -- showing cached data",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.warning
+                    )
+                }
+            }
+
             // Task Feed
             TaskFeed(
                 tasks = state.tasks,
                 fadingTasks = state.fadingTasks,
                 getBucket = { viewModel.getBucket(it) },
                 onAction = { taskId, action -> viewModel.handleAction(taskId, action) },
-                onCardClick = { viewModel.selectTask(it) }
+                onCardClick = { viewModel.selectTask(it) },
+                isRefreshing = state.isRefreshing,
+                isLoading = state.isLoading,
+                onRefresh = { viewModel.refresh() }
             )
         }
 

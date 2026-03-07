@@ -1,7 +1,9 @@
 package com.wiom.csp.ui.navigation
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -20,7 +22,7 @@ import com.wiom.csp.ui.onboarding.OnboardingViewModel
  * Otherwise, HomeScreen manages all overlays/sections internally via state.
  */
 @Composable
-fun WiomNavGraph(userPreferences: UserPreferences) {
+fun WiomNavGraph(userPreferences: UserPreferences, deepLinkIntent: Intent? = null) {
     val isLoggedIn by userPreferences.isLoggedIn.collectAsState(initial = false)
     val isProfileComplete by userPreferences.isProfileComplete.collectAsState(initial = false)
 
@@ -50,6 +52,20 @@ fun WiomNavGraph(userPreferences: UserPreferences) {
                 state.menuOpen -> viewModel.closeMenu()
                 state.assignPickerOpen -> viewModel.closeAssignPicker()
                 // else: at root -- system handles back
+            }
+        }
+
+        // Handle deep links: wiomcsp://open/task/{id} or wiomcsp://open/section/{name}
+        LaunchedEffect(deepLinkIntent) {
+            val uri = deepLinkIntent?.data ?: return@LaunchedEffect
+            if (uri.scheme == "wiomcsp" && uri.host == "open") {
+                val segments = uri.pathSegments
+                if (segments.size >= 2) {
+                    when (segments[0]) {
+                        "task" -> viewModel.selectTask(segments[1])
+                        "section" -> viewModel.navigate(segments[1])
+                    }
+                }
             }
         }
 

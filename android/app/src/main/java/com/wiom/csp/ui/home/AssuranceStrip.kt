@@ -25,6 +25,8 @@ import com.wiom.csp.ui.common.DrillDownSheet
 import com.wiom.csp.ui.common.formatCurrency
 import com.wiom.csp.ui.common.formatCurrencyCompact
 import com.wiom.csp.ui.theme.WiomCspTheme
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun AssuranceStrip(
@@ -66,6 +68,7 @@ fun AssuranceStrip(
                 .background(colors.bgCard)
                 .border(1.dp, colors.borderSubtle, RoundedCornerShape(12.dp))
                 .clickable { onDrillDown("activeBase") }
+                .semantics { contentDescription = "Active base: ${assuranceState.activeBase} connections. Tap for details." }
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Text(
@@ -93,6 +96,7 @@ fun AssuranceStrip(
                 .background(colors.bgCard)
                 .border(1.dp, colors.borderSubtle, RoundedCornerShape(12.dp))
                 .clickable { onDrillDown("earnings") }
+                .semantics { contentDescription = "Cycle earnings: ${formatCurrencyCompact(assuranceState.cycleEarned)}. Tap for details." }
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Text(
@@ -125,6 +129,7 @@ fun AssuranceStrip(
                     .background(colors.bgCard)
                     .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
                     .clickable { if (onOpenSLA != null) onOpenSLA() else onDrillDown("sla") }
+                    .semantics { contentDescription = "SLA standing: ${assuranceState.slaStanding.name}. Tap for details." }
                     .padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -153,6 +158,7 @@ fun AssuranceStrip(
                     .background(colors.bgCard)
                     .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
                     .clickable { onDrillDown("exposure") }
+                    .semantics { contentDescription = "Exposure: ${assuranceState.exposureState.name}. Tap for details." }
                     .padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
