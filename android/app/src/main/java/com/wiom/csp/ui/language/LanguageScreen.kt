@@ -65,26 +65,32 @@ fun LanguageScreen(
 
             // Title — hardcoded bilingual (shown before locale is set)
             Text(
-                "Welcome to Wiom CSP",
+                "Wiom CSP में आपका स्वागत है",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.textPrimary
             )
             Text(
-                "Wiom CSP में आपका स्वागत है",
+                "Welcome to Wiom CSP",
                 fontSize = 16.sp,
                 color = colors.textSecondary
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Subtitle
             Text(
-                "Choose your preferred language\nअपनी पसंदीदा भाषा चुनें",
-                fontSize = 13.sp,
-                color = colors.textMuted,
+                "अपनी पसंदीदा भाषा चुनें",
+                fontSize = 15.sp,
+                color = colors.textPrimary.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
-                lineHeight = 20.sp
+                lineHeight = 22.sp
+            )
+            Text(
+                "Choose your preferred language",
+                fontSize = 13.sp,
+                color = colors.textSecondary,
+                textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(40.dp))
