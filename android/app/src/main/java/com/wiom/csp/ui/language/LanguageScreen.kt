@@ -18,7 +18,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Icon
 import com.wiom.csp.R
 import com.wiom.csp.ui.theme.WiomCspTheme
 
@@ -48,10 +50,15 @@ fun LanguageScreen(
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(colors.brandPrimary),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Text("W", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                Icon(
+                    painter = painterResource(R.drawable.ic_wiom_logo),
+                    contentDescription = "Wiom",
+                    modifier = Modifier.size(40.dp),
+                    tint = Color.Unspecified
+                )
             }
 
             Spacer(Modifier.height(24.dp))

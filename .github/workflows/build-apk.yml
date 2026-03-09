@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - csp-app-v1-2026-03-02
+      - csp-app-v1-2026-03-09
 
 jobs:
   build:
@@ -13,9 +14,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: csp-app-v1-2026-03-02
-          repository: satyamdarmora/satyamYfeb20
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
