@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,18 +91,34 @@ fun OnboardingScreen(
                 .padding(horizontal = 20.dp, vertical = 24.dp)
                 .widthIn(max = 420.dp),
         ) {
-            // Header
+            // Logo + Header
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_wiom_logo),
+                    contentDescription = "Wiom",
+                    modifier = Modifier.size(30.dp),
+                    tint = Color.Unspecified
+                )
+            }
+            Spacer(Modifier.height(16.dp))
             Text(
                 stringResource(R.string.onboarding_title),
-                fontSize = 20.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.textPrimary
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(R.string.onboarding_subtitle),
-                fontSize = 13.sp,
-                color = colors.textMuted
+                fontSize = 15.sp,
+                color = colors.textPrimary.copy(alpha = 0.7f),
+                lineHeight = 22.sp
             )
             Spacer(Modifier.height(12.dp))
 
@@ -403,7 +420,8 @@ fun OnboardingScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colors.brandPrimary,
-                    disabledContainerColor = colors.brandPrimary.copy(alpha = 0.7f)
+                    disabledContainerColor = colors.brandPrimary.copy(alpha = 0.5f),
+                    disabledContentColor = Color.White.copy(alpha = 0.7f)
                 )
             ) {
                 if (state is OnboardingState.Submitting) {
@@ -691,7 +709,7 @@ private fun SectionHeader(title: String, colors: com.wiom.csp.ui.theme.WiomColor
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             title,
-            fontSize = 14.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
             color = colors.textPrimary
         )

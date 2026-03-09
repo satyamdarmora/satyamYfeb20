@@ -102,9 +102,10 @@ fun LoginScreen(
 
             Text(
                 text = if (isOtpStep) stringResource(R.string.login_otp_sent, mobile) else stringResource(R.string.login_subtitle),
-                fontSize = 15.sp,
+                fontSize = if (isOtpStep) 14.sp else 15.sp,
                 color = colors.textPrimary.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp
             )
 
             Spacer(Modifier.height(40.dp))
