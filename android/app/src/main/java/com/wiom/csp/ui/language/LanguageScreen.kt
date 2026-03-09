@@ -18,7 +18,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Icon
 import com.wiom.csp.R
 import com.wiom.csp.ui.theme.WiomCspTheme
 
@@ -48,36 +50,47 @@ fun LanguageScreen(
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(colors.brandPrimary),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Text("W", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                Icon(
+                    painter = painterResource(R.drawable.ic_wiom_logo),
+                    contentDescription = "Wiom",
+                    modifier = Modifier.size(40.dp),
+                    tint = Color.Unspecified
+                )
             }
 
             Spacer(Modifier.height(24.dp))
 
             // Title — hardcoded bilingual (shown before locale is set)
             Text(
-                "Welcome to Wiom CSP",
+                "Wiom CSP में आपका स्वागत है",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.textPrimary
             )
             Text(
-                "Wiom CSP में आपका स्वागत है",
+                "Welcome to Wiom CSP",
                 fontSize = 16.sp,
                 color = colors.textSecondary
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Subtitle
             Text(
-                "Choose your preferred language\nअपनी पसंदीदा भाषा चुनें",
-                fontSize = 13.sp,
-                color = colors.textMuted,
+                "अपनी पसंदीदा भाषा चुनें",
+                fontSize = 15.sp,
+                color = colors.textPrimary.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
-                lineHeight = 20.sp
+                lineHeight = 22.sp
+            )
+            Text(
+                "Choose your preferred language",
+                fontSize = 13.sp,
+                color = colors.textSecondary,
+                textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(40.dp))
