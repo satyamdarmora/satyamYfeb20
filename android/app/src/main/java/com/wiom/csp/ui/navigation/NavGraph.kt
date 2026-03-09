@@ -9,24 +9,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.wiom.csp.data.preferences.UserPreferences
 import com.wiom.csp.ui.auth.LoginScreen
 import com.wiom.csp.ui.auth.LoginViewModel
 import com.wiom.csp.ui.home.HomeScreen
 import com.wiom.csp.ui.home.HomeViewModel
+import com.wiom.csp.ui.language.LanguageScreen
 import com.wiom.csp.ui.onboarding.OnboardingScreen
 import com.wiom.csp.ui.onboarding.OnboardingViewModel
 import com.wiom.csp.ui.pending.PendingScreen
 import com.wiom.csp.ui.pending.PendingViewModel
+import com.wiom.csp.util.LocaleHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
  * Single-screen navigation architecture (matching the web SPA pattern).
+ * Language-gated: if no language selected, show LanguageScreen.
  * Auth-gated: if not logged in, show LoginScreen.
  * Profile-gated: if logged in but profile incomplete, show OnboardingScreen.
  * Pending-gated: if profile complete but not yet active, show PendingScreen.
@@ -37,12 +42,15 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun WiomNavGraph(userPreferences: UserPreferences) {
+    val language by userPreferences.language.collectAsState(initial = null)
     val isLoggedIn by userPreferences.isLoggedIn.collectAsState(initial = null)
     val isProfileComplete by userPreferences.isProfileComplete.collectAsState(initial = null)
     val isPartnerActive by userPreferences.isPartnerActive.collectAsState(initial = null)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // Show loading while DataStore hasn't emitted yet
-    if (isLoggedIn == null || isProfileComplete == null || isPartnerActive == null) {
+    if (language == null || isLoggedIn == null || isProfileComplete == null || isPartnerActive == null) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -50,6 +58,21 @@ fun WiomNavGraph(userPreferences: UserPreferences) {
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator()
+        }
+        return
+    }
+
+    // Language gate: show language selection if not yet chosen
+    if (language!!.isEmpty()) {
+        com.wiom.csp.ui.theme.WiomCspTheme {
+            LanguageScreen(
+                onLanguageSelected = { lang ->
+                    scope.launch(Dispatchers.IO) {
+                        userPreferences.setLanguage(lang)
+                    }
+                    LocaleHelper.setLocale(context, lang)
+                }
+            )
         }
         return
     }
@@ -74,6 +97,7 @@ fun WiomNavGraph(userPreferences: UserPreferences) {
             PendingScreen(
                 viewModel = pendingViewModel,
                 onLogout = {
+                    LocaleHelper.clearLocale(context)
                     CoroutineScope(Dispatchers.IO).launch {
                         userPreferences.clearAuth()
                     }
@@ -100,6 +124,7 @@ fun WiomNavGraph(userPreferences: UserPreferences) {
             HomeScreen(
                 viewModel = viewModel,
                 onLogout = {
+                    LocaleHelper.clearLocale(context)
                     CoroutineScope(Dispatchers.IO).launch {
                         userPreferences.clearAuth()
                     }

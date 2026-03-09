@@ -2,21 +2,25 @@ package com.wiom.csp.ui.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wiom.csp.R
 import com.wiom.csp.ui.theme.WiomCspTheme
 import kotlinx.coroutines.delay
 
@@ -62,12 +66,14 @@ fun LoginScreen(
             .fillMaxSize()
             .background(colors.bgPrimary)
             .statusBarsPadding()
-            .navigationBarsPadding(),
+            .navigationBarsPadding()
+            .imePadding(),
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .widthIn(max = 380.dp)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -84,12 +90,12 @@ fun LoginScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Text("Wiom CSP", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+            Text(stringResource(R.string.login_title), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
 
             Spacer(Modifier.height(6.dp))
 
             Text(
-                text = if (isOtpStep) "OTP sent to +91 $mobile" else "Enter your mobile number to login",
+                text = if (isOtpStep) stringResource(R.string.login_otp_sent, mobile) else stringResource(R.string.login_subtitle),
                 fontSize = 13.sp,
                 color = colors.textMuted
             )
@@ -120,7 +126,7 @@ fun LoginScreen(
             if (!isOtpStep) {
                 // Step 1: Mobile Number
                 Text(
-                    "MOBILE NUMBER",
+                    stringResource(R.string.login_mobile_label),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = colors.textSecondary,
@@ -198,7 +204,7 @@ fun LoginScreen(
                         )
                     } else {
                         Text(
-                            "Send OTP",
+                            stringResource(R.string.login_send_otp),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -207,7 +213,7 @@ fun LoginScreen(
             } else {
                 // Step 2: OTP Verification
                 Text(
-                    "ENTER OTP",
+                    stringResource(R.string.login_enter_otp),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = colors.textSecondary,
@@ -274,7 +280,7 @@ fun LoginScreen(
                         )
                     } else {
                         Text(
-                            "Verify OTP",
+                            stringResource(R.string.login_verify_otp),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -292,7 +298,7 @@ fun LoginScreen(
                         viewModel.goBackToMobile()
                     }) {
                         Text(
-                            "\u2190 Change Number",
+                            stringResource(R.string.login_change_number),
                             fontSize = 13.sp,
                             color = colors.textSecondary,
                             fontWeight = FontWeight.Medium
@@ -304,7 +310,7 @@ fun LoginScreen(
                         enabled = resendTimer == 0 && state !is LoginState.SendingOtp
                     ) {
                         Text(
-                            text = if (resendTimer > 0) "Resend in ${resendTimer}s" else "Resend OTP",
+                            text = if (resendTimer > 0) stringResource(R.string.login_resend_in, resendTimer) else stringResource(R.string.login_resend_otp),
                             fontSize = 13.sp,
                             color = if (resendTimer > 0) colors.textMuted else colors.brandPrimary,
                             fontWeight = FontWeight.SemiBold
@@ -316,7 +322,7 @@ fun LoginScreen(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                "Wiom CSP Partner Portal",
+                stringResource(R.string.login_footer),
                 fontSize = 12.sp,
                 color = colors.textMuted
             )

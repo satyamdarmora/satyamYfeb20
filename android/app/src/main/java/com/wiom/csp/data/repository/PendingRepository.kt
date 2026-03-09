@@ -38,8 +38,8 @@ class PendingRepository @Inject constructor(
         val responseBody = text?.takeIf { it.isNotBlank() }
             ?.toRequestBody("text/plain".toMediaType())
 
-        val docTypes = files.joinToString(",") { it.first }
-        val docTypesBody = docTypes.toRequestBody("text/plain".toMediaType())
+        val docTypesJson = "[" + files.joinToString(",") { "\"${it.first}\"" } + "]"
+        val docTypesBody = docTypesJson.toRequestBody("text/plain".toMediaType())
 
         val parts = files.map { (docType, uri) ->
             val bytes = compressImage(uri)
