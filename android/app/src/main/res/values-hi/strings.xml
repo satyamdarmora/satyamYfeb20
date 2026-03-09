@@ -170,7 +170,7 @@
 
     <!-- Login Screen -->
     <string name="login_title">Wiom CSP</string>
-    <string name="login_subtitle">लॉगिन करने के लिए अपना मोबाइल नंबर दर्ज करें</string>
+    <string name="login_subtitle">अपना मोबाइल नंबर दर्ज करें — बस इतना काफ़ी है</string>
     <string name="login_otp_sent">OTP भेजा गया +91 %1$s पर</string>
     <string name="login_mobile_label">मोबाइल नंबर</string>
     <string name="login_send_otp">OTP भेजें</string>

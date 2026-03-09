@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.wiom.csp.R
 import com.wiom.csp.ui.theme.WiomCspTheme
@@ -82,22 +83,28 @@ fun LoginScreen(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(colors.brandPrimary),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Text("W", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                Icon(
+                    painter = painterResource(R.drawable.ic_wiom_logo),
+                    contentDescription = "Wiom",
+                    modifier = Modifier.size(36.dp),
+                    tint = Color.Unspecified
+                )
             }
 
             Spacer(Modifier.height(16.dp))
 
             Text(stringResource(R.string.login_title), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = if (isOtpStep) stringResource(R.string.login_otp_sent, mobile) else stringResource(R.string.login_subtitle),
-                fontSize = 13.sp,
-                color = colors.textMuted
+                fontSize = 15.sp,
+                color = colors.textPrimary.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(40.dp))
