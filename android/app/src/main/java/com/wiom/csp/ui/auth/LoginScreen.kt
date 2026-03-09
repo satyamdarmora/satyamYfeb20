@@ -153,7 +153,7 @@ fun LoginScreen(
                     Box(
                         modifier = Modifier
                             .background(colors.bgSecondary)
-                            .padding(horizontal = 12.dp, vertical = 14.dp)
+                            .padding(start = 16.dp, end = 12.dp, top = 14.dp, bottom = 14.dp)
                     ) {
                         Text("+91", fontSize = 16.sp, color = colors.textSecondary, fontWeight = FontWeight.Medium)
                     }
@@ -200,7 +200,8 @@ fun LoginScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colors.brandPrimary,
-                        disabledContainerColor = colors.bgSecondary
+                        disabledContainerColor = colors.brandPrimary.copy(alpha = 0.3f),
+                        disabledContentColor = Color.White.copy(alpha = 0.5f)
                     )
                 ) {
                     if (state is LoginState.SendingOtp) {
@@ -276,7 +277,8 @@ fun LoginScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colors.brandPrimary,
-                        disabledContainerColor = colors.bgSecondary
+                        disabledContainerColor = colors.brandPrimary.copy(alpha = 0.3f),
+                        disabledContentColor = Color.White.copy(alpha = 0.5f)
                     )
                 ) {
                     if (state is LoginState.Verifying) {
