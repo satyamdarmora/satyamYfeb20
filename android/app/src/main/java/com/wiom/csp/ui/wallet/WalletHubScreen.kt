@@ -85,6 +85,32 @@ fun WalletHubScreen(
 
     var showWithdraw by remember { mutableStateOf(false) }
 
+    // Separate transactions into ledger categories per design spec
+    // Earnings credits: SETTLEMENT, BONUS, INSTALL_HANDLING, COLLECTION_HANDLING
+    val earningsCredits = data.transactions.filter {
+        it.type in listOf(
+            WalletTransactionType.SETTLEMENT,
+            WalletTransactionType.BONUS,
+            WalletTransactionType.INSTALL_HANDLING,
+            WalletTransactionType.COLLECTION_HANDLING
+        )
+    }
+    // Deposit-related: CARRY_FEE, LOSS_RECOVERY, DEDUCTION
+    val depositEntries = data.transactions.filter {
+        it.type in listOf(
+            WalletTransactionType.CARRY_FEE,
+            WalletTransactionType.LOSS_RECOVERY,
+            WalletTransactionType.DEDUCTION
+        )
+    }
+    // Other: WITHDRAWAL, TOP_UP
+    val otherTransactions = data.transactions.filter {
+        it.type in listOf(
+            WalletTransactionType.WITHDRAWAL,
+            WalletTransactionType.TOP_UP
+        )
+    }
+
     Box(
         modifier = Modifier.fillMaxSize().background(colors.bgPrimary).statusBarsPadding()
     ) {
@@ -182,20 +208,48 @@ fun WalletHubScreen(
                 }
             }
 
-            // Transactions
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "TRANSACTIONS",
-                modifier = Modifier.padding(horizontal = 16.dp),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = colors.textSecondary,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(Modifier.height(8.dp))
+            // === EARNINGS CREDIT LEDGER (Design Spec — separate from deposit) ===
+            if (earningsCredits.isNotEmpty()) {
+                Spacer(Modifier.height(20.dp))
+                SectionHeader("EARNINGS CREDITS")
+                Spacer(Modifier.height(8.dp))
 
-            data.transactions.forEach { txn ->
-                TransactionRow(txn)
+                earningsCredits.forEach { txn ->
+                    EarningsCreditRow(txn)
+                }
+            }
+
+            // === DEPOSIT POOL LEDGER (Design Spec — separate from earnings) ===
+            if (depositEntries.isNotEmpty()) {
+                Spacer(Modifier.height(20.dp))
+                SectionHeader("DEPOSIT & FEES")
+                Spacer(Modifier.height(8.dp))
+
+                depositEntries.forEach { txn ->
+                    DepositEntryRow(txn)
+                }
+            }
+
+            // === OTHER TRANSACTIONS (withdrawals, top-ups) ===
+            if (otherTransactions.isNotEmpty()) {
+                Spacer(Modifier.height(20.dp))
+                SectionHeader("TRANSACTIONS")
+                Spacer(Modifier.height(8.dp))
+
+                otherTransactions.forEach { txn ->
+                    TransactionRow(txn)
+                }
+            }
+
+            // Fallback: show all if no categorized entries
+            if (earningsCredits.isEmpty() && depositEntries.isEmpty() && otherTransactions.isEmpty() && data.transactions.isNotEmpty()) {
+                Spacer(Modifier.height(20.dp))
+                SectionHeader("TRANSACTIONS")
+                Spacer(Modifier.height(8.dp))
+
+                data.transactions.forEach { txn ->
+                    TransactionRow(txn)
+                }
             }
 
             Spacer(Modifier.height(80.dp))
@@ -212,6 +266,115 @@ fun WalletHubScreen(
                 onCancel = { showWithdraw = false }
             )
         }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    val colors = WiomCspTheme.colors
+    Text(
+        title,
+        modifier = Modifier.padding(horizontal = 16.dp),
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = colors.textSecondary,
+        letterSpacing = 0.5.sp
+    )
+}
+
+/** Earnings credit row — shows credit type badge + description + amount (always positive/green) */
+@Composable
+private fun EarningsCreditRow(txn: WalletTransaction) {
+    val colors = WiomCspTheme.colors
+
+    val creditTypeLabel = when (txn.type) {
+        WalletTransactionType.SETTLEMENT -> "Settlement"
+        WalletTransactionType.BONUS -> "Bonus"
+        WalletTransactionType.INSTALL_HANDLING -> "Install"
+        WalletTransactionType.COLLECTION_HANDLING -> "Collection"
+        else -> txn.type.name
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Credit type badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(colors.positiveSubtle)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(creditTypeLabel, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = colors.positive)
+                }
+                Text(txn.description, fontSize = 13.sp, color = colors.textPrimary, maxLines = 1)
+            }
+            Text(formatTimeAgo(txn.date), fontSize = 11.sp, color = colors.textMuted)
+        }
+        Text(
+            text = "+${formatCurrency(kotlin.math.abs(txn.amount))}",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = colors.positive
+        )
+    }
+}
+
+/** Deposit entry row — shows entry type badge + description + amount (red for deductions) */
+@Composable
+private fun DepositEntryRow(txn: WalletTransaction) {
+    val colors = WiomCspTheme.colors
+    val isDeduction = txn.amount < 0
+
+    val entryTypeLabel = when (txn.type) {
+        WalletTransactionType.CARRY_FEE -> "Carry Fee"
+        WalletTransactionType.LOSS_RECOVERY -> "Loss Recovery"
+        WalletTransactionType.DEDUCTION -> "Deduction"
+        else -> txn.type.name
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (isDeduction) colors.negativeSubtle else colors.warningSubtle)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        entryTypeLabel, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+                        color = if (isDeduction) colors.negative else colors.warning
+                    )
+                }
+                Text(txn.description, fontSize = 13.sp, color = colors.textPrimary, maxLines = 1)
+            }
+            Text(formatTimeAgo(txn.date), fontSize = 11.sp, color = colors.textMuted)
+        }
+        Text(
+            text = "${if (isDeduction) "" else "+"}${formatCurrency(txn.amount)}",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (isDeduction) colors.negative else colors.positive
+        )
     }
 }
 

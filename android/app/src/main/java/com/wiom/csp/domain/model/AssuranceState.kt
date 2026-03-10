@@ -29,6 +29,7 @@ data class AssuranceState(
     @SerialName("exposure_state") val exposureState: ExposureState = ExposureState.ELIGIBLE,
     @SerialName("exposure_reason") val exposureReason: String = "",
     @SerialName("exposure_since") val exposureSince: String = "",
+    @SerialName("exposure_direction") val exposureDirection: String = "stable",
     @SerialName("active_base_events") val activeBaseEvents: List<BaseEvent> = emptyList(),
     @SerialName("earnings_events") val earningsEvents: List<EarningsEvent> = emptyList(),
     @SerialName("active_restores") val activeRestores: Int = 0,

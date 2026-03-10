@@ -93,7 +93,7 @@ fun TeamHubScreen(onBack: () -> Unit) {
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(tech.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
-                        Text("Band ${tech.band.name} \u2022 ${tech.completedCount} completed", fontSize = 12.sp, color = colors.textSecondary)
+                        Text(tech.id, fontSize = 12.sp, color = colors.textSecondary)
                     }
                     Box(
                         modifier = Modifier
@@ -145,22 +145,6 @@ private fun AddTechnicianForm(onAdd: (Technician) -> Unit, onCancel: () -> Unit)
                 label = { Text("Phone") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.brandPrimary, unfocusedBorderColor = colors.borderSubtle, focusedTextColor = colors.textPrimary, unfocusedTextColor = colors.textPrimary, cursorColor = colors.brandPrimary, focusedLabelColor = colors.brandPrimary, unfocusedLabelColor = colors.textMuted)
             )
-            Spacer(Modifier.height(12.dp))
-            Text("Band", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                listOf("A", "B", "C").forEach { b ->
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (band == b) colors.brandPrimary else colors.chipBg)
-                            .clickable { band = b }
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Text(b, color = if (band == b) Color.White else colors.textSecondary, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-
             Spacer(Modifier.weight(1f))
 
             Box(
@@ -208,14 +192,13 @@ private fun TechnicianDetailScreen(technician: Technician, onBack: () -> Unit) {
             }
             Spacer(Modifier.height(12.dp))
             Text(technician.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.align(Alignment.CenterHorizontally))
-            Text("Band ${technician.band.name}", fontSize = 14.sp, color = colors.textSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text(if (technician.available) "Available" else "Unavailable", fontSize = 14.sp, color = if (technician.available) colors.positive else colors.textSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(20.dp))
 
             Column(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(colors.bgCard).padding(16.dp).fillMaxWidth()) {
                 DetailRow("ID", technician.id)
                 DetailRow("Phone", technician.phone)
                 DetailRow("Join Date", technician.joinDate)
-                DetailRow("Completed Tasks", "${technician.completedCount}")
                 DetailRow("Status", if (technician.available) "Available" else "Unavailable")
             }
         }

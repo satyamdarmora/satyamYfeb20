@@ -28,6 +28,8 @@ import com.wiom.csp.ui.common.formatTimeAgo
 import com.wiom.csp.ui.common.WiomAsyncImage
 import com.wiom.csp.ui.home.isSelfAssigned
 import com.wiom.csp.ui.home.isInTechnicianHands
+import com.wiom.csp.ui.home.getReasonLabel
+import com.wiom.csp.ui.home.getDeadlineInfo
 import com.wiom.csp.ui.theme.WiomCspTheme
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -47,12 +49,39 @@ private val DECLINE_REASONS = listOf(
     "SLA timeline too tight"
 )
 
+// Quick Notes predefined chips (design spec)
+private val QUICK_NOTE_CHIPS = listOf(
+    "Customer not available",
+    "Wrong address",
+    "Need material",
+    "Rescheduled",
+    "Waiting for access"
+)
+
+// Need Help reason codes (design spec)
+private val HELP_REASON_CODES = listOf(
+    "Wrong address / Cannot locate",
+    "Material / equipment needed",
+    "Customer unreachable",
+    "SLA dispute / timeline issue",
+    "Technical issue beyond scope"
+)
+
 private fun getActorColor(actorType: ActorType, colors: com.wiom.csp.ui.theme.WiomColors): Color {
     return when (actorType) {
         ActorType.SYSTEM -> colors.textMuted
         ActorType.CSP -> colors.brandPrimary
         ActorType.ADMIN -> colors.warning
         ActorType.TECHNICIAN -> colors.positive
+    }
+}
+
+private fun getActorTag(actorType: ActorType): String {
+    return when (actorType) {
+        ActorType.SYSTEM -> "SYSTEM"
+        ActorType.CSP -> "CSP"
+        ActorType.ADMIN -> "ADMIN"
+        ActorType.TECHNICIAN -> "TECH"
     }
 }
 
@@ -71,14 +100,6 @@ private fun getStateColor(state: String, colors: com.wiom.csp.ui.theme.WiomColor
     }
 }
 
-private fun getBadgeBackground(taskType: TaskType, colors: com.wiom.csp.ui.theme.WiomColors): Color {
-    return when (taskType) {
-        TaskType.INSTALL -> colors.brandSubtle
-        TaskType.RESTORE -> colors.restoreSubtle
-        TaskType.NETBOX -> colors.goldSubtle
-    }
-}
-
 private fun getBadgeColor(taskType: TaskType, colors: com.wiom.csp.ui.theme.WiomColors): Color {
     return when (taskType) {
         TaskType.INSTALL -> colors.brandPrimary
@@ -92,6 +113,15 @@ private fun formatFullTimestamp(iso: String): String {
         val instant = Instant.parse(iso)
         val zdt = instant.atZone(ZoneId.systemDefault())
         val formatter = DateTimeFormatter.ofPattern("d MMM yyyy, hh:mm:ss a", Locale.ENGLISH)
+        zdt.format(formatter)
+    } catch (_: Exception) { iso }
+}
+
+private fun formatShortTime(iso: String): String {
+    return try {
+        val instant = Instant.parse(iso)
+        val zdt = instant.atZone(ZoneId.systemDefault())
+        val formatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)
         zdt.format(formatter)
     } catch (_: Exception) { iso }
 }
@@ -154,6 +184,9 @@ fun TaskDetailScreen(
     val context = LocalContext.current
     var offerStep by remember { mutableStateOf("details") }
     var capturedPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var helpRequested by remember { mutableStateOf(false) }
+    var showHelpPicker by remember { mutableStateOf(false) }
+    var showNotePicker by remember { mutableStateOf(false) }
 
     // Camera launcher
     val tempPhotoUri = remember {
@@ -183,6 +216,8 @@ fun TaskDetailScreen(
     val contextId = task.connectionId ?: task.netboxId ?: "--"
     val area = task.customerArea ?: "--"
     val canCaptureProof = !isOffer && !task.isTerminal
+    val typeDotColor = getBadgeColor(task.taskType, colors)
+    val deadline = getDeadlineInfo(task)
 
     // ---- OFFERED: Slot picker ----
     if (isOffer && offerStep == "slot_pick") {
@@ -220,283 +255,191 @@ fun TaskDetailScreen(
             .statusBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
-            Column(
+            // Back button
+            Text(
+                text = "\u2190 Back to tasks",
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .drawBehind {
-                        drawLine(
-                            color = colors.borderSubtle,
-                            start = Offset(0f, size.height),
-                            end = Offset(size.width, size.height),
-                            strokeWidth = 1.dp.toPx()
-                        )
-                    }
-                    .padding(16.dp)
-            ) {
-                // Back button (text, not icon)
-                Text(
-                    text = "\u2190 Back to tasks",
-                    modifier = Modifier
-                        .clickable { onBack() }
-                        .semantics { contentDescription = "Go back to task list" }
-                        .padding(vertical = 4.dp),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.textSecondary
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                // Type badge + Task ID + State badge
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Type badge with background
-                    Text(
-                        text = task.taskType.name,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(getBadgeBackground(task.taskType, colors))
-                            .padding(horizontal = 10.dp, vertical = 3.dp),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.3.sp,
-                        color = getBadgeColor(task.taskType, colors)
-                    )
-
-                    // Task ID
-                    Text(
-                        text = task.taskId,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.textPrimary
-                    )
-
-                    // State badge
-                    Text(
-                        text = task.state,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.White.copy(alpha = 0.05f))
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = getStateColor(task.state, colors)
-                    )
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                // Context ID
-                Text(
-                    text = contextId,
-                    fontSize = 14.sp,
-                    color = colors.textPrimary
-                )
-                Spacer(Modifier.height(2.dp))
-                // Area
-                Text(
-                    text = area,
-                    fontSize = 12.sp,
-                    color = colors.textSecondary
-                )
-            }
+                    .clickable { onBack() }
+                    .semantics { contentDescription = "Go back to task list" }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.textSecondary
+            )
 
             // Scrollable content
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
             ) {
-                // OFFERED: Customer Details Card
-                if (isOffer) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(colors.cardGradientStart, colors.bgSecondary)
+                // === A. STATUS-CONTACT BAR (Merged Element — design spec) ===
+                StatusContactBar(task, typeDotColor, deadline)
+
+                // === B. NEED HELP FROM WIOM (design spec — second thing CSP sees) ===
+                if (!isOffer && !task.isTerminal) {
+                    NeedHelpSection(
+                        helpRequested = helpRequested,
+                        showPicker = showHelpPicker,
+                        onShowPicker = { showHelpPicker = true },
+                        onSelectReason = { reason ->
+                            helpRequested = true
+                            showHelpPicker = false
+                            onAction(task.taskId, "HELP_REQUEST", mapOf("reason" to reason))
+                        },
+                        onDismissPicker = { showHelpPicker = false }
+                    )
+                }
+
+                // === C. TASK INFO SECTION ===
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    Spacer(Modifier.height(16.dp))
+
+                    // OFFERED: Customer Details Card
+                    if (isOffer) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(colors.cardGradientStart, colors.bgSecondary)
+                                    )
                                 )
+                                .border(1.dp, colors.bgCardHover, RoundedCornerShape(12.dp))
+                                .padding(20.dp)
+                        ) {
+                            Text(
+                                text = "CUSTOMER DETAILS",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.textSecondary,
+                                letterSpacing = 0.5.sp
                             )
-                            .border(1.dp, colors.bgCardHover, RoundedCornerShape(12.dp))
-                            .padding(20.dp)
-                    ) {
+                            Spacer(Modifier.height(12.dp))
+                            OfferInfoRow("Connection ID", contextId, colors.textPrimary)
+                            Spacer(Modifier.height(10.dp))
+                            OfferInfoRow("Area", area, colors.textPrimary)
+                            Spacer(Modifier.height(10.dp))
+                            OfferInfoRow("Task Type", task.taskType.name, typeDotColor)
+                            Spacer(Modifier.height(10.dp))
+                            OfferInfoRow(
+                                "Priority",
+                                task.priority.name,
+                                if (task.priority == TaskPriority.HIGH) colors.negative else colors.textPrimary
+                            )
+                            if (task.offerExpiresAt != null) {
+                                Spacer(Modifier.height(10.dp))
+                                OfferInfoRow("Offer Expires", getTimeRemaining(task.offerExpiresAt), colors.warning)
+                            }
+                        }
+                        Spacer(Modifier.height(20.dp))
+                    }
+
+                    // Info rows (non-OFFERED)
+                    if (!isOffer) {
+                        InfoRowWithBorder("Task Type", task.taskType.name, typeDotColor)
+                        InfoRowWithBorder("Object ID", contextId, colors.textPrimary)
+                        InfoRowWithBorder("Customer Area", area, colors.textPrimary)
+                        InfoRowWithBorder("Created", formatFullTimestamp(task.createdAt), colors.textPrimary)
+                        if (task.slaDeadlineAt != null) {
+                            InfoRowWithBorder("Deadline", formatFullTimestamp(task.slaDeadlineAt), colors.textPrimary)
+                        }
+                        if (task.retryCount > 0) {
+                            InfoRowWithBorder("Retries", "${task.retryCount}", colors.warning)
+                        }
+                        if (task.queueEscalationFlag != null) {
+                            InfoRowWithBorder("Escalation", task.queueEscalationFlag.name, colors.warning)
+                        }
+                        if (task.blockedReason != null) {
+                            InfoRowWithBorder("Blocked", task.blockedReason, colors.negative)
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    }
+                }
+
+                // === D. QUICK NOTES (design spec — structured communication, not chat) ===
+                if (!isOffer && !task.isTerminal) {
+                    QuickNotesSection(
+                        showPicker = showNotePicker,
+                        onShowPicker = { showNotePicker = !showNotePicker },
+                        onSelectChip = { note ->
+                            showNotePicker = false
+                            onAction(task.taskId, "CSP_NOTE", mapOf("note" to note))
+                        }
+                    )
+                }
+
+                // === Proof capture section ===
+                if (canCaptureProof) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                         Text(
-                            text = "CUSTOMER DETAILS",
+                            text = "PROOF",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = colors.textSecondary,
                             letterSpacing = 0.5.sp
                         )
-                        Spacer(Modifier.height(12.dp))
-                        OfferInfoRow("Connection ID", contextId, colors.textPrimary)
-                        Spacer(Modifier.height(10.dp))
-                        OfferInfoRow("Area", area, colors.textPrimary)
-                        Spacer(Modifier.height(10.dp))
-                        OfferInfoRow("Task Type", task.taskType.name, getBadgeColor(task.taskType, colors))
-                        Spacer(Modifier.height(10.dp))
-                        OfferInfoRow(
-                            "Priority",
-                            task.priority.name,
-                            if (task.priority == TaskPriority.HIGH) colors.negative else colors.textPrimary
-                        )
-                        if (task.offerExpiresAt != null) {
-                            Spacer(Modifier.height(10.dp))
-                            OfferInfoRow("Offer Expires", getTimeRemaining(task.offerExpiresAt), colors.warning)
-                        }
-                    }
-                    Spacer(Modifier.height(20.dp))
-                }
+                        Spacer(Modifier.height(8.dp))
 
-                // Info Section (non-OFFERED)
-                if (!isOffer) {
-                    // Assigned-to indicator
-                    if (task.assignedTo != null) {
-                        val selfAssigned = isSelfAssigned(task)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (selfAssigned) colors.brandSubtle else colors.warningSubtle)
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(
+                        if (capturedPhotoUri != null) {
+                            WiomAsyncImage(
+                                model = capturedPhotoUri,
+                                contentDescription = "Captured proof photo",
                                 modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(if (selfAssigned) colors.brandPrimary else colors.warning)
+                                    .fillMaxWidth()
+                                    .height(180.dp)
                             )
+                            Spacer(Modifier.height(8.dp))
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(colors.bgCard)
+                                .clickable { launchCamera() }
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                        ) {
                             Text(
-                                text = if (selfAssigned) "You are working on this" else task.assignedTo!!,
+                                text = if (capturedPhotoUri != null) "Retake Photo" else "Capture Photo",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = colors.textPrimary
-                            )
-                            Spacer(Modifier.weight(1f))
-                            Text(
-                                text = when (task.delegationState) {
-                                    DelegationState.IN_PROGRESS -> "In Progress"
-                                    DelegationState.ASSIGNED -> "Assigned"
-                                    else -> task.delegationState.name
-                                },
-                                fontSize = 12.sp,
-                                color = colors.textMuted
+                                color = colors.brandPrimary
                             )
                         }
-                        Spacer(Modifier.height(14.dp))
-                    }
 
-                    // Info rows with border separators
-                    InfoRowWithBorder("Priority", task.priority.name,
-                        if (task.priority == TaskPriority.HIGH) colors.negative else colors.textPrimary)
-                    if (task.slaDeadlineAt != null) {
-                        InfoRowWithBorder("SLA Deadline", formatFullTimestamp(task.slaDeadlineAt), colors.textPrimary)
+                        Spacer(Modifier.height(24.dp))
                     }
-                    InfoRowWithBorder("Created", formatFullTimestamp(task.createdAt), colors.textPrimary)
-                    if (task.retryCount > 0) {
-                        InfoRowWithBorder("Retries", "${task.retryCount}", colors.warning)
-                    }
-                    if (task.queueEscalationFlag != null) {
-                        InfoRowWithBorder("Escalation", task.queueEscalationFlag.name, colors.warning)
-                    }
-                    if (task.blockedReason != null) {
-                        InfoRowWithBorder("Blocked", task.blockedReason, colors.negative)
-                    }
-
-                    Spacer(Modifier.height(24.dp))
                 }
 
-                // Proof capture section (non-OFFERED, non-terminal)
-                if (canCaptureProof) {
+                // === E. TIMELINE (Append-Only Ledger — design spec) ===
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text(
-                        text = "PROOF",
+                        text = "TIMELINE",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.textSecondary,
                         letterSpacing = 0.5.sp
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                    if (capturedPhotoUri != null) {
-                        WiomAsyncImage(
-                            model = capturedPhotoUri,
-                            contentDescription = "Captured proof photo",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp)
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(colors.bgCard)
-                            .clickable { launchCamera() }
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = if (capturedPhotoUri != null) "Retake Photo" else "Capture Photo",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.brandPrimary
-                        )
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-                }
-
-                // Timeline header
-                Text(
-                    text = "TIMELINE",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.textSecondary,
-                    letterSpacing = 0.5.sp
-                )
-                Spacer(Modifier.height(16.dp))
-
-                // Timeline events (sorted ascending — oldest first)
-                val sortedEvents = remember(task.eventLog) {
-                    task.eventLog.sortedBy {
-                        try { Instant.parse(it.timestamp).toEpochMilli() } catch (_: Exception) { 0L }
-                    }
-                }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .drawBehind {
-                            if (sortedEvents.isNotEmpty()) {
-                                drawLine(
-                                    color = colors.borderSubtle,
-                                    start = Offset(7.dp.toPx(), 4.dp.toPx()),
-                                    end = Offset(7.dp.toPx(), size.height - 4.dp.toPx()),
-                                    strokeWidth = 2.dp.toPx()
-                                )
-                            }
+                    // Timeline events (sorted ascending — oldest first, design spec)
+                    val sortedEvents = remember(task.eventLog) {
+                        task.eventLog.sortedBy {
+                            try { Instant.parse(it.timestamp).toEpochMilli() } catch (_: Exception) { 0L }
                         }
-                        .padding(start = 24.dp)
-                ) {
-                    sortedEvents.forEachIndexed { i, event ->
-                        TimelineEventItem(
-                            event = event,
-                            isLast = i == sortedEvents.size - 1
-                        )
+                    }
+
+                    // Structured rows, NOT chat bubbles (design spec)
+                    sortedEvents.forEach { event ->
+                        TimelineRow(event)
                     }
                 }
 
                 Spacer(Modifier.height(80.dp))
             }
 
-            // Bottom CTA area
+            // === F. ACTION FOOTER ===
             val cta = getDetailCTA(task)
             if (isOffer) {
                 // OFFERED: Decline + Claim buttons
@@ -515,7 +458,6 @@ fun TaskDetailScreen(
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Decline (1fr)
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -527,7 +469,6 @@ fun TaskDetailScreen(
                     ) {
                         Text("Decline", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.negative)
                     }
-                    // Claim (2fr)
                     Box(
                         modifier = Modifier
                             .weight(2f)
@@ -556,7 +497,6 @@ fun TaskDetailScreen(
                         .padding(16.dp)
                 ) {
                     if (isSelfAssigned(task)) {
-                        // Self-assigned: Reassign (1fr) + CTA (2fr)
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Box(
                                 modifier = Modifier
@@ -582,7 +522,6 @@ fun TaskDetailScreen(
                             }
                         }
                     } else {
-                        // Single full-width CTA
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -598,6 +537,322 @@ fun TaskDetailScreen(
                 }
             }
         }
+    }
+}
+
+// === A. STATUS-CONTACT BAR (Merged Element) ===
+@Composable
+private fun StatusContactBar(
+    task: Task,
+    typeDotColor: Color,
+    deadline: com.wiom.csp.ui.home.DeadlineInfo?
+) {
+    val colors = WiomCspTheme.colors
+    val stateColor = getStateColor(task.state, colors)
+    val reasonLabel = getReasonLabel(task, deadline)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.bgCard)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
+    ) {
+        // Row 1: Type dot + state + assigned person + call buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Type dot
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(typeDotColor)
+            )
+
+            // State label
+            Text(
+                text = task.state.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = stateColor
+            )
+
+            // Assigned person
+            if (task.assignedTo != null) {
+                Text("\u00B7", fontSize = 12.sp, color = colors.textMuted)
+                Text(
+                    text = if (isSelfAssigned(task)) "You" else task.assignedTo!!,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.textPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
+
+            // Call buttons (tap targets: 48dp min — design spec)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(colors.bgPrimary)
+                    .clickable { /* TODO: call tech */ }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Text("\u260E Tech", fontSize = 11.sp, color = colors.textSecondary)
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(colors.bgPrimary)
+                    .clickable { /* TODO: call customer */ }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Text("\u260E Cust", fontSize = 11.sp, color = colors.textSecondary)
+            }
+        }
+
+        // Row 2: Reason label + timer
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = reasonLabel,
+                fontSize = 12.sp,
+                color = colors.textSecondary,
+                modifier = Modifier.weight(1f)
+            )
+            if (deadline != null) {
+                Text(
+                    text = deadline.text,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (deadline.overdue) colors.negative else colors.textMuted
+                )
+            }
+        }
+    }
+}
+
+// === B. NEED HELP FROM WIOM ===
+@Composable
+private fun NeedHelpSection(
+    helpRequested: Boolean,
+    showPicker: Boolean,
+    onShowPicker: () -> Unit,
+    onSelectReason: (String) -> Unit,
+    onDismissPicker: () -> Unit
+) {
+    val colors = WiomCspTheme.colors
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        if (!helpRequested) {
+            // Default state
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(colors.bgCard)
+                    .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
+                    .clickable { onShowPicker() }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "\uD83C\uDFE2 Need help from Wiom?",
+                    fontSize = 13.sp,
+                    color = colors.textPrimary
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(colors.brandPrimary)
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("Ask", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+            }
+        } else {
+            // Active request state
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(colors.brandSubtle)
+                    .border(1.dp, colors.brandPrimary.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "\uD83C\uDFE2 Wiom help active \u00B7 Awaiting response",
+                    fontSize = 13.sp,
+                    color = colors.brandPrimary
+                )
+            }
+        }
+
+        // Reason picker (inline expansion)
+        if (showPicker) {
+            Spacer(Modifier.height(8.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(colors.bgCard)
+                    .padding(12.dp)
+            ) {
+                Text(
+                    "Select a reason:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.textSecondary
+                )
+                Spacer(Modifier.height(8.dp))
+                HELP_REASON_CODES.forEach { reason ->
+                    Text(
+                        text = reason,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { onSelectReason(reason) }
+                            .padding(vertical = 10.dp, horizontal = 8.dp),
+                        fontSize = 13.sp,
+                        color = colors.textPrimary
+                    )
+                }
+                Text(
+                    text = "Cancel",
+                    modifier = Modifier
+                        .clickable { onDismissPicker() }
+                        .padding(vertical = 8.dp, horizontal = 8.dp),
+                    fontSize = 12.sp,
+                    color = colors.textMuted
+                )
+            }
+        }
+    }
+}
+
+// === D. QUICK NOTES ===
+@Composable
+private fun QuickNotesSection(
+    showPicker: Boolean,
+    onShowPicker: () -> Unit,
+    onSelectChip: (String) -> Unit
+) {
+    val colors = WiomCspTheme.colors
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "QUICK NOTES",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.textSecondary,
+                letterSpacing = 0.5.sp
+            )
+            Text(
+                text = if (showPicker) "Close" else "+ Add",
+                modifier = Modifier.clickable { onShowPicker() }.padding(4.dp),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.brandPrimary
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+
+        if (showPicker) {
+            // Predefined chips (one-tap — design spec)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                QUICK_NOTE_CHIPS.forEach { chip ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(colors.bgCard)
+                            .border(1.dp, colors.borderSubtle, RoundedCornerShape(16.dp))
+                            .clickable { onSelectChip(chip) }
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(chip, fontSize = 12.sp, color = colors.textPrimary)
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+// === E. TIMELINE ROW (Structured, not chat — design spec) ===
+@Composable
+private fun TimelineRow(event: TimelineEvent) {
+    val colors = WiomCspTheme.colors
+    val actorColor = getActorColor(event.actorType, colors)
+    val isNote = event.eventType in listOf("CSP_NOTE", "TECH_NOTE", "WIOM_RESPONSE")
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isNote) Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(colors.bgCard.copy(alpha = 0.5f))
+                else Modifier
+            )
+            .drawBehind {
+                drawLine(
+                    color = colors.borderSubtle,
+                    start = Offset(0f, size.height),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 0.5.dp.toPx()
+                )
+            }
+            .padding(vertical = 8.dp, horizontal = if (isNote) 8.dp else 0.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        // Time
+        Text(
+            text = formatShortTime(event.timestamp),
+            fontSize = 11.sp,
+            color = colors.textMuted,
+            modifier = Modifier.width(44.dp)
+        )
+
+        // Detail text
+        Text(
+            text = event.detail,
+            fontSize = 13.sp,
+            color = colors.textPrimary,
+            modifier = Modifier.weight(1f),
+            lineHeight = 18.sp
+        )
+
+        // Actor tag
+        Text(
+            text = "[${getActorTag(event.actorType)}]",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = actorColor,
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }
 
@@ -635,77 +890,6 @@ private fun InfoRowWithBorder(label: String, value: String, valueColor: Color) {
     }
 }
 
-@Composable
-private fun TimelineEventItem(event: TimelineEvent, isLast: Boolean) {
-    val colors = WiomCspTheme.colors
-    val actorColor = getActorColor(event.actorType, colors)
-
-    Row(
-        modifier = Modifier.padding(bottom = if (isLast) 0.dp else 20.dp)
-    ) {
-        // Dot (positioned to align with the vertical line)
-        Box(
-            modifier = Modifier
-                .offset(x = (-20).dp)
-                .padding(top = 4.dp)
-                .size(10.dp)
-                .clip(CircleShape)
-                .border(2.dp, colors.bgPrimary, CircleShape)
-                .background(actorColor)
-        )
-
-        Column(modifier = Modifier.weight(1f)) {
-            // Actor name + timestamp
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = event.actor,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = actorColor
-                )
-                Text(
-                    text = formatTimeAgo(event.timestamp),
-                    fontSize = 11.sp,
-                    color = colors.textMuted
-                )
-            }
-            Spacer(Modifier.height(4.dp))
-
-            // Event type
-            Text(
-                text = event.eventType,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                color = colors.textMuted,
-                letterSpacing = 0.3.sp
-            )
-            Spacer(Modifier.height(4.dp))
-
-            // Detail
-            Text(
-                text = event.detail,
-                fontSize = 13.sp,
-                color = colors.textPrimary,
-                lineHeight = 20.sp
-            )
-
-            // Proof
-            if (event.proof != null) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Proof: ${event.proof}",
-                    fontSize = 11.sp,
-                    color = colors.brandPrimary
-                )
-            }
-        }
-    }
-}
-
 // ---- Slot Picker Screen (matching web) ----
 
 @Composable
@@ -733,7 +917,6 @@ private fun SlotPickerScreen(
             .fillMaxSize()
             .background(colors.bgPrimary)
     ) {
-        // Header
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -771,7 +954,6 @@ private fun SlotPickerScreen(
             )
         }
 
-        // Slot options
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -835,7 +1017,6 @@ private fun DeclineReasonScreen(
             .fillMaxSize()
             .background(colors.bgPrimary)
     ) {
-        // Header
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -873,7 +1054,6 @@ private fun DeclineReasonScreen(
             )
         }
 
-        // Reason options
         Column(
             modifier = Modifier
                 .weight(1f)

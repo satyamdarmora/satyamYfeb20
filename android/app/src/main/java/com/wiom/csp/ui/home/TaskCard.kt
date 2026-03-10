@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,8 +40,8 @@ fun TaskCard(
     // Left border color = urgency-based (matching web getLeftBorderColor)
     val borderColor = getLeftBorderColor(bucket, task, colors)
 
-    // Badge color by task type
-    val badgeColor = when (task.taskType) {
+    // Type dot color by task type (design spec: Install=blue, Restore=red, NetBox=amber)
+    val typeDotColor = when (task.taskType) {
         TaskType.INSTALL -> colors.brandPrimary
         TaskType.RESTORE -> colors.accentRestore
         TaskType.NETBOX -> colors.accentGold
@@ -50,12 +51,11 @@ fun TaskCard(
     val deadline = getDeadlineInfo(task)
     val contextId = task.connectionId ?: task.netboxId ?: task.taskId
     val area = task.customerArea ?: "--"
-    val techWorking = isInTechnicianHands(task)
+    val reasonLabel = getReasonLabel(task, deadline)
 
     val cardDescription = buildString {
         append("${task.taskType.name} task $contextId")
-        if (task.priority == TaskPriority.HIGH) append(", high priority")
-        append(", state ${task.state}")
+        append(", $reasonLabel")
         if (deadline != null) append(", ${deadline.text}")
         if (cta != null) append(", action: ${cta.label}")
     }
@@ -84,91 +84,75 @@ fun TaskCard(
                 .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 20.dp)
         ) {
             Column {
-                // Line 1: Type badge + HIGH + Context ID + Deadline
+                // Line 1: Type dot + Type · Context ID · Locality (identity line)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Type badge (just colored text, no background — matching web)
-                    Text(
-                        text = task.taskType.name,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = badgeColor,
-                        letterSpacing = 0.5.sp
+                    // 8px type dot (design spec)
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(typeDotColor)
                     )
 
-                    // HIGH priority badge (with background)
-                    if (task.priority == TaskPriority.HIGH) {
-                        Text(
-                            text = "HIGH",
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(colors.negativeSubtle)
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.negative
-                        )
-                    }
-
-                    // Context ID (flex: 1)
+                    // Identity: TYPE · CN-2847 · Sector 12
                     Text(
-                        text = contextId,
-                        modifier = Modifier.weight(1f),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.textPrimary,
+                        text = "${task.taskType.name} \u00B7 $contextId \u00B7 $area",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-
-                    // Deadline countdown (right-aligned)
-                    if (deadline != null) {
-                        Text(
-                            text = deadline.text,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (deadline.overdue) colors.negative else colors.textMuted
-                        )
-                    }
                 }
+
+                Spacer(Modifier.height(10.dp))
+
+                // Line 2: Reason label — the largest text element on the card
+                Text(
+                    text = reasonLabel,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
                 Spacer(Modifier.height(12.dp))
 
-                // Line 2: Area + Tech assignment + CTA
+                // Line 3: Timer + Note indicator + CTA
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Area + tech info (flex: 1)
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    // Timer (left-aligned)
+                    if (deadline != null) {
                         Text(
-                            text = area,
-                            fontSize = 14.sp,
-                            color = colors.textSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
+                            text = "\u23F1 ${deadline.text}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (deadline.overdue) colors.negative else colors.textMuted
                         )
-                        if (techWorking && task.assignedTo != null) {
-                            Text("\u00B7", fontSize = 12.sp, color = colors.textMuted)
-                            Text(
-                                text = task.assignedTo!!,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.warning,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
                     }
+
+                    // Note indicator (if task has notes in event log)
+                    val noteCount = task.eventLog.count {
+                        it.eventType in listOf("CSP_NOTE", "TECH_NOTE", "WIOM_RESPONSE")
+                    }
+                    val hasWiomReply = task.eventLog.any { it.eventType == "WIOM_RESPONSE" }
+                    if (noteCount > 0 || hasWiomReply) {
+                        Text(
+                            text = if (hasWiomReply) "Wiom replied" else "$noteCount note${if (noteCount > 1) "s" else ""}",
+                            fontSize = 11.sp,
+                            color = if (hasWiomReply) colors.brandPrimary else colors.textMuted
+                        )
+                    }
+
+                    Spacer(Modifier.weight(1f))
 
                     // CTA button (right-aligned)
                     if (cta != null) {
@@ -210,6 +194,87 @@ fun TaskCard(
                 }
             }
         }
+    }
+}
+
+/** Generate the single reason label for a task card (design spec: one reason only, no badge stacking) */
+fun getReasonLabel(task: Task, deadline: DeadlineInfo? = null): String {
+    val flag = task.queueEscalationFlag
+
+    // Escalation flags take priority
+    if (flag == EscalationFlag.BLOCKED_STALE) {
+        val reason = task.blockedReason ?: "action needed"
+        return "Blocked \u2014 $reason"
+    }
+    if (flag == EscalationFlag.OFFER_TTL_EXPIRING) {
+        return "Offer expires \u2014 ${deadline?.text ?: "soon"}"
+    }
+    if (flag == EscalationFlag.CLAIM_TTL_EXPIRING) {
+        return "Claim expiring \u2014 ${deadline?.text ?: "soon"}"
+    }
+    if (flag == EscalationFlag.RETURN_OVERDUE) {
+        return "Return overdue${if (deadline != null) " \u2014 ${deadline.text}" else ""}"
+    }
+    if (flag == EscalationFlag.VERIFICATION_PENDING) {
+        return "Verification pending"
+    }
+    if (flag == EscalationFlag.INSTALL_OVERDUE) {
+        return "Install overdue${if (deadline != null) " \u2014 ${deadline.text}" else ""}"
+    }
+    if (flag == EscalationFlag.PICKUP_OVERDUE) {
+        return "Pickup overdue${if (deadline != null) " \u2014 ${deadline.text}" else ""}"
+    }
+    if (flag == EscalationFlag.ASSIGNMENT_UNACCEPTED) {
+        return "Assignment unaccepted"
+    }
+    if (flag == EscalationFlag.CHAIN_ESCALATION_PENDING) {
+        return "Chain escalation pending"
+    }
+    if (flag == EscalationFlag.RESTORE_RETRY) {
+        return "Restore retry \u2014 attempt ${task.retryCount}"
+    }
+    if (flag == EscalationFlag.MANUAL_EXCEPTION) {
+        return "Manual exception"
+    }
+
+    // High priority restore with deadline
+    if (task.taskType == TaskType.RESTORE && task.priority == TaskPriority.HIGH && deadline != null) {
+        return "Customer outage \u2014 ${deadline.text}"
+    }
+
+    // State-based defaults
+    if (deadline?.overdue == true) {
+        return when (task.taskType) {
+            TaskType.INSTALL -> "Install overdue \u2014 ${deadline.text}"
+            TaskType.RESTORE -> "Restore overdue \u2014 ${deadline.text}"
+            TaskType.NETBOX -> "Return overdue \u2014 ${deadline.text}"
+        }
+    }
+
+    // Approaching deadline
+    if (deadline != null && task.state !in Task.TERMINAL_STATES) {
+        return when (task.taskType) {
+            TaskType.INSTALL -> "Install deadline \u2014 ${deadline.text}"
+            TaskType.RESTORE -> "Restore deadline \u2014 ${deadline.text}"
+            TaskType.NETBOX -> "Return due \u2014 ${deadline.text}"
+        }
+    }
+
+    // Default state labels
+    return when (task.state) {
+        "OFFERED" -> "New connection available"
+        "CLAIMED" -> "Claimed \u2014 awaiting acceptance"
+        "ACCEPTED" -> "Accepted \u2014 assign technician"
+        "SCHEDULED" -> "Scheduled"
+        "INSTALLED" -> "Installed \u2014 pending verification"
+        "ALERTED" -> "Service alert \u2014 assign technician"
+        "ASSIGNED" -> "Assigned \u2014 in progress"
+        "IN_PROGRESS" -> "In progress"
+        "RESOLVED" -> "Resolved"
+        "COLLECTED" -> "Collected \u2014 confirm return"
+        "PICKUP_REQUIRED" -> "Pickup required"
+        else -> task.state.replace("_", " ").lowercase()
+            .replaceFirstChar { it.uppercase() }
     }
 }
 

@@ -153,7 +153,7 @@ fun AssuranceStrip(
                 Text("\u203A", fontSize = 14.sp, color = colors.textMuted)
             }
 
-            // Exposure indicator
+            // Exposure indicator (with direction arrow — design spec)
             Row(
                 modifier = Modifier
                     .weight(1f)
@@ -162,10 +162,10 @@ fun AssuranceStrip(
                     .background(colors.bgCard)
                     .border(1.dp, colors.borderSubtle, RoundedCornerShape(10.dp))
                     .clickable { onDrillDown("exposure") }
-                    .semantics { contentDescription = "Exposure: ${assuranceState.exposureState.name}. Tap for details." }
+                    .semantics { contentDescription = "Exposure: ${assuranceState.exposureState.name}, ${assuranceState.exposureDirection}. Tap for details." }
                     .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -182,6 +182,18 @@ fun AssuranceStrip(
                     modifier = Modifier.weight(1f),
                     letterSpacing = 0.3.sp
                 )
+                // Direction indicator arrow
+                val directionArrow = when (assuranceState.exposureDirection) {
+                    "improving" -> "\u2191"  // ↑
+                    "declining" -> "\u2193"  // ↓
+                    else -> "\u2192"         // → stable
+                }
+                val directionColor = when (assuranceState.exposureDirection) {
+                    "improving" -> colors.positive
+                    "declining" -> colors.negative
+                    else -> colors.textMuted
+                }
+                Text(directionArrow, fontSize = 14.sp, color = directionColor)
                 Text("\u203A", fontSize = 14.sp, color = colors.textMuted)
             }
         }
@@ -346,6 +358,18 @@ fun AssuranceDrillDowns(
                 ExposureState.INELIGIBLE -> "INELIGIBLE"
             },
             fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = exposureColor
+        )
+        Spacer(Modifier.height(16.dp))
+        Text("Direction", fontSize = 12.sp, color = colors.textSecondary)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = assuranceState.exposureDirection.replaceFirstChar { it.uppercase() },
+            fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+            color = when (assuranceState.exposureDirection) {
+                "improving" -> colors.positive
+                "declining" -> colors.negative
+                else -> colors.textPrimary
+            }
         )
         Spacer(Modifier.height(16.dp))
         Text("Reason Code", fontSize = 12.sp, color = colors.textSecondary)

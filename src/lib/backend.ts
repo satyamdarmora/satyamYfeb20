@@ -169,6 +169,7 @@ export function transformAssurance(a: any): any {
     exposure_state: a.exposureState,
     exposure_reason: a.exposureReason || '',
     exposure_since: toIso(a.exposureSince) || '',
+    exposure_direction: a.exposureDirection || 'stable',
     active_base_events: baseEvents,
     earnings_events: earningsEvents,
     active_restores: a.activeRestores,
