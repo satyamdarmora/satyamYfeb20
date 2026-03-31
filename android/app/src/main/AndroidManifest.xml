@@ -10,7 +10,7 @@
         android:name=".WiomCspApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="CSP New"
+        android:label="Satyam Install"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.WiomCSP"
@@ -23,14 +23,22 @@
             android:theme="@style/Theme.WiomCSP.Splash"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="wiomcsp" android:host="open" />
+            </intent-filter>
+        </activity>
+
+        <!-- Install Module — sole launcher -->
+        <activity
+            android:name=".InstallMainActivity"
+            android:exported="true"
+            android:label="Satyam Install"
+            android:theme="@style/Theme.WiomCSP">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 

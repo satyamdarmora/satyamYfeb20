@@ -1,0 +1,170 @@
+{
+  "reason.respond_now": {
+    "hi": "कनेक्शन खराब — अभी जाएं",
+    "en": "Connection down — go now"
+  },
+  "reason.working": {
+    "hi": "ठीक कर रहे हैं",
+    "en": "Working on it"
+  },
+  "reason.escalated": {
+    "hi": "⚠ समय बढ़ रहा — अभी ठीक करें",
+    "en": "Escalated — resolve now"
+  },
+  "reason.platform_takeover": {
+    "hi": "प्लेटफ़ॉर्म संभाल रहा है",
+    "en": "Platform taking over"
+  },
+  "reason.verifying": {
+    "hi": "जाँच हो रही है",
+    "en": "System verifying"
+  },
+  "reason.customer_denied": {
+    "hi": "⚠ ग्राहक ने कहा ठीक नहीं हुआ",
+    "en": "Customer says not resolved"
+  },
+  "reason.resolved": {
+    "hi": "✓ ठीक हो गया",
+    "en": "Resolved"
+  },
+  "reason.reclassified": {
+    "hi": "Device issue — प्लेटफ़ॉर्म देखेगा",
+    "en": "Router fault — platform handling"
+  },
+  "cta.start_work": {
+    "hi": "शुरू करें",
+    "en": "Start work"
+  },
+  "cta.resolve": {
+    "hi": "ठीक करें",
+    "en": "Resolve"
+  },
+  "cta.call_customer": {
+    "hi": "कॉल करें",
+    "en": "Call customer"
+  },
+  "cta.submit_diagnosis": {
+    "hi": "भेजें",
+    "en": "Submit diagnosis"
+  },
+  "executor.title": {
+    "hi": "कौन ठीक करेगा?",
+    "en": "Who will fix?"
+  },
+  "executor.self": {
+    "hi": "मैं खुद करूँगा",
+    "en": "I'll fix it"
+  },
+  "cta.assign": {
+    "hi": "चुनें",
+    "en": "Assign"
+  },
+  "diagnose.title": {
+    "hi": "Device issue diagnose करें",
+    "en": "Diagnose device issue"
+  },
+  "fault.DEVICE_MALFUNCTION": {
+    "hi": "Device खराब",
+    "en": "Device malfunction"
+  },
+  "fault.POWER_FAILURE": {
+    "hi": "बिजली की समस्या",
+    "en": "Power failure"
+  },
+  "fault.PHYSICAL_DAMAGE": {
+    "hi": "शारीरिक नुकसान",
+    "en": "Physical damage"
+  },
+  "fault.FIRMWARE_ISSUE": {
+    "hi": "Firmware समस्या",
+    "en": "Firmware issue"
+  },
+  "diagnose.system_will_verify": {
+    "hi": "System verify करेगा",
+    "en": "System will verify"
+  },
+  "proof.device_event": {
+    "hi": "Device reconnect",
+    "en": "Device reconnect"
+  },
+  "proof.system_check": {
+    "hi": "System check",
+    "en": "System connectivity check"
+  },
+  "proof.customer_confirm": {
+    "hi": "Customer confirmation",
+    "en": "Customer confirmation"
+  },
+  "proof.run_check": {
+    "hi": "System check करें",
+    "en": "Run system check"
+  },
+  "proof.request_confirm": {
+    "hi": "Customer से पुष्टि लें",
+    "en": "Request confirmation"
+  },
+  "proof.pass": {
+    "hi": "✅ पास",
+    "en": "Passed"
+  },
+  "proof.fail": {
+    "hi": "❌ फ़ेल",
+    "en": "Failed"
+  },
+  "proof.pending": {
+    "hi": "⏳ जाँच हो रही",
+    "en": "Checking"
+  },
+  "notif.new_restore": {
+    "hi": "कनेक्शन खराब — अभी जाएं",
+    "en": "Connection down — go now"
+  },
+  "notif.respond_now": {
+    "hi": "जवाब का समय खत्म हो रहा",
+    "en": "Response window closing"
+  },
+  "notif.escalated_tier0": {
+    "hi": "जवाब नहीं दिया — अभी ठीक करें",
+    "en": "First response missed"
+  },
+  "notif.escalated_tier1": {
+    "hi": "SLA टूट गया — supervisor को पता चला",
+    "en": "SLA breached"
+  },
+  "notif.customer_denied": {
+    "hi": "ग्राहक ने कहा ठीक नहीं हुआ — फिर करें",
+    "en": "Customer denied — try again"
+  },
+  "event_timeline": {
+    "hi": "इतिहास",
+    "en": "Event history"
+  },
+  "contact.call_label": {
+    "hi": "कॉल करें",
+    "en": "Call"
+  },
+  "drilldown.status_section": {
+    "hi": "स्थिति",
+    "en": "Status"
+  },
+  "drilldown.location_section": {
+    "hi": "स्थान",
+    "en": "Location"
+  },
+  "drilldown.proof_section": {
+    "hi": "Proof",
+    "en": "Proof"
+  },
+  "status.responding": {
+    "hi": "जवाब बाकी",
+    "en": "Responding"
+  },
+  "status.working": {
+    "hi": "काम चल रहा है",
+    "en": "Working"
+  },
+  "status.escalated": {
+    "hi": "Escalated",
+    "en": "Escalated"
+  }
+}

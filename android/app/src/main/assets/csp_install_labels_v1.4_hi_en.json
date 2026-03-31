@@ -1,0 +1,198 @@
+{
+  "reason.propose_slots": {
+    "hi": "समय भेजें — ग्राहक को बताना है",
+    "en": "Propose visit times"
+  },
+  "reason.awaiting_customer": {
+    "hi": "ग्राहक चुन रहा है",
+    "en": "Customer selecting"
+  },
+  "reason.slot_confirmed": {
+    "hi": "समय पक्का हो गया",
+    "en": "Time confirmed"
+  },
+  "reason.scheduled": {
+    "hi": "तैयार — भेजने से पहले",
+    "en": "Scheduled — pre slot day"
+  },
+  "reason.scheduled_today": {
+    "hi": "आज का काम — तैयार",
+    "en": "Today's work — ready"
+  },
+  "reason.reschedule": {
+    "hi": "फिर से समय भेजें",
+    "en": "Repropose times"
+  },
+  "reason.scheduling_failed": {
+    "hi": "ग्राहक से पुष्टि हो रही है",
+    "en": "Confirming with customer"
+  },
+  "reason.in_progress": {
+    "hi": "इंस्टॉल चल रहा है",
+    "en": "Install in progress"
+  },
+  "cta.propose_slots": {
+    "hi": "समय भेजें",
+    "en": "Propose times"
+  },
+  "cta.submit_slots": {
+    "hi": "समय भेजें",
+    "en": "Submit times"
+  },
+  "cta.assign_executor": {
+    "hi": "व्यक्ति चुनें",
+    "en": "Assign person"
+  },
+  "cta.assign": {
+    "hi": "चुनें",
+    "en": "Assign"
+  },
+  "cta.dispatch": {
+    "hi": "शुरू करें",
+    "en": "Start / Dispatch"
+  },
+  "cta.call_customer": {
+    "hi": "कॉल करें",
+    "en": "Call customer"
+  },
+  "cta.confirm_exit": {
+    "hi": "पुष्टि करें",
+    "en": "Confirm exit"
+  },
+  "reason.submitted": {
+    "hi": "सिस्टम जाँच रहा है",
+    "en": "System verifying"
+  },
+  "exit.title": {
+    "hi": "ये काम क्यों नहीं हो सकता?",
+    "en": "Why can't you do this?"
+  },
+  "exit.link": {
+    "hi": "नहीं कर पाएँगे",
+    "en": "Can't do this"
+  },
+  "exit.LOCATION_UNREACHABLE": {
+    "hi": "जगह तक पहुँच नहीं",
+    "en": "Location unreachable"
+  },
+  "exit.CAPACITY_FULL": {
+    "hi": "अभी क्षमता नहीं",
+    "en": "At capacity"
+  },
+  "exit.CUSTOMER_CANCELLED": {
+    "hi": "ग्राहक ने रद्द किया",
+    "en": "Customer cancelled"
+  },
+  "exit.TECHNICIAN_UNAVAILABLE": {
+    "hi": "टेक्नीशियन उपलब्ध नहीं",
+    "en": "Technician unavailable"
+  },
+  "slots.title": {
+    "hi": "दो समय भेजें",
+    "en": "Propose two slots"
+  },
+  "slots.slot1": {
+    "hi": "पहला समय",
+    "en": "First slot"
+  },
+  "slots.slot2": {
+    "hi": "दूसरा समय",
+    "en": "Second slot"
+  },
+  "executor.title": {
+    "hi": "कौन करेगा इंस्टॉल?",
+    "en": "Who will install?"
+  },
+  "executor.self": {
+    "hi": "मैं खुद करूँगा",
+    "en": "I'll do it myself"
+  },
+  "executor.not_assigned": {
+    "hi": "अभी तय नहीं",
+    "en": "Not assigned yet"
+  },
+  "contact.not_yet": {
+    "hi": "समय आने पर उपलब्ध",
+    "en": "Available on slot day"
+  },
+  "contact.call_label": {
+    "hi": "कॉल करें",
+    "en": "Call"
+  },
+  "scheduling_failed_system_handling": {
+    "hi": "ग्राहक से पुष्टि हो रही है",
+    "en": "Confirming with customer"
+  },
+  "assignment_source.new": {
+    "hi": "नया अनुरोध",
+    "en": "New request"
+  },
+  "assignment_source.retry": {
+    "hi": "पुनः प्रयास",
+    "en": "Retry"
+  },
+  "assignment_source.reallocation": {
+    "hi": "पुनः आवंटन",
+    "en": "Reassigned"
+  },
+  "assignment_expired": {
+    "hi": "समय निकल गया",
+    "en": "Expired"
+  },
+  "requires_online": {
+    "hi": "इंटरनेट ज़रूरी है",
+    "en": "Requires internet"
+  },
+  "scheduling_timeline": {
+    "hi": "शेड्यूल इतिहास",
+    "en": "Scheduling history"
+  },
+  "slot.proposed": {
+    "hi": "भेजा गया",
+    "en": "Proposed"
+  },
+  "slot.active": {
+    "hi": "जवाब बाकी",
+    "en": "Awaiting"
+  },
+  "slot.confirmed": {
+    "hi": "पक्का",
+    "en": "Confirmed"
+  },
+  "slot.expired": {
+    "hi": "समाप्त",
+    "en": "Expired"
+  },
+  "notif.new_assignment": {
+    "hi": "नया इंस्टॉल — समय भेजें",
+    "en": "New install — propose"
+  },
+  "notif.act_soon": {
+    "hi": "जल्दी समय भेजें — काम जा सकता है",
+    "en": "Respond soon"
+  },
+  "notif.slot_confirmed": {
+    "hi": "ग्राहक ने समय चुना — व्यक्ति चुनें",
+    "en": "Customer picked — assign"
+  },
+  "notif.reschedule_needed": {
+    "hi": "फिर से समय भेजें",
+    "en": "Repropose"
+  },
+  "notif.install_deadline": {
+    "hi": "समय सीमा करीब",
+    "en": "Deadline approaching"
+  },
+  "drilldown.location_section": {
+    "hi": "स्थान",
+    "en": "Location"
+  },
+  "drilldown.schedule_section": {
+    "hi": "शेड्यूल",
+    "en": "Schedule"
+  },
+  "drilldown.executor_section": {
+    "hi": "व्यक्ति",
+    "en": "Person"
+  }
+}
